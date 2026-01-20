@@ -9,16 +9,17 @@
   "theme_color": "#667eea",
   "icons": [
     {
-      "src": "/ClassTapMark/icon-192.png",
+      "src": "/ClassTapMark/icon192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/ClassTapMark/icon-512.png",
+      "src": "/ClassTapMark/icon512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ]
 }
+
