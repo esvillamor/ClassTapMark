@@ -3,7 +3,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/service-worker.js',
+  '/sw.js',
   '/favicon-32.png',  
   '/icon192x192.png',
   '/icon256x256.png',
@@ -25,3 +25,4 @@ self.addEventListener('fetch', event => {
       .catch(() => caches.match('/index.html'))
   );
 });
+
