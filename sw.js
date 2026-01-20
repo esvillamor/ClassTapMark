@@ -1,7 +1,7 @@
 const CACHE_NAME = 'ClassTapMark-cache-v1';
 const urlsToCache = [
   '/',
-  /ClassTapMark/',
+  '/ClassTapMark/',
   '/ClassTapMark/index.html',
   '/ClassTapMark/manifest.json',
   '/ClassTapMark/sw.js',
@@ -26,5 +26,6 @@ self.addEventListener('fetch', event => {
       .catch(() => caches.match('/index.html'))
   );
 });
+
 
 
