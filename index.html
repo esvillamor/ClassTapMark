@@ -1468,10 +1468,10 @@ window.addStudent = function(){
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  window.addEventListener('load', function() {
     navigator.serviceWorker.register('/ClassTapMark/sw.js')
-      .then(reg => console.log('SW registered'))
-      .catch(err => console.log('SW failed', err));
+      .then(function(reg) { console.log('SW registered!'); })
+      .catch(function(err) { console.log('SW registration failed:', err); });
   });
 }
 </script>
