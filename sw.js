@@ -1,14 +1,15 @@
 const CACHE_NAME = 'ClassTapMark-cache-v1';
 const urlsToCache = [
   '/',
-  '/index.html',
-  '/manifest.json',
-  '/sw.js',
-  '/favicon-32.png',  
-  '/icon192x192.png',
-  '/icon256x256.png',
-  '/icon384x384.png',
-  '/icon512x512.png'
+  /ClassTapMark/',
+  '/ClassTapMark/index.html',
+  '/ClassTapMark/manifest.json',
+  '/ClassTapMark/sw.js',
+  '/ClassTapMark/favicon-32.png',  
+  '/ClassTapMark/icon192x192.png',
+  '/ClassTapMark/icon256x256.png',
+  '/ClassTapMark/icon384x384.png',
+  '/ClassTapMark/icon512x512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -25,4 +26,5 @@ self.addEventListener('fetch', event => {
       .catch(() => caches.match('/index.html'))
   );
 });
+
 
