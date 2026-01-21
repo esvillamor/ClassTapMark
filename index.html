@@ -168,11 +168,53 @@ padding: 0.4rem 0.25rem;font-size: 0.65rem;}
     .fab-help { right: 10px; }
   }
 </style>
+
+
+<style id="ctm-license-css">
+  /* While locked: blur & dim everything except Access Control */
+  body.locked .section:not(#accessControl) {
+    filter: blur(1px);
+    pointer-events: none;
+    user-select: none;
+    opacity: .5;
+  }
+
+  /* Status colors */
+  #proStatus { margin-top:.5rem; font-weight:600; }
+  #proStatus.ok  { color:#10b981; }  /* green  */
+  #proStatus.err { color:#ef4444; }  /* red    */
+
+  /* Hide helper */
+  .ctm-hidden { display: none !important; }
+
+  /* Keep Access Control above the dimmed background & shield */
+  #accessControl { position: relative; z-index: 3; }
+
+  /* A shield that blocks pointer events on the background even if styles change */
+  #lockShield {
+    position: fixed; inset: 0; z-index: 2;
+    background: rgba(0,0,0,.35);
+    display: none;
+  }
+  body.locked #lockShield { display: block; }
+</style>
+
 </head>
-<body>
+<body class="locked">
   <div class="container">
     <h1>ClassTapMark</h1>
-
+<!-- Licensing -->
+<div class="section" id="accessControl">
+  <h3>🔐 Access Control</h3>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
+    <input id="proEmail" type="email" placeholder="your@email.com" style="flex:1;">
+    <input id="proLicense" type="text" placeholder="License Key (e.g., CTM-1A2B3C4D)" style="flex:1;">
+    <input id="proSignature" type="text" placeholder="ECDSA signature (hex)" style="flex:1">
+    <button id="proValidate" class="primary">Unlock</button>
+  </div>
+  <div id="proStatus" style="margin-top:.5rem;font-weight:600"></div>
+</div>
+<div id="lockShield" aria-hidden="true"></div>
     <!-- Manage Classes -->
     <div class="section">
       <h3>📚 Manage Classes</h3>
@@ -1272,8 +1314,8 @@ window.addStudent = function(){
 })();
 </script>
 
-<!-- Floating Action Buttons -->
-<button id="fabRefresh" class="fab fab-refresh" title="Refresh (soft)">🔄</button>
+<!-- Floating Action Buttons 
+<button id="fabRefresh" class="fab fab-refresh" title="Refresh (soft)">🔄</button> -->
 <button id="fabHelp" class="fab fab-help" title="Help &amp; EULA">❔</button>
 
 
@@ -1381,7 +1423,7 @@ window.addStudent = function(){
 
   onReady(function(){
     /* Elements */
-    const fabRefresh = document.getElementById('fabRefresh');
+    <!-- const fabRefresh = document.getElementById('fabRefresh'); -->
     const fabHelp    = document.getElementById('fabHelp');
     const helpModal  = document.getElementById('helpModal');
     const helpClose  = document.getElementById('helpCloseBtn');
@@ -1419,7 +1461,7 @@ window.addStudent = function(){
       window.location.reload();
     }
 
-    /* Bind FAB: Refresh */
+    /* Bind FAB: Refresh 
     if(fabRefresh){
       fabRefresh.addEventListener('click', (ev)=>{
         if(ev.shiftKey) hardReload();
@@ -1429,7 +1471,7 @@ window.addStudent = function(){
         ev.preventDefault();
         hardReload();
       });
-    }
+    } */
 
     /* Modal open/close helpers */
     function openHelp(){
@@ -1466,6 +1508,7 @@ window.addStudent = function(){
   });
 })();
 </script>
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
@@ -1475,5 +1518,245 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<script id="ctm-license">
+/** ===== ClassTapMark Serverless License (ECDSA P-256) =====
+ * PUBLIC KEY from generate-master-keys.html (raw/uncompressed 65-byte P-256 → hex).
+ * Keep your PRIVATE key only in your generator(s).
+ */
+window.CTM_PUBLIC_KEY_HEX = '045d419f4adf281c3b46a8ee14dfcd85a46eda6f6603ec7067d59ee234d5cd1999c6992fd97cedee9ad1da628f04e8733b0669e3cd81845e43b6c5243b9a90294f';
+
+(() => {
+  const LS_RECORD = 'ctm_license_record';
+  const LS_VER    = 'ctm_verified';
+
+  const q = id => document.getElementById(id);
+  const $ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+
+  const normEmail   = e   => String(e||'').trim().toLowerCase();
+  const licenseCore = lic => String(lic||'').trim().replace(/^PRO-/i,'').replace(/^CTM-/i,'');
+
+  /* ---------- Robust hex parsing ---------- */
+// Replace the whole function with this:
+function hexToBytes(hex) {
+  const h = String(hex || '').trim();
+  // Accept only hex chars and require even length
+  if (!/^[0-9a-fA-F]+$/.test(h) || (h.length % 2)) {
+    throw new Error('Signature must be hex (even length)');
+  }
+  const out = new Uint8Array(h.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+  return out;
+}
+
+  // Convert 64-byte raw R||S to DER SEQUENCE { INTEGER R; INTEGER S }
+  function rawRS_to_DER(rawRS) {
+    if (!(rawRS instanceof Uint8Array) || rawRS.length !== 64) {
+      throw new Error('Expected 64-byte raw R||S signature');
+    }
+    function toIntegerDER(bytes) {
+      let i=0; while (i<bytes.length && bytes[i]===0) i++;
+      let v = bytes.slice(i);
+      if (v.length === 0) v = new Uint8Array([0]);
+      if (v[0] & 0x80) { const t = new Uint8Array(v.length+1); t[0]=0x00; t.set(v,1); v=t; }
+      const der = new Uint8Array(2+v.length); der[0]=0x02; der[1]=v.length; der.set(v,2);
+      return der;
+    }
+    const R  = rawRS.slice(0,32), S = rawRS.slice(32,64);
+    const dR = toIntegerDER(R),   dS = toIntegerDER(S);
+    const seq = new Uint8Array(2 + dR.length + dS.length);
+    seq[0]=0x30; seq[1]=dR.length+dS.length; seq.set(dR,2); seq.set(dS,2+dR.length);
+    return seq;
+  }
+
+  async function importPublicKeyFromHex(rawHex) {
+    const bytes = hexToBytes(rawHex);
+    // expect 65-byte uncompressed P-256 public key exported as 'raw' by your generator
+    if (bytes.length !== 65 || bytes[0] !== 0x04) {
+      throw new Error('Public key must be 65-byte uncompressed (raw hex from generator)');
+    }
+    return await crypto.subtle.importKey('raw', bytes, { name:'ECDSA', namedCurve:'P-256' }, false, ['verify']);
+  }
+
+  // Build message variants. CTM licenses prefer 'classtapmark'; legacy PRO- prefer 'promptness-pro'
+  function buildPayloads(email, license) {
+    const lic = String(license || '').trim();
+    const order = /^CTM-/i.test(lic)
+      ? ['classtapmark', 'promptness-pro']
+      : /^PRO-/i.test(lic)
+      ? ['promptness-pro', 'classtapmark']
+      : ['classtapmark', 'promptness-pro'];
+
+    const e = normEmail(email), core = licenseCore(license);
+    return order.map(p => new TextEncoder().encode(`${e}:${core}:${p}`));
+  }
+
+async function verifySignature(sigHex, email, license) {
+  const pub = await importPublicKeyFromHex(window.CTM_PUBLIC_KEY_HEX || '');
+
+  // Parse signature: allow DER hex (variable length) or 128-hex RAW R||S
+  let sig = hexToBytes(sigHex);
+  if (sig.length === 64) sig = rawRS_to_DER(sig);
+
+  // Try email lowercased & as-typed; license core & full; both product tags
+  const emailVariants = [
+    String(email || '').trim().toLowerCase(),
+    String(email || '').trim()
+  ];
+   const licCore = licenseCore(license);
+ // <-- fixed
+  const licVariants = [licCore, String(license || '').trim()];
+  const products = ['classtapmark', 'promptness-pro'];
+
+  const enc = new TextEncoder();
+  for (const e of emailVariants) {
+    for (const l of licVariants) {
+      for (const p of products) {
+        const msg = enc.encode(`${e}:${l}:${p}`);
+        const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pub, sig, msg);
+        if (ok) return true;
+      }
+    }
+  }
+  return false;
+}
+
+  /* ---------- UI helpers (toggle inputs & button caption) ---------- */
+  const inputs = ['proEmail','proLicense','proSignature'];
+  const hideInputs = () => inputs.forEach(id => q(id)?.classList.add('ctm-hidden'));
+  const showInputs = () => inputs.forEach(id => q(id)?.classList.remove('ctm-hidden'));
+
+  function setButtonLabel(mode /* 'unlock' | 'lock' */) {
+    const btn = q('proValidate'); if (!btn) return;
+    if (mode === 'lock') { btn.textContent = 'Lock'; btn.dataset.mode = 'lock'; }
+    else                 { btn.textContent = 'Unlock'; btn.dataset.mode = 'unlock'; }
+  }
+
+  /* ---------- Block background while locked (inert + focus trap + shield) ---------- */
+  function getNonAccessRoots() {
+    const list = $('.section:not(#accessControl)');
+    ['#exportModal', '#helpModal', '.fab'].forEach(sel => list.push(...$(sel)));
+    return list;
+  }
+  function disableFocusIn(el) {
+    const focusables = $('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])', el);
+    focusables.forEach(node => {
+      if (!node.hasAttribute('data-ctm-tabindex')) {
+        const prev = node.getAttribute('tabindex');
+        node.setAttribute('data-ctm-tabindex', prev == null ? '' : prev);
+        node.setAttribute('tabindex','-1');
+      }
+    });
+  }
+  function restoreFocusIn(el) {
+    const tweaked = $('[data-ctm-tabindex]', el);
+    tweaked.forEach(node => {
+      const prev = node.getAttribute('data-ctm-tabindex');
+      if (prev === '') node.removeAttribute('tabindex'); else node.setAttribute('tabindex', prev);
+      node.removeAttribute('data-ctm-tabindex');
+    });
+  }
+  function applyInert(isLocked) {
+    const roots = getNonAccessRoots();
+    roots.forEach(el => {
+      if (isLocked) { el.setAttribute('aria-hidden','true'); el.setAttribute('inert',''); disableFocusIn(el); }
+      else          { el.removeAttribute('aria-hidden');     el.removeAttribute('inert');  restoreFocusIn(el); }
+    });
+  }
+
+  let trapHandler=null;
+  function trapFocus(enable) {
+    const panel = q('accessControl'); if (!panel) return;
+    if (!enable) { if (trapHandler) document.removeEventListener('keydown', trapHandler), trapHandler=null; return; }
+    const getFocusable = () =>
+      $('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])', panel)
+        .filter(el => el.offsetParent !== null);
+    trapHandler = (e) => {
+      if (e.key !== 'Tab') return;
+      const list = getFocusable(); if (!list.length) return;
+      const first=list[0], last=list[list.length-1];
+      if (e.shiftKey) {
+        if (document.activeElement === first || !panel.contains(document.activeElement)) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last  || !panel.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', trapHandler);
+  }
+
+  /* ---------- Lock/Unlock orchestration ---------- */
+  function lockUI(message) {
+    document.body.classList.add('locked');
+    setButtonLabel('unlock');
+    showInputs(); applyInert(true); trapFocus(true);
+    q('proEmail')?.focus();
+    const s = q('proStatus'); if (s) { s.textContent = message || '🔒 Locked — enter your license to unlock'; s.className=''; }
+  }
+  function unlockUI(message) {
+    document.body.classList.remove('locked');
+    setButtonLabel('lock');
+    hideInputs(); applyInert(false); trapFocus(false);
+    const s = q('proStatus'); if (s) { s.textContent = message || '🔓 Unlocked — license verified'; s.className='ok'; }
+  }
+
+  function saveLicense({email, license, signature}) {
+    localStorage.setItem(LS_RECORD, JSON.stringify({ email: normEmail(email), license, signature }));
+    localStorage.setItem(LS_VER, '1');
+  }
+  function clearLicense() {
+    localStorage.removeItem(LS_RECORD);
+    localStorage.removeItem(LS_VER);
+  }
+
+  async function tryAutoUnlock() {
+    const saved = localStorage.getItem(LS_RECORD);
+    if (!saved) { lockUI(); return; }
+    try {
+      const { email, license, signature } = JSON.parse(saved);
+      if (await verifySignature(signature, email, license)) {
+        unlockUI('🔓 Unlocked (auto)'); return;
+      }
+    } catch {}
+    lockUI('🔒 Locked — saved license invalid or changed');
+  }
+
+  async function onToggle() {
+    const btn  = q('proValidate');
+    const mode = btn?.dataset?.mode || (document.body.classList.contains('locked') ? 'unlock' : 'lock');
+
+    if (mode === 'lock') {
+      clearLicense(); lockUI('🔒 Locked — enter your license to unlock'); return;
+    }
+
+    // mode === 'unlock'
+    const email = q('proEmail').value;
+    const license = q('proLicense').value;
+    const signature = q('proSignature').value;
+    const status = q('proStatus'); status.className=''; status.textContent='Validating…';
+
+    try {
+      if (!window.CTM_PUBLIC_KEY_HEX || window.CTM_PUBLIC_KEY_HEX.length < 100)
+        throw new Error('Public key not set. Paste PUBLIC KEY HEX into index.html.');
+      if (!email || !license || !signature)
+        throw new Error('Please fill Email, License, and Signature.');
+      const ok = await verifySignature(signature, email, license);
+      if (!ok) throw new Error('Invalid email/license/signature.');
+      saveLicense({ email, license, signature });
+      unlockUI('✅ Unlocked — license verified');
+    } catch (err) {
+      lockUI(err.message); q('proStatus').classList.add('err');
+    }
+  }
+
+  function boot() {
+    const btn = q('proValidate'); if (btn) btn.addEventListener('click', onToggle);
+    setButtonLabel('unlock'); showInputs(); applyInert(true); trapFocus(true);
+    tryAutoUnlock();
+    console.debug('[CTM] Licensing module loaded');
+  }
+  document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
+
 </body>
 </html>
