@@ -26,7 +26,7 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(CACHE_NAME);
 
     // Precache local app shell
-    await cache.addAll(URLS_TO_CACHE.concat(LEGACY_ABSOLUTE));
+    // await cache.addAll(URLS_TO_CACHE.concat(LEGACY_ABSOLUTE));
 
     // Precache the CDN XLSX file.
     // Try CORS first; if blocked, fall back to caching an opaque response (no-cors),
@@ -107,4 +107,5 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
 
