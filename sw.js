@@ -21,21 +21,6 @@ const URLS_TO_CACHE = [
   './icon512x512.png'
 ];
 
-// Optional: keep your original absolute paths (harmless duplicates are OK)
-// This helps if any code elsewhere refers to absolute URLs in the cache.
-const LEGACY_ABSOLUTE = [
-  '/',                          // root
-  '/ClassTapMark/',
-  '/ClassTapMark/index.html',
-  '/ClassTapMark/manifest.json',
-  '/ClassTapMark/sw.js',
-  '/ClassTapMark/favicon-32.png',
-  '/ClassTapMark/icon192x192.png',
-  '/ClassTapMark/icon256x256.png',
-  '/ClassTapMark/icon384x384.png',
-  '/ClassTapMark/icon512x512.png'
-];
-
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -122,3 +107,4 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
