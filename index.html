@@ -74,7 +74,9 @@
 
 	.status-row {display: flex;flex-wrap: wrap;gap: 8px;width: 100%;padding: 8px;box-sizing: border-box;}
 	
-	.status-btn {flex: 1 1 calc(16.666% - 8px); /* 6 buttons = ~16.67% each */min-width: 80px;padding: 12px 8px;border: 1px solid #ccc;border-radius: 6px;background: #f8f9fa;cursor: pointer;font-size: 14px;white-space: nowrap;transition: all 0.2s ease;}
+	/*.status-btn {flex: 1 1 calc(16.666% - 8px); /* 6 buttons = ~16.67% each */
+	.status-btn {flex: 1 1 calc(33.333% - 8px);
+	max-width: 100px; min-width: 80px; padding: 12px 8px;border: 1px solid #ccc;border-radius: 6px;background: #f8f9fa;cursor: pointer;font-size: 14px;white-space: nowrap;transition: all 0.2s ease;}
 
 	/* Tablet: 3 buttons per row */
 	@media (max-width: 768px) {.status-btn {flex: 1 1 calc(33.333% - 6px); /* 3 buttons = ~33.33% each */}}	
@@ -218,8 +220,8 @@
 
           <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
             <button class="primary" style="flex:1;" onclick="importCSV()" title="Select a class from the dropdown to enable importing">Import</button>
-			<button class="primary" style="flex:1;" onclick="addStudent()">Add</button>
-			<button id="btnCancelEdit" class="edit" style="flex:1;" onclick="cancelEdit()" disabled>Cancel Edit</button>
+			<button class="primary" style="flex:1;" onclick="addStudent()">Save</button>
+			<button id="btnCancelEdit" class="edit" style="flex:1;" onclick="cancelEdit()" disabled>Cancel</button>
           </div>
           <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
             <!-- Per-student export (enabled in edit mode) -->
@@ -231,11 +233,7 @@
       <table id="studentTable">
         <thead>
           <tr>
-            <th style="width:3%">#</th>
-            <th style="width:32%">Name</th>
-            <th style="width:10%">Sex</th>
-            <th style="width:20%">Added</th>
-            <th style="width:35%">Actions</th>
+            <th style="width:3%">#</th><th style="width:32%">Name</th><th style="width:10%">Sex</th><th style="width:20%">Added</th><th style="width:35%">Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -259,10 +257,13 @@
 
       <div id="currentStudent" class="currentStudent">Select a Class to begin</div>
 
-      <div class="status-row">
+      <!-- <div class="status-row"> -->
+	  <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
         <button class="status-btn" onclick="markAttendance('present')">Present</button>
         <button class="status-btn" onclick="markAttendance('absent')">Absent</button>
         <button class="status-btn" onclick="markAttendance('tardy')">Tardy</button>
+	  </div>
+	  <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
         <button class="status-btn" onclick="markAttendance('cutting')">Cutting</button>
         <button class="status-btn" onclick="markAttendance('excuse')">Excuse</button>
         <button class="status-btn" onclick="markAttendance('pending')">Pending</button>
@@ -331,7 +332,7 @@
         <h3>Quick Start</h3>
         <ol>
           <li><strong>Create a Class</strong> with <em>📚 Create Class</em>. Then use <em>Load Class</em>.</li>
-          <li><strong>Add Students</strong> using the format: <em>Last Name, First Name Middle Name</em>. Set Sex: <em>Male / Female</em>.</li>
+          <li><strong>Add Students</strong> using the format: <em>Last Name, First Name Middle Name</em>. Set Sex: <em>Male / Female</em> and click Save</li>
           <li><strong>Mark Attendance</strong>—pick a date, navigate students (⏪ ◀ ▶ ⏩), and choose a status: <em>Present, Absent, Tardy, Cutting, Excuse, Pending</em>.</li>
           <li><strong>Import</strong> <span class="kbd">.csv</span> with columns: <span class="kbd">"Class","Student","Sex","Status","Date"</span>.</li>
           <li><strong>Export CSV</strong>:
@@ -606,7 +607,7 @@
   }
 
   function addStudent(){
-    if(!currentClassId){ alert('Select class first!'); return; }
+    if(!currentClassId){ alert('Select and Load Class first!'); return; }
     const nameEl = document.getElementById('studentName');
     const name = (nameEl.value || '').trim();
     const sex = getSelectedSex();
@@ -645,6 +646,7 @@
     exportBtn.textContent = `Export (${s.name})`;
 
     document.getElementById('btnCancelEdit').disabled = false;
+	updateCancelButtonState();
   }
 
   function cancelEdit(){
@@ -655,10 +657,23 @@
     document.getElementById('sexMale').checked = true;
 
     const exportBtn = document.getElementById('btnExportStudent');
-    if (exportBtn){ exportBtn.disabled = true; exportBtn.textContent = 'Export Student'; }
+    if (exportBtn){ exportBtn.disabled = true; exportBtn.textContent = 'Export'; }
     const cancelBtn = document.getElementById('btnCancelEdit');
     if (cancelBtn){ cancelBtn.disabled = true; }
+	updateCancelButtonState();
   }
+
+function updateCancelButtonState(){
+  const cancelBtn = document.getElementById('btnCancelEdit');
+  if (!cancelBtn) return;
+
+  const nameEl = document.getElementById('studentName');
+  const nameHasText = !!(nameEl && nameEl.value.trim().length > 0);
+
+  // Enable the button if we are editing OR if there's typed text while adding.
+  const isEditing = editingStudentIndex >= 0;
+  cancelBtn.disabled = !(isEditing || nameHasText);
+} 
 
   function deleteStudent(index){
     if(!currentClassId) { alert('Select a class first.'); return; }
@@ -1174,6 +1189,13 @@ function updateAccessUIForLockState(isLocked){
     updateDebug('All features active - Ready!');
   });
   function clearDebug(){ document.getElementById('debugInfo').innerHTML='Task log cleared'; }
+
+const nameEl = document.getElementById('studentName');
+if (nameEl){
+  nameEl.addEventListener('input', updateCancelButtonState);
+  // Initialize the correct state on load
+  updateCancelButtonState();
+}  
 
   /* =========================================================================
      SECTION 8. PWA Service Worker
