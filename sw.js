@@ -5,7 +5,7 @@
    - Safer fallback to ./index.html for navigations
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v2-2026-01-24';
+const CACHE_NAME = 'ClassTapMark-cache-v2-2026-01-24-0934PM';
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
 // Use relative paths so they resolve correctly at /ClassTapMark/ (GitHub Pages) and on localhost
@@ -107,6 +107,7 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
 
 
 
