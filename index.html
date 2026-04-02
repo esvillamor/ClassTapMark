@@ -32,11 +32,9 @@
     .container{max-width:1200px;margin:0 auto}
     h1{color:#fff;text-align:center;margin:0 0 1.25rem}
     .section{background:var(--panel);border-radius:var(--radius);padding:1.25rem;margin:1rem 0;box-shadow:var(--shadow)}
-
     label,input,select,button{font-family:inherit}
     input,select{padding:.8rem 1rem;border:2px solid #e1e5e9;border-radius:12px;background:#fafbff;transition:.2s}
     input:focus,select:focus{outline:none;border-color:var(--bg1);box-shadow:0 0 0 3px rgba(102,126,234,.12)}
-
     button{padding:.8rem 1.1rem;border:none;border-radius:12px;font-weight:500;cursor:pointer;transition:.2s}
     button.primary{background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff}
     button.edit{background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;}
@@ -50,12 +48,36 @@
 
     /* Compact tables (from old) */
     #studentTable, #attendanceTable, #statusTable { font-size: 0.8rem; }
-    #studentTable th, #studentTable td, #attendanceTable th, #attendanceTable td,
-	#statusTable th, #statusTable td,	{ padding: 0.5rem 0.375rem; font-size: 0.75rem; }
-    @media (max-width: 500px) {
+    #studentTable th, #studentTable td, #attendanceTable th, #attendanceTable td, #statusTable th, #statusTable td { padding: 0.5rem 0.375rem; font-size: 0.75rem; }
+    @media (max-width: 700px) {
       #studentTable, #attendanceTable, #statusTable { font-size: .7rem; }
       #studentTable th, #studentTable td, #attendanceTable th, #attendanceTable td, #statusTable th, #statusTable td { padding: .4rem .25rem; font-size: .65rem; }
     }
+
+    /* FIX stray selectors: add # to ensure rules apply */
+    #studentTable th, #studentTable td,
+    #attendanceTable th, #attendanceTable td,
+    #statusTable th, #statusTable td {
+      padding: 0.5rem 0.375rem;
+      font-size: 0.75rem;
+    }
+    @media (max-width: 700px) {
+      #studentTable, #attendanceTable, #statusTable { font-size: .7rem; }
+      #studentTable th, #studentTable td,
+      #attendanceTable th, #attendanceTable td,
+      #statusTable th, #statusTable td {
+        padding: .4rem .25rem;
+        font-size: .65rem;
+      }
+    }
+
+    .expandable-row { table-layout: fixed; width: 100% !important; }
+    .expandable-row.collapsed tbody tr { visibility: collapse; height: 0; padding: 0; margin: 0; border: none; overflow: hidden; }
+    .expandable-row:not(.collapsed) tbody tr { visibility: visible !important; height: auto !important; }
+    .expand-toggle { cursor: pointer; color: var(--bg1); font-weight: bold; padding: 0.125rem 0.25rem; border-radius: 4px; transition: all 0.2s; display: inline-block; font-size: 0.9rem; float: right; }
+    .expand-toggle:hover { background: rgba(102, 126, 234, 0.15); transform: scale(1.05); }
+    #statusTable .expand-toggle { position: absolute; top: 0.125rem; right: 0.25rem; z-index: 10; margin: 0; float: none !important; }
+    #statusTable thead tr th:last-child { position: relative; padding-right: 2rem; /* Space for toggle */ }
 
     /* Nav row */
     .nav-row{display:flex;gap:.75rem;align-items:center;justify-content:center;background:rgba(255,255,255,.95);border-radius:12px;padding:.5rem 1rem;margin:1rem 0;box-shadow:0 6px 18px rgba(0,0,0,.12)}
@@ -71,15 +93,9 @@
     .status-btn.cutting{background:#fd7e14;color:#fff;border-color:#f06b00}
     .status-btn.excuse{background:linear-gradient(135deg,#20c997,#17a2b8);color:#fff;border-color:#138496}
     .status-btn.pending{background:#ff9500;color:#fff;border-color:#e68900}
-
-	.status-row {display: flex;flex-wrap: wrap;gap: 8px;width: 100%;padding: 8px;box-sizing: border-box;}
-	
-	/*.status-btn {flex: 1 1 calc(16.666% - 8px); /* 6 buttons = ~16.67% each */
-	.status-btn {flex: 1 1 calc(33.333% - 8px);
-	max-width: 100px; min-width: 80px; padding: 12px 8px;border: 1px solid #ccc;border-radius: 6px;background: #f8f9fa;cursor: pointer;font-size: 14px;white-space: nowrap;transition: all 0.2s ease;}
-
-	/* Tablet: 3 buttons per row */
-	@media (max-width: 768px) {.status-btn {flex: 1 1 calc(33.333% - 6px); /* 3 buttons = ~33.33% each */}}	
+    .status-row {display: flex;flex-wrap: wrap;gap: 8px;width: 100%;padding: 8px;box-sizing: border-box;}
+    .status-btn {flex: 1 1 calc(33.333% - 8px); max-width: 100px; min-width: 80px; padding: 12px 8px;border: 1px solid #ccc;border-radius: 6px;background: #f8f9fa;cursor: pointer;font-size: 14px;white-space: nowrap;transition: all 0.2s ease;}
+    @media (max-width: 768px) {.status-btn {flex: 1 1 calc(33.333% - 6px);}}
 
     /* Current student highlight */
     .currentStudent{background:linear-gradient(135deg,#ffecd2,#fcb69f);padding:1rem;border-radius:12px;text-align:center}
@@ -92,20 +108,14 @@
     .modal .modal-content{background:#fff;margin:8% auto;padding:1.25rem;border-radius:16px;width:92%;max-width:560px;max-height:80vh;overflow:auto;box-shadow:var(--shadow)}
     .date-container{border:1px solid #e1e5e9;border-radius:8px;padding:.6rem;background:#fafbff;max-height:160px;overflow:auto;margin:.35rem 0}
     .current-date-center{display:block;padding:.7rem;border-radius:10px;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;text-align:center}
-    /* One date per line */
     #exportModal .date-container label{display:block;margin:4px 0;cursor:pointer;user-select:none}
     #exportModal .date-container input[type="checkbox"]{margin-right:.5rem}
 
-    /* Lock UI: while locked show ONLY Access Control; hide rest inside .container */
+    /* Lock UI */
     body.locked .container > :not(#accessControl){display:none !important}
-    /* still hide Export modal while locked */
     body.locked #exportModal{display:none !important}
-
-    /* License status color */
     #proStatus.ok { color:#10b981; }
     #proStatus.err { color:#ef4444; }
-
-    /* Buy/Register paragraph visibility: show only when locked */
     #ctmBuy, #ctmBuy + div { display: none !important; }
     body.locked #ctmBuy, body.locked #ctmBuy + div { display: block !important; }
 
@@ -134,9 +144,6 @@
     .fab:focus { outline: none; box-shadow: 0 0 0 4px rgba(102,126,234,.20); }
     .fab[disabled] { opacity: .55; cursor: not-allowed; transform: none; }
     .fab-help { right: 14px; }
-    /* DO NOT hide help while locked (kept accessible). */
-
-    /* Help modal tweaks (reuse .modal) */
     #helpModal .modal-content { margin: 6% auto; max-width: 820px; }
     #helpModal .close-row { display:flex; justify-content:space-between; align-items:center; gap:.75rem; margin-bottom:.5rem; }
     #helpModal .close-row .title {
@@ -178,7 +185,8 @@
           <em>localStorage</em> — device & browser specific. Works offline.
           <br />
           <div style="display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center;width:100%;align-items:center;">
-            <input type="button" onclick="location.href='https://www.raket.ph/esvillamor';" value="Buy Now" />
+            <input type="button" onclick="location.href='https://www.raket.ph/esvillamor';" value="Buy Now" /> | 
+			Support & Future Updates 👉
             <input type="button" onclick="location.href='https://www.raket.ph/esvillamor';" value="Register" />
           </div>
         </p>
@@ -206,34 +214,35 @@
     <div id="classContent" class="section disabled">
       <h3>👥 Manage Students</h3>
       <span id="classHeader" style="font-weight:600;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
-
       <div class="student-form">
         <div style="display:flex;justify-content:center;gap:1rem;align-items:end;flex-wrap:wrap;margin:.6rem 0">
           <input id="studentName" placeholder="Last Name, First Name Middle Name" style="flex:2;min-width:240px;max-width:600px">
         </div>
-
         <div style="display:flex; justify-content:center; flex-direction:column; align-items:center; gap:1rem; padding:1rem;">
           <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:.35rem"><input type="radio" name="studentSex" value="Male" id="sexMale" checked> Male</label>
             <label style="display:flex;align-items:center;gap:.35rem"><input type="radio" name="studentSex" value="Female" id="sexFemale"> Female</label>
           </div>
-
           <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
             <button class="primary" style="flex:1;" onclick="importCSV()" title="Select a class from the dropdown to enable importing">Import</button>
-			<button class="primary" style="flex:1;" onclick="addStudent()">Save</button>
-			<button id="btnCancelEdit" class="edit" style="flex:1;" onclick="cancelEdit()" disabled>Cancel</button>
+            <button class="primary" style="flex:1;" onclick="addStudent()">Save</button>
+            <button id="btnCancelEdit" class="edit" style="flex:1;" onclick="cancelEdit()" disabled>Cancel</button>
           </div>
           <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
             <!-- Per-student export (enabled in edit mode) -->
-            <button class="primary" style="flex:1;" onclick="exportCSV()" title="Click Edit ✏️ to Export Student"  disabled id="btnExportStudent">Export</button>
+            <button class="primary" style="flex:1;" onclick="exportCSV()" title="Click Edit ✏️ to Export Student" disabled id="btnExportStudent">Export</button>
           </div>
         </div>
       </div>
-
       <table id="studentTable">
         <thead>
           <tr>
-            <th style="width:3%">#</th><th style="width:32%">Name</th><th style="width:10%">Sex</th><th style="width:20%">Added</th><th style="width:35%">Actions</th>
+            <th style="width:3%">#</th>
+            <th style="width:32%; text-align:center;">Name</th>
+            <th style="width:10%; text-align:center;">Sex</th>
+            <th style="width:20%; text-align:center;">Added</th>
+            <th style="width:35%">Actions</th>
+            <th style="width:3%"></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -249,7 +258,16 @@
       <div>
         <table id="statusTable">
           <thead>
-            <tr><th>Sex</th><th>Present</th><th>Absent</th><th>Tardy</th><th>Cutting</th><th>Excuse</th><th>Pending</th></tr>
+            <tr>
+              <th style="width:15%">Sex</th>
+              <th style="width:14%">Present</th>
+              <th style="width:13%">Absent</th>
+              <th style="width:13%">Tardy</th>
+              <th style="width:14%">Cutting</th>
+              <th style="width:13%">Excuse</th>
+              <th style="width:14%">Pending</th>
+              <th style="width:3%"></th>
+            </tr>
           </thead>
           <tbody id="statusTableBody"></tbody>
         </table>
@@ -257,29 +275,37 @@
 
       <div id="currentStudent" class="currentStudent">Select a Class to begin</div>
 
-      <!-- <div class="status-row"> -->
-	  <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
-        <button class="status-btn" onclick="markAttendance('present')">Present</button>
-        <button class="status-btn" onclick="markAttendance('absent')">Absent</button>
-        <button class="status-btn" onclick="markAttendance('tardy')">Tardy</button>
-	  </div>
-	  <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
-        <button class="status-btn" onclick="markAttendance('cutting')">Cutting</button>
-        <button class="status-btn" onclick="markAttendance('excuse')">Excuse</button>
-        <button class="status-btn" onclick="markAttendance('pending')">Pending</button>
+      <!-- Status buttons -->
+      <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
+        <button class="status-btn" data-status="present" onclick="markAttendance('present')">Present</button>
+        <button class="status-btn" data-status="absent"  onclick="markAttendance('absent')">Absent</button>
+        <button class="status-btn" data-status="tardy"   onclick="markAttendance('tardy')">Tardy</button>
+      </div>
+      <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
+        <button class="status-btn" data-status="cutting" onclick="markAttendance('cutting')">Cutting</button>
+        <button class="status-btn" data-status="excuse"  onclick="markAttendance('excuse')">Excuse</button>
+        <button class="status-btn" data-status="pending" onclick="markAttendance('pending')">Pending</button>
       </div>
 
       <div class="nav-row">
         <input type="date" id="datePicker" style="min-width:160px">
         <button class="nav-btn" onclick="navigateStudent('first')" title="First">⏪</button>
-        <button class="nav-btn" onclick="navigateStudent('prev')" title="Previous">◀</button>
-        <button class="nav-btn" onclick="navigateStudent('next')" title="Next">▶</button>
-        <button class="nav-btn" onclick="navigateStudent('last')" title="Last">⏩</button>
+        <button class="nav-btn" onclick="navigateStudent('prev')"  title="Previous">◀</button>
+        <button class="nav-btn" onclick="navigateStudent('next')"  title="Next">▶</button>
+        <button class="nav-btn" onclick="navigateStudent('last')"  title="Last">⏩</button>
       </div>
 
       <table id="attendanceTable">
         <thead>
-          <tr><th>#</th><th>Student</th><th style="width:10%">Sex</th><th>Status</th><th style="width:20%">Date</th></tr>
+          <tr>
+            <th style="width:4%">#</th>
+            <th style="width:34%; text-align:center;">Student</th>
+            <th style="width:10%">Sex</th>
+            <th style="width:14%">Status</th>
+            <th style="width:17%">Date</th>
+            <th>Remarks</th>
+            <th style="width:1%"></th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -309,10 +335,10 @@
     </div>
   </div>
 
-  <!-- Floating Help FAB (outside .container so it's visible even when locked) -->
+  <!-- Floating Help FAB -->
   <button id="fabHelp" class="fab fab-help" title="Help & EULA">❓</button>
 
-  <!-- Help & EULA Modal (also outside .container) -->
+  <!-- Help & EULA Modal -->
   <div id="helpModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="helpModalTitle" aria-modal="true" style="display:none">
     <div class="modal-content">
       <div class="close-row">
@@ -322,13 +348,10 @@
         </div>
         <button id="helpCloseBtn" class="danger" style="padding:.35rem .7rem" aria-label="Close help">✕</button>
       </div>
-
       <div class="meta">Version: <strong>v1.1</strong> · Storage: <strong>Browser localStorage</strong> · Works offline</div>
-
       <div class="content">
         <h3>Overview</h3>
         <p>ClassTapMark helps you manage classes, add students, and record daily attendance with quick status buttons. Data is stored in your browser via <em>localStorage</em>, so it’s device & browser‑specific.</p>
-
         <h3>Quick Start</h3>
         <ol>
           <li><strong>Create a Class</strong> with <em>📚 Create Class</em>. Then use <em>Load Class</em>.</li>
@@ -342,46 +365,41 @@
             </ul>
           </li>
         </ol>
-
         <h3>Import Tips</h3>
         <ul>
           <li><strong>Recommended: Use CSV for imports.</strong> Keep the Date column as text in <strong>YYYY‑MM‑DD</strong>.</li>
-		  <li><strong>Import only the exported CSV...</strong></li>
+          <li><strong>Import only the exported CSV...</strong></li>
           <li><strong>Don’t reopen CSV in Excel</strong> just to check it—use a text editor to avoid date re‑parsing or do not save changes made in Excel.</li>
         </ul>
-
         <h3>FAQ</h3>
         <ul>
-          <li><strong>Date picker format not YYYY-MM-DD.</strong> In Windows 11 open Settings > Date & time > Format > Short date and select YYYY-MM-DD. ClassTapMark conforms with ISO 8601</li>
+          <li><strong>Date picker format not YYYY-MM-DD.</strong> Change your OS short date to ISO 8601.</li>
           <li><strong>Why is the Date a number in my sheet?</strong> That’s an Excel serial date; the importer understands it and converts it to YYYY‑MM‑DD.</li>
-          <li><strong>My imported dates shifted one day back.</strong> This is caused by time‑zone conversion when spreadsheets export or interpret date‑only values as full datetimes. 
-          <strong>Best: stick to CSV</strong> when importing.</li>
-          <li><strong>How do I delete a student &amp; their attendance?</strong> Click <em>🗑️</em>. The app removes the student and purges their attendance records.</li>
-          <li><strong>Reset everything?</strong> Delete classes or clear site data (this wipes localStorage). Export first if you need a backup.</li>		  
-		  <li><strong>Why is Export disabled?</strong> Click <em>✏️ Edit</em> on a student to enable the student export. Class export uses the main <em>📥 Export CSV</em> button.</li>
+          <li><strong>My imported dates shifted one day back.</strong> Caused by time‑zone conversion with date‑only values. Best: stick to CSV.</li>
+          <li><strong>How do I delete a student & their attendance?</strong> Click 🗑️. The app removes the student and purges their attendance records.</li>
+          <li><strong>Reset everything?</strong> Delete classes or clear site data (this wipes localStorage). Export first if you need a backup.</li>
+          <li><strong>Why is Export disabled?</strong> Click ✏️ Edit on a student to enable the student export. Class export uses the main 📥 Export CSV button.</li>
           <li><strong>Where is data stored?</strong> Browser <em>localStorage</em> on this device only.</li>
           <li><strong>Combine multiple dates?</strong> Yes—select multiple dates in the Export modal; one combined CSV will be generated.</li>
         </ul>
-
         <div class="eula">
-        <h3>End‑User License Agreement (EULA)</h3>
-        <p><em>Last updated:</em> <span id="eulaDate"></span></p>
-        <ol>
-          <li><strong>License.</strong> You are granted a non‑exclusive, non‑transferable license to use this ClassTapMark application for personal, classroom, or internal school purposes.</li>
-          <li><strong>Ownership.</strong> The application and its components remain the property of the author. This EULA does not transfer any intellectual property rights.</li>
-          <li><strong>Data &amp; Storage.</strong> All records are stored locally in your browser’s <em>localStorage</em>. You are solely responsible for backups and exports.</li>
-          <li><strong>Acceptable Use.</strong> Do not use this software for unlawful purposes or to process sensitive personal data without consent or lawful basis.</li>
-          <li><strong>No Warranty.</strong> The application is provided “AS IS”, without warranties of any kind. Use at your own risk.</li>
-          <li><strong>Limitation of Liability.</strong> To the maximum extent permitted by law, the author will not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of data, even if advised of the possibility.</li>
-          <li><strong>Support.</strong> Support is provided on a best‑effort basis and may be discontinued at any time.</li>
-          <li><strong>Termination.</strong> This license terminates if you breach this EULA. Upon termination, stop using the app and delete any related data as required.</li>
-          <li><strong>Changes.</strong> The EULA may be updated. Continued use after changes constitutes acceptance of the revised terms.</li>
-          <li><strong>Governing Law.</strong> This EULA is governed by the laws applicable in your jurisdiction unless otherwise agreed in writing.</li>
-        </ol>
-          <p style="font-size:.9rem;color:#555">For queries email: <a href="mailto:esv.tnt010@gmail.com?subject=ClassTapMark">esv.tnt010@gmail.com</a></p>
+          <h3>End‑User License Agreement (EULA)</h3>
+          <p><em>Last updated:</em> <span id="eulaDate"></span></p>
+          <ol>
+            <li><strong>License.</strong> You are granted a non‑exclusive, non‑transferable license to use this ClassTapMark application for personal, classroom, or internal school purposes.</li>
+            <li><strong>Ownership.</strong> The application and its components remain the property of the author. This EULA does not transfer any intellectual property rights.</li>
+            <li><strong>Data & Storage.</strong> All records are stored locally in your browser’s <em>localStorage</em>. You are solely responsible for backups and exports.</li>
+            <li><strong>Acceptable Use.</strong> Do not use this software for unlawful purposes or to process sensitive personal data without consent or lawful basis.</li>
+            <li><strong>No Warranty.</strong> The application is provided “AS IS”, without warranties of any kind. Use at your own risk.</li>
+            <li><strong>Limitation of Liability.</strong> To the maximum extent permitted by law, the author will not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of data, even if advised of the possibility.</li>
+            <li><strong>Support.</strong> Support is provided on a best‑effort basis and may be discontinued at any time.</li>
+            <li><strong>Termination.</strong> This license terminates if you breach this EULA. Upon termination, stop using the app and delete any related data as required.</li>
+            <li><strong>Changes.</strong> The EULA may be updated. Continued use after changes constitutes acceptance of the revised terms.</li>
+            <li><strong>Governing Law.</strong> This EULA is governed by the laws applicable in your jurisdiction unless otherwise agreed in writing.</li>
+          </ol>
+          <p style="font-size:.9rem;color:#555">For queries email: esv.tnt010@gmail.com?subject=ClassTapMarkesv.tnt010@gmail.com</a></p>
         </div>
       </div>
-
       <div style="display:flex; gap:.6rem; justify-content:flex-end; margin-top: .75rem;">
         <button class="edit" id="helpPrintBtn" title="Print or Save as PDF">Print</button>
         <button class="primary" id="helpCloseBtn2">Close</button>
@@ -406,13 +424,17 @@
   // Export modal
   let selectedDates = [];
 
+  // Status sets
+  const STATUS_SET = new Set(['PRESENT','ABSENT','TARDY','CUTTING','EXCUSE','PENDING']);
+  const XCP_SET     = new Set(['ABSENT','CUTTING','PENDING']); // for XCP streak & absent
+
   function updateDebug(msg){
     const d = document.getElementById('debugInfo');
     d.innerHTML = `<div>${new Date().toLocaleTimeString()}: ${msg}</div>` + d.innerHTML;
     d.scrollTop = 0;
   }
   function generateId(){ return 'cls' + Date.now() + Math.random().toString(36).slice(2,10); }
-  function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   function setTodayDate(){
     const dp = document.getElementById('datePicker');
     const now = new Date();
@@ -422,7 +444,6 @@
     const el = document.querySelector('input[name="studentSex"]:checked');
     return el ? el.value : '';
   }
-
   // Robust date parsing for import
   function parseDateFromCell(raw){
     if (raw == null || raw === '') return null;
@@ -461,7 +482,7 @@
   }
   function updateClassButtons(){
     const id = document.getElementById('classDropdown').value;
-    document.getElementById('btnEditClass').disabled   = !id;
+    document.getElementById('btnEditClass').disabled = !id;
     document.getElementById('btnDeleteClass').disabled = !id;
     const imp = document.querySelector('button[onclick="importCSV()"]');
     if (imp) imp.disabled = !id;
@@ -506,7 +527,6 @@
     }
     const classes = getAllClasses().filter(c=>c.id!==id);
     if (classes.length) saveAllClasses(classes); else localStorage.removeItem('attendanceclasses');
-
     if (currentClassId === id){
       currentClassId = null;
       document.getElementById('classContent').classList.add('disabled');
@@ -569,10 +589,8 @@
     currentStudents = sortStudentsBySex(Array.isArray(list)?list:[]);
     const tbody = document.querySelector('#studentTable tbody');
     let html = '';
-
     const males = currentStudents.filter(s=>s.sex==='Male');
     const females = currentStudents.filter(s=>s.sex==='Female');
-
     males.forEach((s,i)=>{
       const idx = currentStudents.findIndex(u=>u.id===s.id);
       html += `<tr>
@@ -602,20 +620,17 @@
       fi++;
     });
     tbody.innerHTML = html;
-
+    reinitExpanders();
     loadAttendance();
   }
-
   function addStudent(){
     if(!currentClassId){ alert('Select and Load Class first!'); return; }
     const nameEl = document.getElementById('studentName');
     const name = (nameEl.value || '').trim();
     const sex = getSelectedSex();
     if(!name || !sex){ alert('Name and sex required!'); return; }
-
     const dup = currentStudents.some((s,i)=> s.name.toLowerCase()===name.toLowerCase() && s.sex===sex && i!==editingStudentIndex);
     if (dup){ alert(`Duplicate name "${name}" (${sex}) already exists!`); return; }
-
     let students = currentStudents.slice();
     if (editingStudentIndex > -1 && currentStudents[editingStudentIndex]){
       const original = currentStudents[editingStudentIndex];
@@ -623,15 +638,12 @@
     }else{
       students.push({ id: generateId(), name, sex, added: new Date().toISOString() });
     }
-
     students = sortStudentsBySex(students);
     localStorage.setItem(`students-${currentClassId}`, JSON.stringify(students));
     loadClassStudents();
-
     cancelEdit();
     updateDebug('Student saved.');
   }
-
   function editStudent(index){
     const s = currentStudents[index];
     if(!s) return;
@@ -640,52 +652,41 @@
     document.getElementById('studentName').value = s.name;
     document.getElementById('sexMale').checked = (s.sex === 'Male');
     document.getElementById('sexFemale').checked = (s.sex === 'Female');
-
     const exportBtn = document.getElementById('btnExportStudent');
     exportBtn.disabled = false;
     exportBtn.textContent = `Export (${s.name})`;
-
     document.getElementById('btnCancelEdit').disabled = false;
-	updateCancelButtonState();
+    updateCancelButtonState();
   }
-
   function cancelEdit(){
     editingStudentIndex = -1;
     editingStudentId = null;
     const nameEl = document.getElementById('studentName');
     if (nameEl){ nameEl.value = ''; }
     document.getElementById('sexMale').checked = true;
-
     const exportBtn = document.getElementById('btnExportStudent');
     if (exportBtn){ exportBtn.disabled = true; exportBtn.textContent = 'Export'; }
     const cancelBtn = document.getElementById('btnCancelEdit');
     if (cancelBtn){ cancelBtn.disabled = true; }
-	updateCancelButtonState();
+    updateCancelButtonState();
   }
-
-function updateCancelButtonState(){
-  const cancelBtn = document.getElementById('btnCancelEdit');
-  if (!cancelBtn) return;
-
-  const nameEl = document.getElementById('studentName');
-  const nameHasText = !!(nameEl && nameEl.value.trim().length > 0);
-
-  // Enable the button if we are editing OR if there's typed text while adding.
-  const isEditing = editingStudentIndex >= 0;
-  cancelBtn.disabled = !(isEditing || nameHasText);
-} 
-
+  function updateCancelButtonState(){
+    const cancelBtn = document.getElementById('btnCancelEdit');
+    if (!cancelBtn) return;
+    const nameEl = document.getElementById('studentName');
+    const nameHasText = !!(nameEl && nameEl.value.trim().length > 0);
+    const isEditing = editingStudentIndex >= 0;
+    cancelBtn.disabled = !(isEditing || nameHasText);
+  }
   function deleteStudent(index){
     if(!currentClassId) { alert('Select a class first.'); return; }
     const s = currentStudents[index];
     if(!s) return;
     if(!confirm(`Delete this student and ALL their attendance?\n\n${s.name} (${s.sex})`)) return;
-
     const students = currentStudents.slice();
     const sid = s.id;
     students.splice(index,1);
     localStorage.setItem(`students-${currentClassId}`, JSON.stringify(students));
-
     for (const k of Object.keys(localStorage)){
       if (k.startsWith('attendance-') && k.endsWith(`-${currentClassId}`)){
         try{
@@ -704,8 +705,114 @@ function updateCancelButtonState(){
   }
 
   /* =========================================================================
-     SECTION 3. Attendance
+     SECTION 3. Attendance — Month Window, Weekdays, XCP and Remarks
   ========================================================================= */
+
+  // ---- Helper: Y-M-D parts and local Date ----
+  function ymdParts(dateStr){
+    const [Y,M,D] = dateStr.split('-').map(n=>parseInt(n,10));
+    return {Y, M, D};
+  }
+  function localDate(Y,M,D){ return new Date(Y, M-1, D); } // local TZ, safe for weekday checks
+  function isWeekendYMD(Y,M,D){
+    const wd = localDate(Y,M,D).getDay(); // 0 Sun, 6 Sat
+    return wd === 0 || wd === 6;
+  }
+  function lastDayOfMonth(Y,M){ return new Date(Y, M, 0).getDate(); } // local
+  function sameMonth(Y,M,t){ return (Y === t.getFullYear() && M === (t.getMonth()+1)); }
+
+  // ---- Window selection (A/B logic) ----
+  //  - Past month  => full month (weekdays only)
+  //  - Current     => 1st .. min(selected, today) (weekdays only)
+  //  - Future      => 1st .. selected            (weekdays only)
+  function computeWindowEnd(dateStr){
+    const {Y,M,D} = ymdParts(dateStr);
+    const t = new Date(); // local today
+    const tY = t.getFullYear(), tM = t.getMonth()+1, tD = t.getDate();
+
+    if (Y < tY || (Y === tY && M < tM)) {
+      return lastDayOfMonth(Y,M); // Past → whole month
+    } else if (Y === tY && M === tM) {
+      return Math.min(D, tD);     // Current → up to min(selected, today)
+    } else {
+      return D;                   // Future → up to selected
+    }
+  }
+
+  function monthWeekdayDateStrings(dateStr){
+    const {Y,M} = ymdParts(dateStr);
+    const endDay = computeWindowEnd(dateStr);
+    const out = [];
+    for (let d = 1; d <= endDay; d++){
+      if (!isWeekendYMD(Y,M,d)){
+        out.push(`${Y}-${String(M).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+      }
+    }
+    return out;
+  }
+
+  // ---- Month aggregates cache + invalidator (HOISTED to module scope) ----
+  function invalidateMonthAggCache(){
+    if (typeof computeMonthlyAggregates === 'function') {
+      computeMonthlyAggregates._cache = undefined;
+    }
+  }
+
+  /**
+   * Compute per-student monthly aggregates for the selected month window (weekdays only).
+   * - XCP Streak = longest consecutive run in {ABSENT,CUTTING,PENDING}
+   * - XCP Absent = total of {ABSENT,CUTTING,PENDING}
+   * - T Tardy = total TARDY
+   * - E Excuse = total EXCUSE
+   *
+   * Returns: { { xcpStreak, xcpAbsent, tTardy, eExcuse } }
+   */
+  function computeMonthlyAggregates(dateStr, classId, students) {
+    const {Y,M} = ymdParts(dateStr);
+    const endDay = computeWindowEnd(dateStr);
+    const cacheKey = `${classId}|${Y}-${String(M).padStart(2,'0')}|end=${String(endDay).padStart(2,'0')}`;
+
+    if (!computeMonthlyAggregates._cache) computeMonthlyAggregates._cache = {};
+    if (computeMonthlyAggregates._cache.key === cacheKey) {
+      return computeMonthlyAggregates._cache.map;
+    }
+
+    const days = monthWeekdayDateStrings(dateStr); // weekdays only up to window end
+    const result = {};
+    students.forEach(s => { result[s.id] = { xcpStreak: 0, xcpAbsent: 0, tTardy: 0, eExcuse: 0, _cur: 0 }; });
+
+    days.forEach(d => {
+      const key = `attendance-${d}-${classId}`;
+      const dayData = JSON.parse(localStorage.getItem(key) || '{}');
+      students.forEach(st => {
+        let raw = (dayData[st.id]?.status ?? 'PENDING').toString().toUpperCase();
+        if (!STATUS_SET.has(raw)) raw = 'PENDING';
+
+        // Totals
+        if (XCP_SET.has(raw)) result[st.id].xcpAbsent++;      // X, C, P
+        if (raw === 'TARDY')  result[st.id].tTardy++;
+        if (raw === 'EXCUSE') result[st.id].eExcuse++;
+
+        // Streak
+        if (XCP_SET.has(raw)) {
+          result[st.id]._cur++;
+          if (result[st.id]._cur > result[st.id].xcpStreak) {
+            result[st.id].xcpStreak = result[st.id]._cur;
+          }
+        } else {
+          result[st.id]._cur = 0; // PRESENT / TARDY / EXCUSE break the streak
+        }
+      });
+    });
+
+    // Cleanup
+    for (const id in result) delete result[id]._cur;
+
+    computeMonthlyAggregates._cache.key = cacheKey;
+    computeMonthlyAggregates._cache.map = result;
+    return result;
+  }
+
   function loadAttendance(){
     const date = document.getElementById('datePicker').value;
     if(!date || !currentClassId) return;
@@ -721,71 +828,131 @@ function updateCancelButtonState(){
     if(!date || !currentClassId) return;
     const student = currentStudents[currentStudentIndex];
     if(!student?.id){ alert('No student selected!'); return; }
+
     const key = `attendance-${date}-${currentClassId}`;
     const att = JSON.parse(localStorage.getItem(key) || '{}');
     att[student.id] = { status, timestamp:new Date().toISOString() };
     localStorage.setItem(key, JSON.stringify(att));
+
+    // Invalidate month aggregates so Remarks recompute
+    invalidateMonthAggCache();
+
+    // Button visual feedback
     document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('present','absent','tardy','cutting','excuse','pending','active'));
-    if (window.event) window.event.target.classList.add(status,'active');
+    // Color the clicked immediately (if available via event)
+    if (window.event && window.event.target && window.event.target.classList.contains('status-btn')) {
+      window.event.target.classList.add(status,'active');
+    }
+
     loadAttendance();
+  }
+
+  function highlightStatusButtonsForCurrent(){
+    // Clear
+    document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('present','absent','tardy','cutting','excuse','pending','active'));
+    // Highlight according to current student's status
+    const s = currentStudents[currentStudentIndex];
+    if (!s) return;
+    const rec = currentAttendance[s.id];
+    const stt = (rec?rec.status:'PENDING').toString().toLowerCase();
+    const btn = document.querySelector(`.status-btn[data-status="${stt}"]`);
+    if (btn){
+      btn.classList.add(stt, 'active');
+    }
   }
 
   function updateAttendanceDisplay(){
     const date = document.getElementById('datePicker').value;
     const tbody = document.querySelector('#attendanceTable tbody');
     if(!date || !currentClassId || !currentStudents.length){
-      tbody.innerHTML = '<tr><td colspan="5">Select class and date</td></tr>'; return;
+      tbody.innerHTML = '<tr><td colspan="7">Select class and date</td></tr>';
+      return;
     }
-    const males = currentStudents.filter(s=>s.sex==='Male');
-    const females = currentStudents.filter(s=>s.sex==='Female');
-    const color = s=>({present:'#28a745',absent:'#dc3545',tardy:'#ffc107',cutting:'#fd7e14',excuse:'#17a2b8',pending:'#ff9500'})[s] || '#ff9500';
+
+    // Compute month aggregates once per refresh
+    const monthAgg = computeMonthlyAggregates(date, currentClassId, currentStudents);
+
+    const males = currentStudents.filter(s => s.sex === 'Male');
+    const females = currentStudents.filter(s => s.sex === 'Female');
+    const color = s => ({present:'#28a745',absent:'#dc3545',tardy:'#ffc107',cutting:'#fd7e14',excuse:'#17a2b8',pending:'#ff9500'})[s] || '#ff9500';
+
+    const buildRemarks = (stId) => {
+      const r = monthAgg[stId] || {xcpStreak:0,xcpAbsent:0,tTardy:0,eExcuse:0};
+      const parts = [];
+      if (r.xcpStreak > 0) parts.push(`XCP Streak: ${r.xcpStreak}`);
+      if (r.xcpAbsent > 0) parts.push(`XCP Absent: ${r.xcpAbsent}`);
+      if (r.tTardy   > 0) parts.push(`T Tardy: ${r.tTardy}`);
+      if (r.eExcuse  > 0) parts.push(`E Excuse: ${r.eExcuse}`);
+      return parts.join('<br>');
+    };
 
     let html = '';
-    males.forEach((st,i)=>{
+    // Males
+    males.forEach((st,i) => {
       const rec = currentAttendance[st.id];
-      const stt = (rec?rec.status:'pending').toLowerCase();
-      html += `<tr>
-        <td style="font-weight:600;color:#667eea;width:40px">${i+1}</td>
-        <td>${st.name}</td><td>${st.sex}</td>
-        <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
-        <td>${date}</td>
-      </tr>`;
+      const stt = (rec ? rec.status : 'pending').toLowerCase();
+      html += `
+        <tr>
+          <td style="font-weight:600;color:#667eea;width:40px">${i+1}</td>
+          <td>${st.name}</td>
+          <td>${st.sex}</td>
+          <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
+          <td>${date}</td>
+          <td>${buildRemarks(st.id)}</td>
+          <td></td>
+        </tr>`;
     });
-    let fi=1;
-    females.forEach(st=>{
+    // Females
+    let fi = 1;
+    females.forEach(st => {
       const rec = currentAttendance[st.id];
-      const stt = (rec?rec.status:'pending').toLowerCase();
-      html += `<tr>
-        <td style="font-weight:600;color:#667eea;width:40px">${fi}</td>
-        <td>${st.name}</td><td>${st.sex}</td>
-        <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
-        <td>${date}</td>
-      </tr>`;
+      const stt = (rec ? rec.status : 'pending').toLowerCase();
+      html += `
+        <tr>
+          <td style="font-weight:600;color:#667eea;width:40px">${fi}</td>
+          <td>${st.name}</td>
+          <td>${st.sex}</td>
+          <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
+          <td>${date}</td>
+          <td>${buildRemarks(st.id)}</td>
+          <td></td>
+        </tr>`;
       fi++;
     });
     tbody.innerHTML = html;
+    reinitExpanders();
   }
 
-  function updateStatusSummary(){
-    const statuses = ['present','absent','tardy','cutting','excuse','pending'];
-    const male={}, female={}, total={};
-    statuses.forEach(s=>{ male[s]=0; female[s]=0; total[s]=0; });
-    currentStudents.forEach(st=>{
+  function updateStatusSummary() {
+    const statuses = ['present', 'absent', 'tardy', 'cutting', 'excuse', 'pending'];
+    let males = {}, females = {}, totals = {};
+    statuses.forEach(s => { males[s] = 0; females[s] = 0; totals[s] = 0; });
+    currentStudents.forEach(st => {
       const rec = currentAttendance[st.id];
-      const s = (rec?rec.status:'pending');
-      if (st.sex==='Male') male[s]++; else female[s]++;
-      total[s]++;
+      const s = (rec ? rec.status : 'pending').toLowerCase();
+      if (st.sex === 'Male') males[s]++; else females[s]++;
+      totals[s]++;
     });
-    const males = currentStudents.filter(s=>s.sex==='Male').length || 0;
-    const females = currentStudents.filter(s=>s.sex==='Female').length || 0;
-    const t = currentStudents.length || 0;
+    const maleCount   = currentStudents.filter(s => s.sex === 'Male').length || 0;
+    const femaleCount = currentStudents.filter(s => s.sex === 'Female').length || 0;
+    const totalCount  = currentStudents.length || 0;
     const body = document.getElementById('statusTableBody');
     body.innerHTML = `
-      <tr><td>Male: ${males}</td>${statuses.map(s=>`<td>${male[s]}</td>`).join('')}</tr>
-      <tr><td>Female: ${females}</td>${statuses.map(s=>`<td>${female[s]}</td>`).join('')}</tr>
-      <tr style="font-weight:bold;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">
-        <td>Total: ${t}</td>${statuses.map(s=>`<td>${total[s]}</td>`).join('')}
-      </tr>`;
+      <tr><td>Male: ${maleCount}</td>${statuses.map(s => `<td>${males[s]}</td>`).join('')}<td></td></tr>
+      <tr><td>Female: ${femaleCount}</td>${statuses.map(s => `<td>${females[s]}</td>`).join('')}<td></td></tr>
+      <tr style="font-weight:bold; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;"><td>Total: ${totalCount}</td>${statuses.map(s => `<td>${totals[s]}</td>`).join('')}<td></td></tr>
+    `;
+    preserveStatusExpansion();
+  }
+  function preserveStatusExpansion() {
+    const statusTable = document.getElementById('statusTable');
+    if (!statusTable) return;
+    statusTable.classList.remove('collapsed');
+    statusTable.classList.add('expandable-row');
+    const lastTh = statusTable.querySelector('thead tr th:last-child');
+    if (lastTh && !lastTh.querySelector('.expand-toggle')) {
+      lastTh.innerHTML += '<span class="expand-toggle" onclick="toggleTable(\'statusTable\')">▾</span>';
+    }
   }
 
   function navigateStudent(dir){
@@ -797,7 +964,6 @@ function updateCancelButtonState(){
     else if (dir==='last') currentStudentIndex=len-1;
     updateCurrentStudent();
   }
-
   function updateCurrentStudent(){
     if(!currentStudents || currentStudentIndex>=currentStudents.length){
       document.getElementById('currentStudent').textContent='No students'; return;
@@ -809,6 +975,8 @@ function updateCancelButtonState(){
     document.getElementById('currentStudent').innerHTML =
       `Student ${currentStudentIndex+1} of ${currentStudents.length}<br><strong>${s.name}</strong> (${s.sex})<br>` +
       `<span style="color:${color};font-weight:600;font-size:1.05rem">${status.toUpperCase()}</span>`;
+    // Pre-highlight buttons according to current status
+    highlightStatusButtonsForCurrent();
   }
 
   /* =========================================================================
@@ -821,38 +989,32 @@ function updateCancelButtonState(){
     const today = new Date();
     const tStr = todayStr();
     let html = '';
-
     // FUTURE (top)
     html += '<div class="date-container" id="futureDates">';
     for (let i=364;i>=1;i--){
       const d = new Date(today); d.setDate(today.getDate()+i);
-      const s = d.toISOString().split('T')[0];
+      const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const l = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
       html += `<label title="${s}"><input type="checkbox" value="${s}" onchange="toggleDate('${s}')"> ${l}</label>`;
     }
     html += '</div>';
-
     // PRESENT (center) – default checked
     const lToday = today.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
     html += `<label class="current-date-center" title="${tStr}">
       <input type="checkbox" value="${tStr}" onchange="toggleDate('${tStr}')" checked> Present Date ${lToday}
     </label>`;
-
     // PAST (bottom)
     html += '<div class="date-container" id="pastDates">';
     for (let i=1;i<=365;i++){
       const d = new Date(today); d.setDate(today.getDate()-i);
-      const s = d.toISOString().split('T')[0];
+      const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const l = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
       html += `<label title="${s}"><input type="checkbox" value="${s}" onchange="toggleDate('${s}')"> ${l}</label>`;
     }
     html += '</div>';
-
     ds.innerHTML = html;
     selectedDates = [tStr];
     document.getElementById('exportModal').style.display='block';
-
-    // Auto-scroll FUTURE container to bottom so Present is in view
     setTimeout(()=>{
       const futureEl = document.getElementById('futureDates');
       if (futureEl) futureEl.scrollTop = futureEl.scrollHeight;
@@ -866,12 +1028,10 @@ function updateCancelButtonState(){
   function confirmExport(){
     if(selectedDates.length===0){ alert('Select at least one date!'); return; }
     closeExportModal();
-
     const classes = getAllClasses();
     const cls = classes.find(c=>c.id===currentClassId);
     const className = cls?cls.name:'unknown';
     const safeClass = className.replace(/[^a-zA-Z0-9_\-]/g,'_');
-
     const rows = ['"Class","Student","Sex","Status","Date"'];
     const dates = [...selectedDates].sort((a,b)=>a.localeCompare(b));
     dates.forEach(dateStr=>{
@@ -900,11 +1060,9 @@ function updateCancelButtonState(){
     if(!currentClassId){ alert('Select a class first!'); return; }
     if (editingStudentIndex < 0 || !currentStudents[editingStudentIndex]){ alert('Click ✏️ Edit on a student to enable Export.'); return; }
     const s = currentStudents[editingStudentIndex];
-
     const classes = getAllClasses();
     const cls = classes.find(c=>c.id===currentClassId);
     const className = cls?cls.name:'Unknown Class';
-
     const allDates = [];
     for (const k of Object.keys(localStorage)){
       if (k.startsWith('attendance-') && k.endsWith(`-${currentClassId}`)){
@@ -916,7 +1074,6 @@ function updateCancelButtonState(){
       }
     }
     allDates.sort((a,b)=>a.localeCompare(b));
-
     const rows = ['"Class","Student","Sex","Status","Date"'];
     let count = 0;
     allDates.forEach(dateStr=>{
@@ -937,7 +1094,7 @@ function updateCancelButtonState(){
     });
     if (count === 0){ alert(`No non-PENDING attendance records found for "${s.name}".`); return; }
     const safeClass = className.replace(/[^a-zA-Z0-9_\-]/g,'_');
-    const safeName  = s.name.replace(/[^a-zA-Z0-9_\-]/g,'_');
+    const safeName = s.name.replace(/[^a-zA-Z0-9_\-]/g,'_');
     const csv = rows.join('\r\n');
     downloadFile(csv, `${safeClass}_${safeName}_attendance_no_pending.csv`, 'text/csv');
     updateDebug(`Exported ${count} row(s) for "${s.name}" (excluding PENDING).`);
@@ -976,25 +1133,23 @@ function updateCancelButtonState(){
         const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true});
         if(!Array.isArray(rows) || rows.length<=1){ alert('No rows found.'); return; }
         rows.shift();
-
         const toAdd = [];
         const attendanceRows = [];
         rows.forEach(r=>{
-          const student  = (r[1] ?? '').toString().trim();
-          const sex      = (r[2] ?? '').toString().trim();
-          let   status   = (r[3] ?? 'pending').toString().trim().toLowerCase();
-          let   dateStr  = parseDateFromCell(r[4]);
+          const student = (r[1] ?? '').toString().trim();
+          const sex = (r[2] ?? '').toString().trim();
+          let status = (r[3] ?? 'pending').toString().trim().toLowerCase();
+          let dateStr = parseDateFromCell(r[4]);
           if (!student || !['Male','Female'].includes(sex)) return;
           if (!dateStr) dateStr = todayStr();
           if (!['present','absent','tardy','cutting','excuse','pending'].includes(status)) status = 'pending';
           toAdd.push({student, sex});
           attendanceRows.push({student, sex, status, dateStr});
         });
-
         let list = JSON.parse(localStorage.getItem(`students-${targetClassId}`) || '[]');
-        const seen = new Set(list.map(s=>`${s.name.toLowerCase()}|${s.sex}`));
+        const seen = new Set(list.map(s=>`${s.name.toLowerCase()}\n${s.sex}`));
         toAdd.forEach(it=>{
-          const key = `${it.student.toLowerCase()}|${it.sex}`;
+          const key = `${it.student.toLowerCase()}\n${it.sex}`;
           if (!seen.has(key)){
             seen.add(key);
             list.push({ id: generateId(), name: it.student, sex: it.sex, added: new Date().toISOString() });
@@ -1002,11 +1157,9 @@ function updateCancelButtonState(){
         });
         list = sortStudentsBySex(list);
         localStorage.setItem(`students-${targetClassId}`, JSON.stringify(list));
-
-        const idMap = new Map(list.map(s=>[`${s.name.toLowerCase()}|${s.sex}`, s.id]));
-
+        const idMap = new Map(list.map(s=>[`${s.name.toLowerCase()}\n${s.sex}`, s.id]));
         attendanceRows.forEach(it=>{
-          const sid = idMap.get(`${it.student.toLowerCase()}|${it.sex}`);
+          const sid = idMap.get(`${it.student.toLowerCase()}\n${it.sex}`);
           if (!sid) return;
           const k = `attendance-${it.dateStr}-${targetClassId}`;
           const att = JSON.parse(localStorage.getItem(k) || '{}');
@@ -1034,7 +1187,6 @@ function updateCancelButtonState(){
   window.CTM_PUBLIC_KEY_HEX = '045d419f4adf281c3b46a8ee14dfcd85a46eda6f6603ec7067d59ee234d5cd1999c6992fd97cedee9ad1da628f04e8733b0669e3cd81845e43b6c5243b9a90294f';
   const CTM = (() => {
     const PRODUCT_ID = 'classtapmark';
-
     function hexToBytes(hex){
       const h = String(hex ?? '').trim();
       if (!/^([0-9a-fA-F]{2})+$/.test(h)) throw new Error('Signature must be hex (pairs of 0-9a-f)');
@@ -1056,7 +1208,6 @@ function updateCancelButtonState(){
       const sig = hexToBytes(sigHex);
       return await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'}, pub, sig, data);
     }
-
     const KEY_EMAIL='ctm_input_email', KEY_LIC='ctm_input_license', KEY_SIG='ctm_input_signature';
     function saveInputs(){
       localStorage.setItem(KEY_EMAIL, document.getElementById('proEmail')?.value ?? '');
@@ -1069,30 +1220,24 @@ function updateCancelButtonState(){
       if (l!=null) document.getElementById('proLicense').value = l;
       if (s!=null) document.getElementById('proSignature').value = s;
     }
-
-function updateAccessUIForLockState(isLocked){
-  const email = document.getElementById('proEmail');
-  const lic   = document.getElementById('proLicense');
-  const sig   = document.getElementById('proSignature');
-  const btn   = document.getElementById('proValidate');
-
-  // Keep inputs ALWAYS visible; only toggle disabled/readOnly states.
-  [email, lic, sig].forEach(el => {
-    if (!el) return;
-    el.style.display = '';                 // never hide
-    el.removeAttribute('aria-hidden');     // keep exposed to AT
-    el.toggleAttribute('disabled', !isLocked); // unlocked -> disabled
-    el.readOnly = !isLocked;               // UX hint on some UAs
-    // Optional: cursor hint when disabled
-    el.style.cursor = !isLocked ? 'not-allowed' : '';
-  });
-
-  if (btn){
-    btn.textContent = isLocked ? 'Unlock' : 'Lock';
-    btn.setAttribute('title', btn.textContent);
-  }
-}
-
+    function updateAccessUIForLockState(isLocked){
+      const email = document.getElementById('proEmail');
+      const lic = document.getElementById('proLicense');
+      const sig = document.getElementById('proSignature');
+      const btn = document.getElementById('proValidate');
+      [email, lic, sig].forEach(el => {
+        if (!el) return;
+        el.style.display = '';
+        el.removeAttribute('aria-hidden');
+        el.toggleAttribute('disabled', !isLocked);
+        el.readOnly = !isLocked;
+        el.style.cursor = !isLocked ? 'not-allowed' : '';
+      });
+      if (btn){
+        btn.textContent = isLocked ? 'Unlock' : 'Lock';
+        btn.setAttribute('title', btn.textContent);
+      }
+    }
     function lock(){
       document.body.classList.add('locked');
       updateAccessUIForLockState(true);
@@ -1150,7 +1295,7 @@ function updateAccessUIForLockState(isLocked){
         if (el) el.addEventListener('input', saveInputs);
       });
       const btn = document.getElementById('proValidate');
-      if (btn) btn.addEventListener('click', ()=>{ 
+      if (btn) btn.addEventListener('click', ()=>{
         if (document.body.classList.contains('locked')) validate(); else lock();
       });
       const clr = document.getElementById('proClear');
@@ -1182,20 +1327,16 @@ function updateAccessUIForLockState(isLocked){
     document.getElementById('sexMale').checked = true;
     setTodayDate();
     setTimeout(()=>document.getElementById('datePicker').dispatchEvent(new Event('change',{bubbles:true})), 50);
-
     document.getElementById('classDropdown').addEventListener('change', updateClassButtons);
-    document.getElementById('datePicker').addEventListener('change', ()=>{ if(currentClassId) loadAttendance(); });
-
+    document.getElementById('datePicker').addEventListener('change', ()=>{ if(currentClassId) { invalidateMonthAggCache(); loadAttendance(); } });
     updateDebug('All features active - Ready!');
   });
   function clearDebug(){ document.getElementById('debugInfo').innerHTML='Task log cleared'; }
-
-const nameEl = document.getElementById('studentName');
-if (nameEl){
-  nameEl.addEventListener('input', updateCancelButtonState);
-  // Initialize the correct state on load
-  updateCancelButtonState();
-}  
+  const nameEl = document.getElementById('studentName');
+  if (nameEl){
+    nameEl.addEventListener('input', updateCancelButtonState);
+    updateCancelButtonState();
+  }
 
   /* =========================================================================
      SECTION 8. PWA Service Worker
@@ -1225,26 +1366,68 @@ if (nameEl){
       m.setAttribute('aria-hidden','true');
     }
     document.addEventListener('DOMContentLoaded', ()=>{
-      const fabHelp   = document.getElementById('fabHelp');
+      const fabHelp = document.getElementById('fabHelp');
       const helpModal = document.getElementById('helpModal');
-      const btnX      = document.getElementById('helpCloseBtn');
-      const btnClose  = document.getElementById('helpCloseBtn2');
-      const btnPrint  = document.getElementById('helpPrintBtn');
-      const eulaDate  = document.getElementById('eulaDate');
-
+      const btnX = document.getElementById('helpCloseBtn');
+      const btnClose = document.getElementById('helpCloseBtn2');
+      const btnPrint = document.getElementById('helpPrintBtn');
+      const eulaDate = document.getElementById('eulaDate');
       if (eulaDate){
         const d = new Date();
         eulaDate.textContent = d.toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'});
       }
-      if (fabHelp)  fabHelp.addEventListener('click', openHelp);
-      if (btnX)     btnX.addEventListener('click', closeHelp);
+      if (fabHelp) fabHelp.addEventListener('click', openHelp);
+      if (btnX) btnX.addEventListener('click', closeHelp);
       if (btnClose) btnClose.addEventListener('click', closeHelp);
       if (btnPrint) btnPrint.addEventListener('click', ()=>window.print());
-
       if (helpModal){ helpModal.addEventListener('click', (e)=>{ if (e.target === helpModal) closeHelp(); }); }
       document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && helpModal && helpModal.style.display === 'block') closeHelp(); });
     });
   })();
+
+  // Expand/collapse tables
+  function initTableExpanders() {
+    const tables = ['studentTable', 'attendanceTable', 'statusTable'];
+    tables.forEach(tableId => {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      if (!table.classList.contains('expandable-row')) {
+        table.classList.add('expandable-row');
+        const shouldExpand = (tableId === 'statusTable');
+        table.classList.toggle('collapsed', !shouldExpand);
+      }
+      const headerRow = table.querySelector('thead tr');
+      if (!headerRow) return;
+      let lastTh = headerRow.lastElementChild;
+      if (!lastTh || lastTh.tagName !== 'TH') {
+        lastTh = document.createElement('th');
+        headerRow.appendChild(lastTh);
+      }
+      lastTh.style.position = 'relative';
+      let toggle = lastTh.querySelector('.expand-toggle');
+      if (!toggle) {
+        toggle = document.createElement('span');
+        toggle.className = 'expand-toggle';
+        toggle.addEventListener('click', () => toggleTable(tableId));
+        lastTh.appendChild(toggle);
+      }
+      toggle.textContent = table.classList.contains('collapsed') ? '▾' : '▴';
+    });
+  }
+  function toggleTable(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    table.classList.toggle('collapsed');
+    const toggle = table.querySelector('.expand-toggle');
+    if (toggle) {
+      toggle.textContent = table.classList.contains('collapsed') ? '▾' : '▴';
+    }
+    table.style.width = table.offsetWidth + 'px';
+    void table.offsetHeight; // reflow
+    table.style.width = '';
+  }
+  document.addEventListener('DOMContentLoaded', initTableExpanders);
+  function reinitExpanders() { setTimeout(initTableExpanders, 50); }
   </script>
 </body>
 </html>
