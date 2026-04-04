@@ -118,6 +118,15 @@
     #proStatus.err { color:#ef4444; }
     #ctmBuy, #ctmBuy + div { display: none !important; }
     body.locked #ctmBuy, body.locked #ctmBuy + div { display: block !important; }
+	
+	/* Buy/Register button visibility based on lock state */
+#btnBuyLicense, #btnRegister { display: none !important; }
+
+/* Locked: show Buy License only */
+body.locked #btnBuyLicense { display: inline-block !important; }
+
+/* Unlocked: show Register only */
+body:not(.locked) #btnRegister { display: inline-block !important; }
 
     /* ==== HELP FAB + HELP MODAL ==== */
     .fab {
@@ -165,9 +174,8 @@
   </style>
 </head>
 <body>
-  <div class="container">
     <h1>ClassTapMark</h1>
-
+  <div class="container">
     <!-- Access Control (License) -->
     <div class="section" id="accessControl" style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
       <h3 id="proStatus"></h3>
@@ -177,22 +185,19 @@
         <input id="proSignature" type="text" placeholder="Signature" style="flex:1">
       </div>
       <button class="danger" id="proClear" style="flex:1;">Clear License</button>
+	  <!-- Buy License will appear only if locked -->
+	  <button id="btnBuyLicense" style="flex:1;" onclick="location.href='https://www.raket.ph/esvillamor';">Buy License</button>
+	  <!-- Register will appear only if unlocked -->
+	  <button id="btnRegister" style="flex:1;" onclick="location.href='https://forms.gle/boVHGgwcbHRP4Eo2A';">Register</button>
       <button class="primary" id="proValidate" style="flex:1;">Unlock</button>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
         <p id="ctmBuy">
-          <b>ClassTapMark</b> helps you manage classes, add students, and record daily attendance with quick status buttons.
+          <b>ClassTapMark</b> helps you manage classes and students, record daily attendance with quick status buttons.
           Import and Export Students and Classes as CSV for backup and migration. Data is stored in your browser via
-          <em>localStorage</em> — device & browser specific. Works offline.
-          <br />
-          <div style="display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center;width:100%;align-items:center;">
-            <input type="button" onclick="location.href='https://www.raket.ph/esvillamor';" value="Buy" /> | 
-			Support & Future Updates 👉
-            <input type="button" onclick="location.href='https://www.raket.ph/esvillamor';" value="Register" />
-          </div>
-        </p>
+          <em>localStorage</em> — device & browser specific. Works offline.<br /><br />
+		  Works with <b>ClassTapSF2</b> they both process exported CSV's 👍</p>
       </div>
     </div>
-
     <!-- Manage Classes -->
     <div class="section">
       <h3>📚 Manage Classes</h3>
