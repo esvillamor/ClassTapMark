@@ -47,6 +47,10 @@
     th{background:linear-gradient(135deg,#f0f4ff,#e8f0ff);font-weight:700}
 
     /* Compact tables (from old) */
+ /* Date cell: show weekday above date */
+ #attendanceTable td:nth-child(5){ line-height: 1.15; }
+ #attendanceTable td:nth-child(5) br{ content: ''; }
+
     #studentTable, #attendanceTable, #statusTable { font-size: 0.8rem; }
     #studentTable th, #studentTable td, #attendanceTable th, #attendanceTable td, #statusTable th, #statusTable td { padding: 0.5rem 0.375rem; font-size: 0.75rem; }
     @media (max-width: 700px) {
@@ -100,7 +104,18 @@
     /* Current student highlight */
     .currentStudent{background:linear-gradient(135deg,#ffecd2,#fcb69f);padding:1rem;border-radius:12px;text-align:center}
 
-    /* Debug panel */
+    
+ /* Attendance header: class name left, date right */
+ .attendance-header{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.35rem;}
+ .attendance-header .attendance-date{margin-left:auto;color:var(--bg1);font-weight:600;}
+ .attendance-header .attendance-date{white-space:nowrap;}
+ @media (max-width: 520px){
+  .attendance-header{gap:.25rem;}
+  .attendance-header .attendance-date{font-size:.95rem;}
+ }
+ /* Current student: date line below status */
+ #currentStudent .currentStudentDate{margin-top:.35rem;font-size:.9rem;color:#333;opacity:.85;}
+/* Debug panel */
     .debug{background:linear-gradient(135deg,#fff3cd,#ffeaa7);padding:.8rem;border-radius:12px;font:13px/1.35 ui-monospace,Consolas,monospace;max-height:160px;overflow:auto}
 
     /* Export modal */
@@ -257,8 +272,10 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     <!-- Mark Attendance -->
     <div class="section">
       <h3>📅 Mark Attendance</h3>
-      <span id="attendanceClassHeader" style="font-weight:600;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
-
+		<div class="attendance-header">
+		  <span id="attendanceClassHeader" style="font-weight:600;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
+		  <span id="attendanceDateInline" class="attendance-date"></span>
+		</div>
       <!-- Daily status summary (by sex) -->
       <div>
         <table id="statusTable">
@@ -566,6 +583,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     if(!cls){ currentClassId=null; document.getElementById('classContent').classList.add('disabled'); return; }
     document.getElementById('classHeader').textContent = cls.name;
     document.getElementById('attendanceClassHeader').textContent = cls.name;
+ updateAttendanceHeaderDate();
     document.getElementById('classContent').classList.remove('disabled');
     loadClassStudents();
     currentStudentIndex = 0;
@@ -719,6 +737,31 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     return {Y, M, D};
   }
   function localDate(Y,M,D){ return new Date(Y, M-1, D); } // local TZ, safe for weekday checks
+
+ // ---- Helper: Day name (shown above date in Attendance table) ----
+ function weekdayNameYMD(dateStr, locale='en-US'){
+  try{
+   const {Y,M,D} = ymdParts(dateStr);
+   return localDate(Y,M,D).toLocaleDateString(locale, { weekday: 'long' });
+  }catch(e){ return ''; }
+ }
+ function formatDayAboveDate(dateStr){
+  const day = weekdayNameYMD(dateStr, 'en-US');
+  return day ? `${day}<br>${dateStr}` : dateStr;
+ }
+
+ // ---- Helper: Inline date label (YYYY-MM-DD; Monday) ----
+ function formatDateInline(dateStr){
+  const day = weekdayNameYMD(dateStr, 'en-US');
+  return day ? `${dateStr}; ${day}` : dateStr;
+ }
+ function updateAttendanceHeaderDate(){
+  const el = document.getElementById('attendanceDateInline');
+  const dp = document.getElementById('datePicker');
+  if (!el || !dp || !dp.value) { if (el) el.textContent=''; return; }
+  el.textContent = formatDateInline(dp.value);
+ }
+
   function isWeekendYMD(Y,M,D){
     const wd = localDate(Y,M,D).getDay(); // 0 Sun, 6 Sat
     return wd === 0 || wd === 6;
@@ -819,7 +862,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
   }
 
   function loadAttendance(){
-    const date = document.getElementById('datePicker').value;
+ const date = document.getElementById('datePicker').value;
+ updateAttendanceHeaderDate();
     if(!date || !currentClassId) return;
     const key = `attendance-${date}-${currentClassId}`;
     currentAttendance = JSON.parse(localStorage.getItem(key) || '{}');
@@ -902,7 +946,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
           <td>${st.name}</td>
           <td>${st.sex}</td>
           <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
-          <td>${date}</td>
+          <td>${formatDayAboveDate(date)}</td>
           <td>${buildRemarks(st.id)}</td>
           <td></td>
         </tr>`;
@@ -918,7 +962,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
           <td>${st.name}</td>
           <td>${st.sex}</td>
           <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
-          <td>${date}</td>
+          <td>${formatDayAboveDate(date)}</td>
           <td>${buildRemarks(st.id)}</td>
           <td></td>
         </tr>`;
@@ -978,8 +1022,9 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     const status = (rec?rec.status:'PENDING').toLowerCase();
     const color = {present:'#28a745',absent:'#dc3545',tardy:'#e0a800',cutting:'#fd7e14',excuse:'#17a2b8',pending:'#ff9500'}[status] || '#ff9500';
     document.getElementById('currentStudent').innerHTML =
-      `Student ${currentStudentIndex+1} of ${currentStudents.length}<br><strong>${s.name}</strong> (${s.sex})<br>` +
-      `<span style="color:${color};font-weight:600;font-size:1.05rem">${status.toUpperCase()}</span>`;
+ `Student ${currentStudentIndex+1} of ${currentStudents.length}<br><strong>${s.name}</strong> (${s.sex})<br>` +
+ `<span style="color:${color};font-weight:600;font-size:1.05rem">${status.toUpperCase()}</span>` +
+ `<div class="currentStudentDate">${formatDateInline(document.getElementById('datePicker').value)}</div>`;
     // Pre-highlight buttons according to current status
     highlightStatusButtonsForCurrent();
   }
@@ -1333,7 +1378,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     setTodayDate();
     setTimeout(()=>document.getElementById('datePicker').dispatchEvent(new Event('change',{bubbles:true})), 50);
     document.getElementById('classDropdown').addEventListener('change', updateClassButtons);
-    document.getElementById('datePicker').addEventListener('change', ()=>{ if(currentClassId) { invalidateMonthAggCache(); loadAttendance(); } });
+    document.getElementById('datePicker').addEventListener('change', () => { if(currentClassId) { invalidateMonthAggCache(); updateAttendanceHeaderDate(); loadAttendance(); } });
     updateDebug('All features active - Ready!');
   });
   function clearDebug(){ document.getElementById('debugInfo').innerHTML='Task log cleared'; }
