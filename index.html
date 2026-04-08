@@ -186,7 +186,145 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
       border-top: 1px solid #e8ecf4; margin-top: 1rem; padding-top: 1rem;
       background: #fafbff; border-radius: 10px; padding: 1rem;
     }
-  </style>
+  
+
+/* ===================== Scrollable Student & Attendance Tables =====================
+   Goal: keep the form controls (inputs/buttons) visible while lists scroll.
+   - Shows ~6 rows by default (adaptive via media queries)
+   - Sticky table header inside the scroll area
+*/
+:root{
+  --ctm-visible-rows: 6;      /* default target rows */
+  --ctm-row-h: 34px;         /* estimated body row height (compact tables) */
+  --ctm-head-h: 38px;        /* estimated header height */
+  --ctm-table-max-vh: 46vh;  /* cap height to a fraction of viewport */
+}
+@media (max-width: 700px){
+  :root{ --ctm-visible-rows: 5; --ctm-row-h: 30px; --ctm-head-h: 34px; --ctm-table-max-vh: 44vh; }
+}
+@media (min-width: 1100px){
+  :root{ --ctm-visible-rows: 8; }
+}
+
+.table-scroll{
+  /* Height ≈ header + N rows; but never taller than a portion of the viewport */
+  max-height: min(
+    calc(var(--ctm-head-h) + (var(--ctm-visible-rows) * var(--ctm-row-h)) + 6px),
+    var(--ctm-table-max-vh)
+  );
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+  margin: 1rem 0;
+}
+
+/* Remove outer table spacing because the wrapper provides it */
+.table-scroll > table{
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* Keep headers visible while scrolling */
+.table-scroll thead th{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* Ensure the expand/collapse toggle stays clickable on sticky header */
+.table-scroll .expand-toggle{
+  z-index: 10;
+}
+
+/* Row selection highlight (Student & Attendance) */
+.table-scroll tbody tr{ cursor: pointer; }
+.table-scroll tbody tr:hover{ background: rgba(102,126,234,.08); }
+.table-scroll tbody tr.row-selected,
+.table-scroll tbody tr[aria-selected="true"]{
+  background: rgba(102,126,234,.16);
+  outline: 2px solid rgba(102,126,234,.32);
+  outline-offset: -2px;
+}
+.table-scroll tbody tr.row-selected td:nth-child(2){ font-weight: 700; }
+
+/* ===================== Sticky overlay toggle (never scrolls) ===================== */
+
+/* Make wrapper a positioning context */
+#studentTableScroll,
+#attendanceTableScroll{
+  position: relative;
+}
+
+/* Overlay that sticks to the top INSIDE the scroll area */
+.table-scroll .ctm-sticky-overlay{
+  position: sticky;
+  top: 0;
+  z-index: 100;                  /* above sticky thead */
+  height: var(--ctm-head-h, 38px);
+  margin-bottom: calc(-1 * var(--ctm-head-h, 38px)); /* overlap header without adding space */
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 6px;
+  pointer-events: none;          /* don't block header clicks */
+}
+
+/* The button itself */
+.table-scroll .ctm-toggle-btn{
+  pointer-events: auto;          /* clickable */
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  color: #3b4cca;
+  background: rgba(240,244,255,.92);
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide the old in-header span toggle for these two tables (we use overlay instead) */
+#studentTable .expand-toggle,
+#attendanceTable .expand-toggle{
+  display: none !important;
+}
+
+/* ===================== FIX: Sticky headers + no column shift ===================== */
+/* Make sure sticky headers work (global table overflow:hidden breaks sticky) */
+#studentTableScroll > table,
+#attendanceTableScroll > table {
+  overflow: visible !important;   /* KEY: allows thead th to stick */
+  table-layout: fixed;            /* prevents column width reflow/shift */
+  width: 100%;
+}
+
+/* Keep the scrollbar where it is (wrapper), and avoid header/body width mismatch */
+#studentTableScroll,
+#attendanceTableScroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  scrollbar-gutter: stable;       /* prevents “column jump” when scrollbar appears */
+}
+
+/* Ensure header stays on top and looks solid while sticky */
+#studentTableScroll thead th,
+#attendanceTableScroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(135deg, #f0f4ff, #e8f0ff); /* same as your th bg */
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);  /* subtle separator line */
+}
+
+</style>
 </head>
 <body>
     <h1>ClassTapMark</h1>
@@ -254,7 +392,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
           </div>
         </div>
       </div>
-      <table id="studentTable">
+      <div class="table-scroll" id="studentTableScroll" aria-label="Scrollable studentTable">
+<table id="studentTable">
         <thead>
           <tr>
             <th style="width:3%">#</th>
@@ -267,6 +406,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
         </thead>
         <tbody></tbody>
       </table>
+</div>
     </div>
 
     <!-- Mark Attendance -->
@@ -317,7 +457,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
         <button class="nav-btn" onclick="navigateStudent('last')"  title="Last">⏩</button>
       </div>
 
-      <table id="attendanceTable">
+      <div class="table-scroll" id="attendanceTableScroll" aria-label="Scrollable attendanceTable">
+<table id="attendanceTable">
         <thead>
           <tr>
             <th style="width:4%">#</th>
@@ -331,6 +472,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
         </thead>
         <tbody></tbody>
       </table>
+</div>
     </div>
 
     <div class="section">
@@ -616,8 +758,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     const females = currentStudents.filter(s=>s.sex==='Female');
     males.forEach((s,i)=>{
       const idx = currentStudents.findIndex(u=>u.id===s.id);
-      html += `<tr>
-        <td style="font-weight:600;color:#667eea;width:40px">${i+1}</td>
+      html += `<tr data-student-id="${s.id}" data-index="${idx}" aria-selected="false">
+ <td style="font-weight:600;color:#667eea;width:40px">${i+1}</td>
         <td>${s.name}</td>
         <td>${s.sex}</td>
         <td>${new Date(s.added).toISOString().slice(0,10)}</td>
@@ -630,8 +772,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     let fi=1;
     females.forEach(s=>{
       const idx = currentStudents.findIndex(u=>u.id===s.id);
-      html += `<tr>
-        <td style="font-weight:600;color:#667eea;width:40px">${fi}</td>
+      html += `<tr data-student-id="${s.id}" data-index="${idx}" aria-selected="false">
+ <td style="font-weight:600;color:#667eea;width:40px">${fi}</td>
         <td>${s.name}</td>
         <td>${s.sex}</td>
         <td>${new Date(s.added).toISOString().slice(0,10)}</td>
@@ -680,6 +822,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     exportBtn.textContent = `Export (${s.name})`;
     document.getElementById('btnCancelEdit').disabled = false;
     updateCancelButtonState();
+ syncStudentSelectionHighlight();
   }
   function cancelEdit(){
     editingStudentIndex = -1;
@@ -692,6 +835,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     const cancelBtn = document.getElementById('btnCancelEdit');
     if (cancelBtn){ cancelBtn.disabled = true; }
     updateCancelButtonState();
+ syncStudentSelectionHighlight();
   }
   function updateCancelButtonState(){
     const cancelBtn = document.getElementById('btnCancelEdit');
@@ -701,7 +845,90 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     const isEditing = editingStudentIndex >= 0;
     cancelBtn.disabled = !(isEditing || nameHasText);
   }
-  function deleteStudent(index){
+  
+
+// ===================== Row selection (click-to-highlight) =====================
+// Keeps the header + form controls visible while the list scrolls.
+function scrollRowIntoView(wrapperSelector, tr){
+  if (!tr) return;
+  const wrap = document.querySelector(wrapperSelector);
+  if (!wrap){ tr.scrollIntoView({block:'nearest'}); return; }
+  const head = wrap.querySelector('thead');
+  const headH = head ? head.offsetHeight : 0;
+  const top = tr.offsetTop;
+  const bottom = top + tr.offsetHeight;
+  const viewTop = wrap.scrollTop;
+  const viewBottom = viewTop + wrap.clientHeight;
+  if (top < viewTop + headH){
+    wrap.scrollTop = Math.max(0, top - headH);
+  } else if (bottom > viewBottom){
+    wrap.scrollTop = bottom - wrap.clientHeight;
+  }
+}
+
+function syncStudentSelectionHighlight(){
+  const tbody = document.querySelector('#studentTable tbody');
+  if (!tbody) return;
+  const id = editingStudentId;
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const sel = !!(id && tr.dataset.studentId === id);
+    tr.classList.toggle('row-selected', sel);
+    tr.setAttribute('aria-selected', sel ? 'true' : 'false');
+  });
+  if (id){
+    const tr = tbody.querySelector(`tr[data-student-id="${id}"]`);
+    scrollRowIntoView('#studentTableScroll', tr);
+  }
+}
+
+function syncAttendanceSelectionHighlight(){
+  const tbody = document.querySelector('#attendanceTable tbody');
+  if (!tbody) return;
+  const cur = currentStudents && currentStudents[currentStudentIndex];
+  const id = cur ? cur.id : null;
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const sel = !!(id && tr.dataset.studentId === id);
+    tr.classList.toggle('row-selected', sel);
+    tr.setAttribute('aria-selected', sel ? 'true' : 'false');
+  });
+  if (id){
+    const tr = tbody.querySelector(`tr[data-student-id="${id}"]`);
+    scrollRowIntoView('#attendanceTableScroll', tr);
+  }
+}
+
+function initRowSelectionHandlers(){
+  const st = document.getElementById('studentTable');
+  if (st && !st._rowSel){
+    st.addEventListener('click', (e) => {
+      // Don't hijack clicks on action buttons
+      if (e.target.closest('button')) return;
+      const tr = e.target.closest('tbody tr');
+      if (!tr) return;
+      const idx = parseInt(tr.dataset.index || '', 10);
+      if (!isNaN(idx)) editStudent(idx);
+      syncStudentSelectionHighlight();
+    });
+    st._rowSel = true;
+  }
+
+  const at = document.getElementById('attendanceTable');
+  if (at && !at._rowSel){
+    at.addEventListener('click', (e) => {
+      const tr = e.target.closest('tbody tr');
+      if (!tr) return;
+      const id = tr.dataset.studentId;
+      const idx = currentStudents.findIndex(s => s.id === id);
+      if (idx >= 0){
+        currentStudentIndex = idx;
+        updateCurrentStudent();
+        syncAttendanceSelectionHighlight();
+      }
+    });
+    at._rowSel = true;
+  }
+}
+function deleteStudent(index){
     if(!currentClassId) { alert('Select a class first.'); return; }
     const s = currentStudents[index];
     if(!s) return;
@@ -941,8 +1168,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
       const rec = currentAttendance[st.id];
       const stt = (rec ? rec.status : 'pending').toLowerCase();
       html += `
-        <tr>
-          <td style="font-weight:600;color:#667eea;width:40px">${i+1}</td>
+ <tr data-student-id="${st.id}" aria-selected="false">
+ <td style="font-weight:600;color:#667eea;width:40px">${i+1}</td>
           <td>${st.name}</td>
           <td>${st.sex}</td>
           <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
@@ -957,8 +1184,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
       const rec = currentAttendance[st.id];
       const stt = (rec ? rec.status : 'pending').toLowerCase();
       html += `
-        <tr>
-          <td style="font-weight:600;color:#667eea;width:40px">${fi}</td>
+ <tr data-student-id="${st.id}" aria-selected="false">
+ <td style="font-weight:600;color:#667eea;width:40px">${fi}</td>
           <td>${st.name}</td>
           <td>${st.sex}</td>
           <td style="font-weight:600;color:${color(stt)}">${stt.toUpperCase()}</td>
@@ -1027,6 +1254,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
  `<div class="currentStudentDate">${formatDateInline(document.getElementById('datePicker').value)}</div>`;
     // Pre-highlight buttons according to current status
     highlightStatusButtonsForCurrent();
+ syncAttendanceSelectionHighlight();
   }
 
   /* =========================================================================
@@ -1379,7 +1607,8 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     setTimeout(()=>document.getElementById('datePicker').dispatchEvent(new Event('change',{bubbles:true})), 50);
     document.getElementById('classDropdown').addEventListener('change', updateClassButtons);
     document.getElementById('datePicker').addEventListener('change', () => { if(currentClassId) { invalidateMonthAggCache(); updateAttendanceHeaderDate(); loadAttendance(); } });
-    updateDebug('All features active - Ready!');
+    initRowSelectionHandlers();
+ updateDebug('All features active - Ready!');
   });
   function clearDebug(){ document.getElementById('debugInfo').innerHTML='Task log cleared'; }
   const nameEl = document.getElementById('studentName');
@@ -1435,6 +1664,42 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     });
   })();
 
+//Not scrollable expand-collapse button
+function ensureStickyOverlayToggle(tableId, wrapperId){
+  const wrap = document.getElementById(wrapperId);
+  const table = document.getElementById(tableId);
+  if (!wrap || !table) return;
+
+  let overlay = wrap.querySelector('.ctm-sticky-overlay');
+  if (!overlay){
+    overlay = document.createElement('div');
+    overlay.className = 'ctm-sticky-overlay';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ctm-toggle-btn';
+    btn.setAttribute('aria-label', 'Expand/collapse table');
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleTable(tableId);
+      // keep icon in sync after toggling
+      btn.textContent = table.classList.contains('collapsed') ? '▾' : '▴';
+    });
+
+    overlay.appendChild(btn);
+    // put overlay inside the scroll wrapper so it sticks inside that scrolling area
+    wrap.insertBefore(overlay, wrap.firstChild);
+  }
+
+  const btn = overlay.querySelector('.ctm-toggle-btn');
+  if (btn){
+    btn.textContent = table.classList.contains('collapsed') ? '▾' : '▴';
+  }
+}
+
+
   // Expand/collapse tables
   function initTableExpanders() {
     const tables = ['studentTable', 'attendanceTable', 'statusTable'];
@@ -1462,8 +1727,14 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
         lastTh.appendChild(toggle);
       }
       toggle.textContent = table.classList.contains('collapsed') ? '▾' : '▴';
+	  
+	  toggle.textContent = table.classList.contains('collapsed') ? '▾' : '▴';
+
+		if (tableId === 'studentTable') ensureStickyOverlayToggle('studentTable', 'studentTableScroll');
+		if (tableId === 'attendanceTable') ensureStickyOverlayToggle('attendanceTable', 'attendanceTableScroll');
     });
   }
+  
   function toggleTable(tableId) {
     const table = document.getElementById(tableId);
     if (!table) return;
