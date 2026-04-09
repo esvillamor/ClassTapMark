@@ -85,7 +85,7 @@
 
     /* Nav row */
     .nav-row{display:flex;gap:.75rem;align-items:center;justify-content:center;background:rgba(255,255,255,.95);border-radius:12px;padding:.5rem 1rem;margin:1rem 0;box-shadow:0 6px 18px rgba(0,0,0,.12)}
-    .nav-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center}
+    .nav-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;font-size:1rem;display:inline-flex;align-items:center;justify-content:center}
     .nav-btn:hover{transform:scale(1.06)}
 
     /* Status buttons */
@@ -99,7 +99,7 @@
     .status-btn.pending{background:#ff9500;color:#fff;border-color:#e68900}
     .status-row {display: flex;flex-wrap: wrap;gap: 8px;width: 100%;padding: 8px;box-sizing: border-box;}
     .status-btn {flex: 1 1 calc(33.333% - 8px); max-width: 100px; min-width: 80px; padding: 12px 8px;border: 1px solid #ccc;border-radius: 6px;background: #f8f9fa;cursor: pointer;font-size: 14px;white-space: nowrap;transition: all 0.2s ease;}
-    @media (max-width: 768px) {.status-btn {flex: 1 1 calc(33.333% - 6px);}}
+    @media (max-width: 520px) {.status-btn {flex: 1 1 calc(33.333% - 6px);}}
 
     /* Current student highlight */
     .currentStudent{background:linear-gradient(135deg,#ffecd2,#fcb69f);padding:1rem;border-radius:12px;text-align:center}
@@ -107,7 +107,7 @@
     
  /* Attendance header: class name left, date right */
  .attendance-header{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.35rem;}
- .attendance-header .attendance-date{margin-left:auto;color:var(--bg1);font-weight:600;}
+ .attendance-header .attendance-date{margin-left:auto;color:var(--bg1);font-weight:400;}
  .attendance-header .attendance-date{white-space:nowrap;}
  @media (max-width: 520px){
   .attendance-header{gap:.25rem;}
@@ -308,7 +308,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
 #studentTableScroll,
 #attendanceTableScroll {
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   position: relative;
   scrollbar-gutter: stable;       /* prevents “column jump” when scrollbar appears */
 }
@@ -323,6 +323,123 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
   background-clip: padding-box;
   box-shadow: 0 1px 0 rgba(0,0,0,.08);  /* subtle separator line */
 }
+
+
+
+/* ===================== Responsive (per Eric’s breakpoints) ===================== */
+
+/* --- statusTable: long labels by default, symbols at 431px and below --- */
+#statusTable .th-short{ display:none; }
+@media (max-width: 431px){
+  #statusTable .th-long{ display:none; }
+  #statusTable .th-short{ display:inline; font-weight:800; }
+}
+
+/* --- Status buttons: 2x3 (<=320), 3x2 (321-574), 1 row (>=575) --- */
+.status-grid{
+  display:grid;
+  gap:10px;
+  justify-content:center;     /* center the grid block */
+  margin:12px auto;
+  width:100%;
+  max-width:520px;            /* keeps spacing nice on mid widths */
+  padding:0 8px;
+}
+.status-grid .status-btn{
+  width:100%;
+  min-width:0 !important;
+  max-width:none !important;
+  flex:unset !important;      /* neutralize older flex-based status-btn rules */
+}
+
+@media (max-width: 320px){
+  .status-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 321px) and (max-width: 574px){
+  .status-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 575px){
+  .status-grid{
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    max-width:900px;
+  }
+}
+
+/* --- nav-row: date picker + nav buttons stay as a horizontal group; wrap only if needed --- */
+.nav-row{
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.nav-row #datePicker{
+  flex: 1 1 160px;
+  min-width: 160px;
+}
+.nav-row .nav-group{
+  flex: 0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.75rem;
+}
+
+/* --- attendanceTable: at 432px and below, fixed table width + horizontal scroll (NO hidden columns) --- */
+@media (max-width: 432px){
+  #attendanceTableScroll{
+    overflow-x:auto !important; /* override global overflow-x:hidden */
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  #attendanceTable{
+    width:760px;
+    min-width:760px;
+    table-layout:fixed;
+  }
+  /* Stable column widths (tweak if needed) */
+  #attendanceTable th:nth-child(1), #attendanceTable td:nth-child(1){ width:44px; }
+  #attendanceTable th:nth-child(2), #attendanceTable td:nth-child(2){ width:230px; }
+  #attendanceTable th:nth-child(3), #attendanceTable td:nth-child(3){ width:70px; }
+  #attendanceTable th:nth-child(4), #attendanceTable td:nth-child(4){ width:90px; }
+  #attendanceTable th:nth-child(5), #attendanceTable td:nth-child(5){ width:150px; }
+  #attendanceTable th:nth-child(6), #attendanceTable td:nth-child(6){ width:170px; }
+  #attendanceTable th:nth-child(7), #attendanceTable td:nth-child(7){ width:20px; }
+}
+/* --- studentTable: at 432px and below, fixed table width + horizontal scroll (NO hidden columns) --- */
+@media (max-width: 432px){
+  #studentTableScroll{
+    overflow-x:auto !important; /* allow side-scroll on very small screens */
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  #studentTable{
+    width:680px;
+    min-width:680px;
+    table-layout:fixed;
+  }
+  /* Stable column widths (tweak if needed) */
+  #studentTable th:nth-child(1), #studentTable td:nth-child(1){ width:44px; }
+  #studentTable th:nth-child(2), #studentTable td:nth-child(2){ width:260px; }
+  #studentTable th:nth-child(3), #studentTable td:nth-child(3){ width:70px; }
+  #studentTable th:nth-child(4), #studentTable td:nth-child(4){ width:120px; }
+  #studentTable th:nth-child(5), #studentTable td:nth-child(5){ width:160px; }
+  #studentTable th:nth-child(6), #studentTable td:nth-child(6){ width:26px; }
+}
+
+
+/* --- studentTable: smaller Edit/Delete icon buttons to save space --- */
+#studentTable td:nth-child(5){
+  white-space: nowrap;
+}
+#studentTable td:nth-child(5) button{
+  padding: .22rem .40rem;      /* smaller hit area while still tappable */
+  border-radius: 10px;
+  font-size: .78rem;
+  line-height: 1;
+  min-width: 34px;
+}
+#studentTable td:nth-child(5) button + button{
+  margin-left: .25rem;
+}
+
 
 </style>
 </head>
@@ -371,7 +488,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     <!-- Manage Students -->
     <div id="classContent" class="section disabled">
       <h3>👥 Manage Students</h3>
-      <span id="classHeader" style="font-weight:600;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
+      <span id="classHeader" style="font-weight:400;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
       <div class="student-form">
         <div style="display:flex;justify-content:center;gap:1rem;align-items:end;flex-wrap:wrap;margin:.6rem 0">
           <input id="studentName" placeholder="Last Name, First Name Middle Name" style="flex:2;min-width:240px;max-width:600px">
@@ -413,7 +530,7 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
     <div class="section">
       <h3>📅 Mark Attendance</h3>
 		<div class="attendance-header">
-		  <span id="attendanceClassHeader" style="font-weight:600;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
+		  <span id="attendanceClassHeader">[Class Name]</span>
 		  <span id="attendanceDateInline" class="attendance-date"></span>
 		</div>
       <!-- Daily status summary (by sex) -->
@@ -421,13 +538,13 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
         <table id="statusTable">
           <thead>
             <tr>
-              <th style="width:15%">Sex</th>
-              <th style="width:14%">Present</th>
-              <th style="width:13%">Absent</th>
-              <th style="width:13%">Tardy</th>
-              <th style="width:14%">Cutting</th>
-              <th style="width:13%">Excuse</th>
-              <th style="width:14%">Pending</th>
+              <th style="width:17%">Sex</th>
+              <th style="width:14%"><span class="th-long">Present</span><span class="th-short">✓</span></th>
+              <th style="width:13%"><span class="th-long">Absent</span><span class="th-short">X</span></th>
+              <th style="width:12%"><span class="th-long">Tardy</span><span class="th-short">T</span></th>
+              <th style="width:14%"><span class="th-long">Cutting</span><span class="th-short">C</span></th>
+              <th style="width:13%"><span class="th-long">Excuse</span><span class="th-short">E</span></th>
+              <th style="width:14%"><span class="th-long">Pending</span><span class="th-short">P</span></th>
               <th style="width:3%"></th>
             </tr>
           </thead>
@@ -438,24 +555,24 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
       <div id="currentStudent" class="currentStudent">Select a Class to begin</div>
 
       <!-- Status buttons -->
-      <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
-        <button class="status-btn" data-status="present" onclick="markAttendance('present')">Present</button>
-        <button class="status-btn" data-status="absent"  onclick="markAttendance('absent')">Absent</button>
-        <button class="status-btn" data-status="tardy"   onclick="markAttendance('tardy')">Tardy</button>
-      </div>
-      <div style="display:flex; padding:0.5rem; gap:1rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
-        <button class="status-btn" data-status="cutting" onclick="markAttendance('cutting')">Cutting</button>
-        <button class="status-btn" data-status="excuse"  onclick="markAttendance('excuse')">Excuse</button>
-        <button class="status-btn" data-status="pending" onclick="markAttendance('pending')">Pending</button>
-      </div>
+		<div class="status-grid" aria-label="Attendance status buttons">
+		  <button class="status-btn" data-status="present" onclick="markAttendance('present')">Present</button>
+		  <button class="status-btn" data-status="absent" onclick="markAttendance('absent')">Absent</button>
+		  <button class="status-btn" data-status="tardy" onclick="markAttendance('tardy')">Tardy</button>
+		  <button class="status-btn" data-status="cutting" onclick="markAttendance('cutting')">Cutting</button>
+		  <button class="status-btn" data-status="excuse" onclick="markAttendance('excuse')">Excuse</button>
+		  <button class="status-btn" data-status="pending" onclick="markAttendance('pending')">Pending</button>
+		</div>
 
-      <div class="nav-row">
-        <input type="date" id="datePicker" style="min-width:160px">
-        <button class="nav-btn" onclick="navigateStudent('first')" title="First">⏪</button>
-        <button class="nav-btn" onclick="navigateStudent('prev')"  title="Previous">◀</button>
-        <button class="nav-btn" onclick="navigateStudent('next')"  title="Next">▶</button>
-        <button class="nav-btn" onclick="navigateStudent('last')"  title="Last">⏩</button>
-      </div>
+     <div class="nav-row">
+		<input type="date" id="datePicker" style="min-width:160px">
+	  <div class="nav-group" aria-label="Attendance navigation">
+		<button class="nav-btn" onclick="navigateStudent('first')" title="First">⏪</button>
+		<button class="nav-btn" onclick="navigateStudent('prev')" title="Previous">◀</button>
+		<button class="nav-btn" onclick="navigateStudent('next')" title="Next">▶</button>
+		<button class="nav-btn" onclick="navigateStudent('last')" title="Last">⏩</button>
+	  </div>
+	 </div>
 
       <div class="table-scroll" id="attendanceTableScroll" aria-label="Scrollable attendanceTable">
 <table id="attendanceTable">
@@ -1251,8 +1368,9 @@ function deleteStudent(index){
     document.getElementById('currentStudent').innerHTML =
  `Student ${currentStudentIndex+1} of ${currentStudents.length}<br><strong>${s.name}</strong> (${s.sex})<br>` +
  `<span style="color:${color};font-weight:600;font-size:1.05rem">${status.toUpperCase()}</span>` +
- `<div class="currentStudentDate">${formatDateInline(document.getElementById('datePicker').value)}</div>`;
-    // Pre-highlight buttons according to current status
+ `<div class="currentStudentDate">${formatDateInline(document.getElementById('datePicker').value)}</div>`; 
+
+ // Pre-highlight buttons according to current status
     highlightStatusButtonsForCurrent();
  syncAttendanceSelectionHighlight();
   }
