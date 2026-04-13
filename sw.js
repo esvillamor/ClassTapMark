@@ -5,7 +5,7 @@
    - Safer fallback to ./index.html for navigations
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v2-20260412';
+const CACHE_NAME = 'ClassTapMark-cache-v2-20260413';
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
 // Use relative paths so they resolve correctly at /ClassTapMark/ (GitHub Pages) and on localhost
