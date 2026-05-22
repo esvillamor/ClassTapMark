@@ -9,11 +9,12 @@
    - Optional assets are added with best-effort (won't break install if missing).
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v5-2026-05-22';
-const DYNAMIC_CACHE = 'ctm-dynamic-v5-2026-05-22';
+const CACHE_NAME = 'ClassTapMark-cache-v5-2026-05-22P';
+const DYNAMIC_CACHE = 'ctm-dynamic-v5-2026-05-22P';
 
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const CDN_PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+const CDN_LZ = 'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js';
 
 // Build absolute URLs based on SW scope (works on GitHub Pages /ClassTapMark/ and localhost)
 const SCOPE = self.registration.scope;
@@ -162,7 +163,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 2) CDN libs: STALE-WHILE-REVALIDATE
-  if (req.url === CDN_XLSX || req.url === CDN_PDFLIB) {
+  if (req.url === CDN_XLSX || req.url === CDN_PDFLIB || req.url === CDN_LZ) {
     event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
     return;
   }
