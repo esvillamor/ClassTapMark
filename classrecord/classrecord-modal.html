@@ -1,1 +1,874 @@
+<div id="crModal" class="cr-modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none;">
+  <style>
+    .cr-modal, .cr-modal * { box-sizing: border-box; }
+    .cr-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1600;
+      background: rgba(0,0,0,.52);
+      padding: 1rem;
+      overflow: auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .cr-modal-content {
+      width: min(1160px, 100%);
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 18px 48px rgba(0,0,0,.22);
+      overflow: hidden;
+      max-height: calc(100vh - 2rem);
+      display: flex;
+      flex-direction: column;
+    }
+    .cr-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      padding: 1rem 1.1rem;
+      color: #fff;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .cr-modal-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+    .cr-header-meta { display: grid; gap: .2rem; }
+    .cr-header-meta small { opacity: .92; }
+    #crBtnClose {
+      border: 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,.16);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .cr-tabs {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      padding: .75rem 1rem;
+      background: #fff;
+      border-bottom: 1px solid #e8ecf4;
+    }
+    .cr-tabs button {
+      flex: 1 1 180px;
+      min-width: 0;
+      border: 2px solid #d9e1f2;
+      background: #f8faff;
+      color: #334155;
+      border-radius: 12px;
+      padding: .8rem 1rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .cr-tabs button.cr-tab-active {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .cr-panel-wrap {
+      overflow: auto;
+      padding: 1rem;
+      flex: 1 1 auto;
+    }
+    .cr-panel { display: block; }
+    .cr-grid { display: grid; gap: .9rem; }
+    .cr-form-grid {
+      display: grid;
+      gap: .75rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: start;
+    }
+    .cr-grid-full { grid-column: 1 / -1; }
+    .cr-pairs-grid {
+      grid-template-columns: repeat(2, minmax(min(14rem, 100%), 1fr));
+    }
+    .cr-setup-grid {
+      grid-template-columns: repeat(3, minmax(min(10rem, 100%), 1fr));
+    }
+    .cr-score-grid--5 {
+      grid-template-columns: repeat(5, minmax(min(8rem, 100%), 1fr));
+    }
+    .cr-score-grid--3 {
+      grid-template-columns: repeat(3, minmax(min(9rem, 100%), 1fr));
+    }
+    .cr-preview-pairs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    .cr-preview-pairs .cr-pill:last-child { grid-column: auto; }
+    .cr-meta-pairs {
+      grid-template-columns: repeat(2, minmax(min(14rem, 100%), 1fr));
+    }
+    .cr-inline-actions-row {
+      grid-template-columns: minmax(220px, 1fr) repeat(3, max-content);
+    }
+    .cr-inline-actions-row > button,
+    .cr-keep-inline > button {
+      white-space: nowrap;
+    }
+    .cr-keep-inline {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+    }
+    .cr-keep-inline > * {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .cr-field { display: grid; gap: .38rem; min-width: 0; }
+    .cr-field label { font-size: .83rem; color: #475569; font-weight: 700; }
+    .cr-note { font-size: .8rem; color: #64748b; }
+    .cr-modal input,
+    .cr-modal select,
+    .cr-modal textarea,
+    .cr-modal button { font: inherit; }
+    .cr-modal input,
+    .cr-modal select,
+    .cr-modal textarea {
+      width: 100%;
+      min-width: 0;
+      border: 2px solid #e1e5e9;
+      border-radius: 12px;
+      padding: .78rem .9rem;
+      background: #fafbff;
+      color: #111827;
+    }
+    .cr-modal input:focus,
+    .cr-modal select:focus,
+    .cr-modal textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,.12);
+    }
+    .cr-modal textarea { min-height: 88px; resize: vertical; }
+    .cr-readonly { background: #f1f5f9 !important; color: #475569 !important; cursor: not-allowed; }
+    .cr-summary-card,
+    .cr-card {
+      border: 1px solid #e8ecf4;
+      border-radius: 16px;
+      background: #fff;
+      padding: .9rem;
+      box-shadow: 0 8px 18px rgba(0,0,0,.05);
+    }
+    .cr-card-title {
+      margin: 0 0 .35rem;
+      font-size: .98rem;
+      color: #334155;
+      font-weight: 700;
+    }
+    .cr-card-subtitle {
+      margin: 0 0 .75rem;
+      color: #64748b;
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+    .cr-record-row {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto auto auto;
+      gap: .75rem;
+      align-items: end;
+    }
+    .cr-score-grid {
+      display: grid;
+      gap: .6rem;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: end;
+    }
+    .cr-score-grid .cr-field label { font-size: .76rem; }
+    .cr-encode-layout {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(240px, 320px) 1fr;
+      align-items: start;
+    }
+    .cr-encode-stack { display: grid; gap: .9rem; }
+    .cr-roster-list {
+      border: 1px solid #e8ecf4;
+      border-radius: 12px;
+      padding: .4rem;
+      max-height: 280px;
+      overflow: auto;
+      background: #fafbff;
+    }
+    .cr-roster-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .6rem;
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: .65rem .7rem;
+      background: transparent;
+      color: #1f2937;
+      cursor: pointer;
+      text-align: left;
+    }
+    .cr-roster-item:hover { background: rgba(102,126,234,.10); }
+    .cr-roster-item.cr-active {
+      background: linear-gradient(135deg, rgba(102,126,234,.15), rgba(118,75,162,.12));
+      outline: 2px solid rgba(102,126,234,.22);
+    }
+    .cr-preview-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
 
+.cr-preview-break {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+    .cr-preview-grid > .cr-pill {
+      flex: 0 1 auto;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .cr-pill {
+      border-radius: 12px;
+      border: 1px solid #e8ecf4;
+      background: #fafbff;
+      padding: .75rem;
+      min-height: 72px;
+      min-width: max-content;
+    }
+    .cr-pill b {
+      display: block;
+      margin-bottom: .25rem;
+      color: #475569;
+      font-size: .8rem;
+      white-space: nowrap;
+    }
+    .cr-pill span {
+      display: block;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #111827;
+      white-space: nowrap;
+    }
+    .cr-warning,
+    .cr-error,
+    .cr-success {
+      padding: .75rem .85rem;
+      border-radius: 12px;
+      font-size: .9rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    .cr-warning { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+    .cr-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .cr-success { background: #ecfdf5; color: #166534; border: 1px solid #bbf7d0; }
+    .cr-action-row {
+      display: flex;
+      gap: .6rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .cr-action-row.cr-justify-between { justify-content: space-between; }
+    .cr-btn-primary,
+    .cr-btn-secondary,
+    .cr-btn-danger {
+      border: 0;
+      border-radius: 12px;
+      padding: .85rem 1rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .cr-btn-primary { color: #fff; background: linear-gradient(135deg, #667eea, #764ba2); }
+    .cr-btn-secondary { color: #111827; background: #e2e8f0; }
+    .cr-btn-danger { color: #fff; background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .cr-table-wrap {
+      overflow: auto;
+      border: 1px solid #e8ecf4;
+      border-radius: 14px;
+      background: #fff;
+    }
+    .cr-table { width: 100%; border-collapse: collapse; min-width: 980px; }
+    .cr-table th,
+    .cr-table td {
+      padding: .7rem .6rem;
+      border-bottom: 1px solid #e8ecf4;
+      text-align: left;
+      font-size: .88rem;
+      vertical-align: top;
+    }
+    .cr-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: linear-gradient(135deg,#f0f4ff,#e8f0ff);
+      color: #334155;
+      font-weight: 800;
+    }
+    .cr-table td:nth-child(1), .cr-table th:nth-child(1),
+    .cr-table td:nth-child(3), .cr-table th:nth-child(3),
+    .cr-table td:nth-child(4), .cr-table th:nth-child(4),
+    .cr-table td:nth-child(5), .cr-table th:nth-child(5),
+    .cr-table td:nth-child(6), .cr-table th:nth-child(6),
+    .cr-table td:nth-child(7), .cr-table th:nth-child(7),
+    .cr-table td:nth-child(8), .cr-table th:nth-child(8) { text-align: center; }
+    .cr-meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+    .cr-meta-chip {
+      border: 1px solid #e8ecf4;
+      background: #fafbff;
+      border-radius: 12px;
+      padding: .75rem;
+    }
+    .cr-meta-chip b {
+      display: block;
+      font-size: .76rem;
+      color: #64748b;
+      margin-bottom: .2rem;
+    }
+    .cr-meta-chip span {
+      display: block;
+      color: #111827;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    .cr-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .35rem .6rem;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #4338ca;
+    }
+    .cr-status-pill.cr-status-draft { background: #fff7ed; color: #9a3412; }
+    .cr-hidden { display: none !important; }
+
+    @media (max-width: 980px) {
+      .cr-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cr-score-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .cr-encode-layout { grid-template-columns: 1fr; }
+      .cr-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cr-record-row:not(.cr-inline-actions-row) { grid-template-columns: 1fr 1fr; }
+      .cr-inline-actions-row { grid-template-columns: minmax(180px, 1fr) repeat(3, max-content); }
+      .cr-score-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .cr-score-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cr-setup-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cr-meta-pairs,
+      .cr-pairs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .cr-score-grid--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .cr-modal { padding: .5rem; }
+      .cr-modal-content { max-height: calc(100vh - 1rem); border-radius: 14px; }
+      .cr-modal-header { padding: .85rem; }
+      .cr-tabs { padding: .65rem; }
+      .cr-panel-wrap { padding: .8rem; }
+      .cr-form-grid,
+      .cr-score-grid,
+      .cr-meta-grid,
+      .cr-record-row:not(.cr-inline-actions-row) { grid-template-columns: 1fr; }
+      .cr-action-row > * { flex: 1 1 100%; }
+      .cr-keep-inline > * { flex: 1 1 0; }
+      .cr-pairs-grid,
+      .cr-meta-pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cr-setup-grid,
+      .cr-score-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cr-inline-actions-row { grid-template-columns: minmax(0, 1fr) repeat(3, max-content); }
+    }
+    @media (max-width: 500px) {
+      .cr-modal { padding: .4rem; }
+      .cr-modal-content { width: 100%; max-height: calc(100vh - .8rem); border-radius: 12px; }
+      .cr-modal-header { padding: .75rem .85rem; }
+      .cr-header-meta h3 { font-size: 1rem; }
+      #crBtnClose { width: 36px; height: 36px; }
+      .cr-tabs { gap: .4rem; padding: .55rem; }
+      .cr-tabs button { flex: 1 1 calc(50% - .4rem); padding: .72rem .8rem; font-size: .92rem; }
+      .cr-card, .cr-summary-card { padding: .8rem; border-radius: 14px; }
+      .cr-panel-wrap { padding: .7rem; }
+      .cr-field label { line-height: 1.25; }
+      .cr-modal input,
+      .cr-modal select,
+      .cr-modal textarea { padding: .72rem .82rem; }
+      .cr-inline-actions-row { gap: .45rem; }
+      .cr-inline-actions-row > button,
+      .cr-keep-inline > button { padding: .75rem .7rem; font-size: .88rem; }
+      .cr-keep-inline { gap: .45rem; }
+      .cr-pill { padding: .68rem; min-height: 64px; }
+      .cr-pill span { font-size: .95rem; }
+      .cr-preview-grid > .cr-pill { max-width: 100%; }
+      .cr-pill b,
+      .cr-pill span { overflow: hidden; text-overflow: ellipsis; }
+      .cr-score-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .cr-score-grid--3,
+      .cr-setup-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cr-pairs-grid,
+      .cr-meta-pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 420px) {
+      .cr-tabs button { flex-basis: 100%; }
+      .cr-inline-actions-row {
+        grid-template-columns: 1fr;
+      }
+      .cr-inline-actions-row > button,
+      .cr-keep-inline > button,
+      .cr-action-row > * { flex: 1 1 100%; }
+      .cr-pairs-grid,
+      .cr-meta-pairs,
+      .cr-score-grid--5,
+      .cr-score-grid--3,
+      .cr-setup-grid { grid-template-columns: 1fr; }
+      .cr-preview-pairs .cr-pill:last-child { grid-column: auto; }
+    }
+
+/* =========================================
+   Make Class Record Summary behave like attendanceTable
+   ========================================= */
+
+/* Scroll wrapper like #attendanceTableScroll */
+#crSummaryTableScroll{
+  position: relative;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  
+  
+  /*max-height: 40vh;
+    max-height: min(
+    calc(var(--ctm-head-h, 38px) + (var(--ctm-visible-rows, 6) * var(--ctm-row-h, 34px)) + 6px),
+    var(--ctm-table-max-vh, 45vh)
+  ); */
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+  margin: 1rem 0;
+}
+
+/* Remove extra spacing because wrapper now handles it */
+#crSummaryTableScroll > table{
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible !important;
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Match compact attendanceTable sizing */
+#crSummaryTable{
+  font-size: 0.8rem;
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+#crSummaryTable th,
+#crSummaryTable td{
+  padding: 0.5rem 0.375rem;
+  font-size: 0.75rem;
+  border-bottom: 1px solid #e8ecf4;
+  vertical-align: top;
+white-space: nowrap;
+}
+
+/* Sticky header like attendance table */
+#crSummaryTableScroll thead th{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(135deg, #f0f4ff, #e8f0ff);
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+  font-weight: 700;
+  color: #334155;
+}
+
+/* Hover / selected-row feel similar to table-scroll rows */
+#crSummaryTable tbody tr{
+  cursor: pointer;
+}
+
+#crSummaryTable tbody tr:hover{
+  background: rgba(102,126,234,.08);
+}
+
+#crSummaryTable tbody tr.cr-row-selected{
+  background: rgba(102,126,234,.18);
+  outline: 2px solid rgba(102,126,234,.28);
+  outline-offset: -2px;
+}
+
+/* Alignment similar to attendance compact style */
+#crSummaryTable th:nth-child(1),
+#crSummaryTable td:nth-child(1),
+#crSummaryTable th:nth-child(3),
+#crSummaryTable td:nth-child(3),
+#crSummaryTable th:nth-child(4),
+#crSummaryTable td:nth-child(4),
+#crSummaryTable th:nth-child(5),
+#crSummaryTable td:nth-child(5),
+#crSummaryTable th:nth-child(6),
+#crSummaryTable td:nth-child(6),
+#crSummaryTable th:nth-child(7),
+#crSummaryTable td:nth-child(7),
+#crSummaryTable th:nth-child(8),
+#crSummaryTable td:nth-child(8){
+  text-align: center;
+}
+
+
+/* Responsive like attendanceTable */
+@media (max-width: 700px){
+  #crSummaryTable{
+    font-size: .7rem;
+  }
+  #crSummaryTable th,
+  #crSummaryTable td{
+    padding: .4rem .25rem;
+    font-size: .65rem;
+  }
+}
+
+@media (max-width: 432px){
+  #crSummaryTableScroll{
+    overflow-x: auto !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #crSummaryTable{
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+  }
+}
+  </style>
+
+  <div class="cr-modal-content">
+    <div class="cr-modal-header">
+      <div class="cr-header-meta">
+        <h3>Class Record</h3>
+        <small id="crHeaderContext">No class loaded</small>
+      </div>
+      <button id="crBtnClose" type="button" aria-label="Close">✕</button>
+    </div>
+
+    <div class="cr-tabs cr-keep-inline" id="crTabs">
+      <button id="crTabBtnHeader" type="button" class="cr-tab-active" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px">Header Fields</button>
+      <button id="crTabBtnSetup" type="button" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px"">Assessment Setup</button>
+      <button id="crTabBtnEncode" type="button" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px"">Encode Data</button>
+      <button id="crTabBtnSummary" type="button" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px"">Summary</button>
+    </div>
+	<div class="meta" style="color:#667;font-size:.9rem;margin-bottom:.75rem;font-size:10px;text-align: center;"><br />
+      <b>Production Reference to Conform:</b><br /><a href="https://drive.google.com/file/d/1WRrMV-W-Hf5jYgcdnG40BeA8-G5RbfM_/view?usp=sharing" target="_blank"> REVISED GUIDELINES ON CLASSROOM ASSESSMENT, GRADING SYSTEM, AND AWARDS AND RECOGNITION FOR THE K TO 12 BASIC EDUCATION PROGRAM.</a>
+    </div>
+    <div class="cr-panel-wrap">
+      <div id="crPanelHeader" class="cr-panel">
+        <div class="cr-grid">
+
+          <div class="cr-card">
+            <!--<h4 class="cr-card-title">Shared Class Fields</h4>
+            <p class="cr-card-subtitle">These values are shared across all records under the same advisory class.</p>-->
+            <div class="cr-form-grid cr-pairs-grid">
+              <div class="cr-field cr-grid-full">
+                <label for="crSchoolName">School Name</label>
+                <input id="crSchoolName" placeholder="School Name">
+              </div>
+              <div class="cr-field"><label for="crSchoolYear">School Year</label><input id="crSchoolYear" placeholder="eg. 2026-2027"></div>
+              <div class="cr-field"><label for="crGradeLevel">Grade Level</label>
+                <select id="crGradeLevel">
+                  <option value="">Select Grade Level</option>
+                  <option>Kindergarten</option>
+                  <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+                  <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+                  <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option>
+                  <option>Grade 11</option><option>Grade 12</option>
+                </select>
+              </div>
+              <div class="cr-field"><label for="crSection">Class</label><input id="crSection" placeholder="Class" readonly class="cr-readonly"></div>
+              <div class="cr-field"><label for="crTeacher">Teacher / Class Adviser</label><input id="crTeacher" placeholder="Teacher / Class Adviser"></div>
+              <div class="cr-field"><label for="crSchoolId">School ID</label><input id="crSchoolId" placeholder="School ID"></div>
+              <div class="cr-field"><label for="crDistrict">District</label><input id="crDistrict" placeholder="District"></div>
+              <div class="cr-field"><label for="crDivision">Division</label><input id="crDivision" placeholder="Division"></div>
+              <div class="cr-field"><label for="crRegion">Region</label><input id="crRegion" placeholder="Region"></div>
+            </div>
+          </div>
+          <div class="cr-card">
+            <h4 class="cr-card-title">Class Record Manager</h4>
+            <p class="cr-card-subtitle" style="text-align: justify;">A Class can have many Class Records, each keeps its own <i>Subject, Subject Group, Term, Setup, Scores, and Intervention data</i>. Editing the selected saved record updates that same record. New entries are created only through New Record + Save, Duplicate + Save, or Import CSV.</p>
+				<div class="cr-field">
+				  <label for="crRecordSelect">Current Saved Class Record</label>
+				  <select id="crRecordSelect" style="font-size: 10px;">
+					<option value="" style="font-size: 11px;">Draft / New Record</option>
+				  </select>
+				</div>
+				<br />
+				<div class="cr-record-row cr-inline-actions-row" style="display: flex; gap: 8px;">
+				  <button id="crBtnDeleteRecord" type="button" class="cr-btn-danger" style="flex: 1; white-space: nowrap;">Delete</button>
+				  <button id="crBtnDuplicateRecord" type="button" class="cr-btn-secondary" style="flex: 1; white-space: nowrap;">Duplicate</button>
+				  <button id="crBtnNewRecord" type="button" class="cr-btn-secondary" style="flex: 1; white-space: nowrap;">New Record</button>
+				</div>
+            <div class="cr-action-row cr-justify-between" style="margin-top:.8rem; align-items:center;">
+              <div>
+                <span id="crRecordStatus" class="cr-status-pill cr-status-draft">Draft / unsaved record</span>
+              </div>
+              <div class="cr-action-row">
+                <button id="crBtnSaveHeader" type="button" class="cr-btn-primary" style="flex: 1; white-space: nowrap;">Save Class Record</button>
+				<button id="crBtnImportCsv" type="button" class="cr-btn-secondary" style="flex: 1; white-space: nowrap;">Import CSV</button>
+				<input id="crImportFile" type="file" accept=".csv,text/csv" class="cr-hidden">
+              </div>
+            </div>
+            <div id="crHeaderWarnings" class="cr-warning cr-hidden" style="margin-top:.8rem;"></div>
+          </div>
+          <div class="cr-card">
+            <h4 class="cr-card-title">Record-Specific Fields</h4>
+            <p class="cr-card-subtitle">These values define one saved class record profile inside the current Class.</p>
+            <div class="cr-form-grid">
+				<div class="cr-field">
+				  <label for="crSubjectGroup">Subject Group</label>
+				  <select id="crSubjectGroup" style="font-size:11px;">
+					<option value="" style="font-size:11px;">Select Subject Group</option>
+					<optgroup label="Grades 4–10">
+					  <option value="core-jhs" style="font-size:11px;">AP / English / Filipino / Mathematics / Science / GMRC / Values</option>
+					  <option value="skills-jhs" style="font-size:11px;">EPP / TLE / MAPEH</option>
+					</optgroup>
+					<optgroup label="Grades 11–12">
+					  <option value="shs-core" style="font-size:11px;">SHS Core / Other SHS Academic Electives</option>
+					  <option value="shs-field" style="font-size:11px;">SHS Field Exposure / Arts Apprenticeship / Creative Production</option>
+					  <option value="shs-ashw" style="font-size:11px;">SHS Arts / Sports / Health / Wellness</option>
+					  <option value="shs-research" style="font-size:11px;">SHS Research Electives / Design &amp; Innovation</option>
+					  <option value="shs-techpro" style="font-size:11px;">SHS TechPro Electives</option>
+					  <option value="shs-immersion" style="font-size:11px;">SHS Work Immersion</option>
+					</optgroup>
+				  </select>
+				</div>
+			  <div class="cr-field cr-grid-full"><label for="crSubject">Subject</label><input id="crSubject" placeholder="Subject"></div>
+              <div class="cr-field"><label for="crTerm">Term</label>
+                <select id="crTerm">
+                  <option value="">Select Term</option>
+                  <option value="Term 1">Term 1</option>
+                  <option value="Term 2">Term 2</option>
+                  <option value="Term 3">Term 3</option>
+                </select>
+              </div>
+              <div class="cr-field"><label for="crKeyStage">Key Stage</label><input id="crKeyStage" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crGradingMode">Grading Mode</label><input id="crGradingMode" class="cr-readonly" readonly></div>
+              <div class="cr-field cr-grid-full"><label for="crRecordLabel">Record Label</label><textarea id="crRecordLabel" class="cr-readonly" readonly></textarea></div>
+            </div>
+            <div class="cr-action-row" style="margin-top:1rem;">
+              <button id="crBtnHeaderNext" type="button" class="cr-btn-primary">Next: Assessment Setup</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="crPanelSetup" class="cr-panel" style="display:none;">
+        <div class="cr-grid">
+          <div class="cr-card">
+            <h4 class="cr-card-title">Assessment Setup (Policy Driven)</h4>
+            <p class="cr-card-subtitle">Setup is recalculated from grade level and the saved record's subject group. Save the header first before encoding learner data.</p>
+            <div class="cr-form-grid cr-setup-grid">
+              <div class="cr-field cr-grid-full"><label for="crSetupProfileName">Profile Name</label><input id="crSetupProfileName" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupWeightsWW">WW Weight</label><input id="crSetupWeightsWW" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupWeightsPT">PT Weight</label><input id="crSetupWeightsPT" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupWeightsST">ST Weight</label><input id="crSetupWeightsST" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupWwCount">WW Count</label><input id="crSetupWwCount" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupPtCount">PT Count</label><input id="crSetupPtCount" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupStCount">ST Count</label><input id="crSetupStCount" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupHasTE">Has TE</label><input id="crSetupHasTE" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupUsesTransmutation">Uses Transmutation</label><input id="crSetupUsesTransmutation" class="cr-readonly" readonly></div>
+              <div class="cr-field"><label for="crSetupUsesDescriptors">Uses Descriptors</label><input id="crSetupUsesDescriptors" class="cr-readonly" readonly></div>
+              <div class="cr-field cr-grid-full"><label for="crSetupValidationBox">Validation / Notes</label><textarea id="crSetupValidationBox" class="cr-readonly" readonly></textarea></div>
+            </div>
+          </div>
+          <div id="crNumericHpsCard" class="cr-card">
+              <h4 class="cr-card-title">Highest Possible Scores (HPS)</h4>
+          <p class="cr-card-subtitle">Enter HPS once only. These scores are common to all learners in the active record. Unused maximum slots may be left blank; calculations use only filled HPS + score pairs.</p>
+              <div class="cr-grid">
+              <div class="cr-score-grid cr-score-grid--5">
+                <div class="cr-field"><label for="crHpsWw1">WW1 HPS</label><input id="crHpsWw1" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsWw2">WW2 HPS</label><input id="crHpsWw2" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsWw3">WW3 HPS</label><input id="crHpsWw3" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsWw4">WW4 HPS</label><input id="crHpsWw4" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsWw5">WW5 HPS</label><input id="crHpsWw5" type="number" min="0" step="1"></div>
+              </div>
+              <div class="cr-score-grid cr-score-grid--3">
+                <div class="cr-field"><label for="crHpsPt1">PT1 HPS</label><input id="crHpsPt1" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsPt2">PT2 HPS</label><input id="crHpsPt2" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsPt3">PT3 HPS</label><input id="crHpsPt3" type="number" min="0" step="1"></div>
+              </div>
+              <div class="cr-score-grid cr-score-grid--3">
+                <div class="cr-field"><label for="crHpsSt1">ST1 HPS</label><input id="crHpsSt1" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsSt2">ST2 HPS</label><input id="crHpsSt2" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crHpsTe">TE HPS</label><input id="crHpsTe" type="number" min="0" step="1"></div>
+              </div>
+            </div>
+
+
+            <div class="cr-action-row cr-keep-inline" style="margin-top:1rem;">
+              <button id="crBtnSetupBack" type="button" class="cr-btn-secondary">Back</button>
+              <button id="crBtnSetupNext" type="button" class="cr-btn-primary">Next: Encode Data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="crPanelEncode" class="cr-panel" style="display:none;">
+        <div class="cr-encode-layout">
+          <div class="cr-encode-stack">
+
+            <div class="cr-summary-card" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0;">
+              <h4 class="cr-card-title">Current Learner Live Preview</h4>
+              <div class="cr-preview-grid cr-preview-pairs" style="width:100%; display:flex; flex-wrap:wrap; gap:.6rem;">
+			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
+				<b>Initial</b><span id="crPreviewInitial">—</span>
+			  </div>
+			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
+				<b>Final</b><span id="crPreviewTransmuted">—</span>
+			  </div>
+			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
+				<b>Letter</b><span id="crPreviewLetter">—</span>
+			  </div>
+			  <div class="cr-preview-break" aria-hidden="true" style="flex-basis:100%; width:100%; height:0; margin:0; padding:0;"></div>
+			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
+				<b>Descriptor</b><span id="crPreviewDescriptor">—</span>
+			  </div>
+			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
+				<b>Intervention</b><span id="crPreviewIntervention">—</span>
+			  </div>
+			  <div class="cr-preview-break" aria-hidden="true" style="flex-basis:100%; width:100%; height:0; margin:0; padding:0;"></div>
+			</div>
+            <div class="cr-card">
+              <!--<h4 class="cr-card-title">Learners</h4>-->
+              <div class="cr-field">
+                <select id="crLearnerSelect"><option value="">Select learner…</option></select>
+              </div>
+			  <div id="crLearnerList" class="cr-roster-list" aria-label="Learner list" hidden></div>
+			  <div class="cr-action-row cr-keep-inline" style="margin-top:.8rem;">
+                <button id="crBtnPrevLearner" type="button" class="cr-btn-secondary">Previous</button>
+                <button id="crBtnNextLearner" type="button" class="cr-btn-secondary">Next</button>
+              </div>
+            </div>			  
+            </div>
+          </div>
+
+          <div class="cr-encode-stack">
+        <div id="crNumericScoresCard" class="cr-card">
+              <h4 class="cr-card-title">Learner Scores</h4>
+              <p class="cr-card-subtitle">Leave unused slots blank if the class did not reach them. Computation uses only filled HPS + score pairs and warns when the recommended minimum is not met.</p>
+              <div class="cr-grid">
+              <div class="cr-score-grid cr-score-grid--5">
+                <div class="cr-field"><label for="crScoreWw1">WW1</label><input id="crScoreWw1" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScoreWw2">WW2</label><input id="crScoreWw2" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScoreWw3">WW3</label><input id="crScoreWw3" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScoreWw4">WW4</label><input id="crScoreWw4" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScoreWw5">WW5</label><input id="crScoreWw5" type="number" min="0" step="1"></div>
+              </div>
+              <div class="cr-score-grid cr-score-grid--3">
+                <div class="cr-field"><label for="crScorePt1">PT1</label><input id="crScorePt1" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScorePt2">PT2</label><input id="crScorePt2" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScorePt3">PT3</label><input id="crScorePt3" type="number" min="0" step="1"></div>
+              </div>
+              <div class="cr-score-grid cr-score-grid--3">
+                <div class="cr-field"><label for="crScoreSt1">ST1</label><input id="crScoreSt1" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScoreSt2">ST2</label><input id="crScoreSt2" type="number" min="0" step="1"></div>
+                <div class="cr-field"><label for="crScoreTe">TE</label><input id="crScoreTe" type="number" min="0" step="1"></div>
+              </div>
+            </div>
+            </div>
+
+            <div id="crKs1Card" class="cr-card cr-hidden">
+              <h4 class="cr-card-title">Descriptive Rating</h4>
+              <p class="cr-card-subtitle">For Kindergarten and Grades 1–3, select the learner's descriptor. The corresponding letter grade is generated automatically.</p>
+              <div class="cr-form-grid">
+                <div class="cr-field cr-grid-full">
+                  <label for="crKs1Descriptor">Descriptor</label>
+                  <select id="crKs1Descriptor"><option value="">Select descriptor</option></select>
+                </div>
+                <!--<div class="cr-field">
+                  <label for="crKs1Letter">Letter Grade</label>
+                  <input id="crKs1Letter" class="cr-readonly" readonly>
+                </div>-->
+              </div>
+            </div>
+
+            <div class="cr-card">
+              <div class="cr-field">
+                <label for="crScoreRemarks">Remarks</label>
+                <textarea id="crScoreRemarks" placeholder="Remarks"></textarea>
+              </div>
+              <div id="crEncodeWarnings" class="cr-warning cr-hidden" style="margin-top:.8rem;"></div>
+              <div class="cr-action-row" style="margin-top:1rem;">
+                <button id="crBtnSaveLearnerScores" type="button" class="cr-btn-primary">Save Learner Scores</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="crPanelSummary" class="cr-panel" style="display:none;">
+        <div class="cr-grid">		
+          <div class="cr-summary-card" hidden>
+            <h4 class="cr-card-title">Summary Meta</h4>
+            <div id="crSummaryMeta" class="cr-meta-grid cr-meta-pairs"></div>
+          </div>
+          <div id="crSummaryWarnings" class="cr-warning cr-hidden"></div>
+          <div class="cr-summary-card">
+            <div class="cr-action-row cr-justify-between" style="margin-bottom:.9rem;">
+              <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+                <button id="crBtnRecomputeAll" type="button" class="cr-btn-secondary">Recompute All</button>
+                <button id="crBtnValidateAll" type="button" class="cr-btn-secondary">Validate All</button>
+                <button id="crBtnExportCsv" type="button" class="cr-btn-primary">Export CSV</button>
+              </div>
+            </div>
+			
+			<div class="table-scroll" id="crSummaryTableScroll" aria-label="Scrollable class record summary table">
+			  <table id="crSummaryTable" class="cr-table" aria-label="Class Record Summary">
+				<thead>
+				  <tr>
+					<th>No.</th>
+					<th>Learner</th>
+					<th>Sex</th>
+					<th>Initial Grade</th>
+					<th>Final Grade</th>
+					<th>Letter Grade</th>
+					<th>Descriptor</th>
+					<th>Intervention</th>
+					<th>Remarks</th>
+				  </tr>
+				</thead>
+				<tbody></tbody>
+			  </table>				  
+			</div>
+	<div class="meta" style="color:#667;font-size:.9rem;margin-bottom:.75rem;font-size:10px;text-align: justify;width:400px; max-width:100%;"><br />
+      <b>Disclaimer:</b> Generated document is not an official DepEd School Form. All recorded entries must be properly transferred and synchronized with the prescribed DepEd LIS-generated official school forms. For Excel quality Class Record printouts use <a href="https://www.raket.ph/esvillamor" target="_blank">ClassTapMark_ECR</a>.
+    </div>			
+          </div>
+        </div>	
+      </div>
+    </div>
+  </div>
+</div>
+<!--
+Please fully obfuscate the attached file using a NON‑HUMAN‑READABLE method.
+The final output MUST contain ZERO readable English words in CSS or JavaScript.
+Return to me then to download the obfuscated version with intact functionalities.
+
+Please keep these emojis ✅,🔒,▴,▾,✏️,🗑️ used as labels, buttons and for page presentation - do not obfuscate these emojis.You can reference the previous chat named Obf index.html 2026-06-04
+
+FILE PROVIDED AS ATTACHED:
+ classrecord-modal.html
+-->
