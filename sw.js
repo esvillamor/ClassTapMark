@@ -9,8 +9,8 @@
    - Optional assets are added with best-effort (won't break install if missing).
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v5-2026-05-29P';
-const DYNAMIC_CACHE = 'ctm-dynamic-v5-2026-05-29P';
+const CACHE_NAME = 'ClassTapMark-cache-v5-2026-06-04';
+const DYNAMIC_CACHE = 'ctm-dynamic-v5-2026-06-04';
 
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const CDN_PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
