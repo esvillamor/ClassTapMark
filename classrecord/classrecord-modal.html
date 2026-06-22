@@ -1,873 +1,2300 @@
-<div id="crModal" class="cr-modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none;">
-  <style>
-    .cr-modal, .cr-modal * { box-sizing: border-box; }
-    .cr-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 1600;
-      background: rgba(0,0,0,.52);
-      padding: 1rem;
+<!-- Fixed build: summary selected learner visibility + silent autosave handled in classrecord-modal-fixed.js; Complete card fix retained compatibility -->
+<div id="classRecordModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none; z-index:2001">
+  <style id="ctm-cr-modal-fab-fix">
+    /* Keep Class Record modal above the floating help FAB without changing JS hooks */
+    #classRecordModal{
+      z-index: 2001 !important;
+      padding: 0 !important; /* Force override external modal paddings */
+      margin: 0 !important;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 1. FORCE FULL BROWSER WIDTH */
+    #classRecordModal .ctm-cr-modal-content{
+      position: relative;
+      width: 100vw;
+      max-width: 100vw !important;
+      margin: 0 !important;
+      padding: 0 !important; /* Removes internal padding causing top gap */
+      min-height: 100dvh;
+      max-height: 100dvh;
+      border-radius: 0;
       overflow: auto;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
     }
-    .cr-modal-content {
-      width: min(1160px, 100%);
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 18px 48px rgba(0,0,0,.22);
-      overflow: hidden;
-      max-height: calc(100vh - 2rem);
-      display: flex;
-      flex-direction: column;
+
+    #classRecordModal .ctm-cr-sticky-shell {
+      padding: 0 !important;
+      margin: 0 !important;
     }
-    .cr-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: .75rem;
-      padding: 1rem 1.1rem;
-      color: #fff;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-    .cr-modal-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; }
-    .cr-header-meta { display: grid; gap: .2rem; }
-    .cr-header-meta small { opacity: .92; }
-    #crBtnClose {
-      border: 0;
-      border-radius: 10px;
-      background: rgba(255,255,255,.16);
-      color: #fff;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 700;
-    }
-    .cr-tabs {
+    
+    /* 1. SOLID BACKGROUND TO PREVENT BLEEDING */
+    #classRecordModal .ctm-cr-topbar {
       position: sticky;
-      top: 0;
-      z-index: 2;
-      display: flex;
-      flex-wrap: wrap;
-      gap: .5rem;
-      padding: .75rem 1rem;
-      background: #fff;
-      border-bottom: 1px solid #e8ecf4;
+      top: 0 !important; /* Force it to the absolute topmost edge */
+      z-index: 100; /* High z-index forces it above all scrolling content */
+      background: #ffffff; /* Solid white blocks background elements */
+      padding: 0;
+      margin: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .cr-tabs button {
-      flex: 1 1 180px;
-      min-width: 0;
-      border: 2px solid #d9e1f2;
-      background: #f8faff;
-      color: #334155;
-      border-radius: 12px;
-      padding: .8rem 1rem;
-      cursor: pointer;
-      font-weight: 700;
-    }
-    .cr-tabs button.cr-tab-active {
-      color: #fff;
-      border-color: transparent;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-    .cr-panel-wrap {
-      overflow: auto;
-      padding: 1rem;
-      flex: 1 1 auto;
-    }
-    .cr-panel { display: block; }
-    .cr-grid { display: grid; gap: .9rem; }
-    .cr-form-grid {
+
+    /* 2. GRID LAYOUT: KEEPS LAYOUT AS-IS ON ALL SCREEN SIZES, BORDERS REMOVED */
+    #classRecordModal .ctm-cr-topbar-grid {
       display: grid;
-      gap: .75rem;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      align-items: start;
-    }
-    .cr-grid-full { grid-column: 1 / -1; }
-    .cr-pairs-grid {
-      grid-template-columns: repeat(2, minmax(min(14rem, 100%), 1fr));
-    }
-    .cr-setup-grid {
-      grid-template-columns: repeat(3, minmax(min(10rem, 100%), 1fr));
-    }
-    .cr-score-grid--5 {
-      grid-template-columns: repeat(5, minmax(min(8rem, 100%), 1fr));
-    }
-    .cr-score-grid--3 {
-      grid-template-columns: repeat(3, minmax(min(9rem, 100%), 1fr));
-    }
-    .cr-preview-pairs {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: stretch;
-      justify-content: flex-start;
-    }
-    .cr-preview-pairs .cr-pill:last-child { grid-column: auto; }
-    .cr-meta-pairs {
-      grid-template-columns: repeat(2, minmax(min(14rem, 100%), 1fr));
-    }
-    .cr-inline-actions-row {
-      grid-template-columns: minmax(220px, 1fr) repeat(3, max-content);
-    }
-    .cr-inline-actions-row > button,
-    .cr-keep-inline > button {
-      white-space: nowrap;
-    }
-    .cr-keep-inline {
-      flex-wrap: nowrap;
-      justify-content: flex-start;
-    }
-    .cr-keep-inline > * {
-      flex: 1 1 0;
-      min-width: 0;
-    }
-    .cr-field { display: grid; gap: .38rem; min-width: 0; }
-    .cr-field label { font-size: .83rem; color: #475569; font-weight: 700; }
-    .cr-note { font-size: .8rem; color: #64748b; }
-    .cr-modal input,
-    .cr-modal select,
-    .cr-modal textarea,
-    .cr-modal button { font: inherit; }
-    .cr-modal input,
-    .cr-modal select,
-    .cr-modal textarea {
+      grid-template-columns: 1fr auto;
+      border: none;
+      background: #ffffff;
       width: 100%;
-      min-width: 0;
-      border: 2px solid #e1e5e9;
-      border-radius: 12px;
-      padding: .78rem .9rem;
-      background: #fafbff;
-      color: #111827;
+      grid-template-rows: auto auto auto;
+      gap: 0px; /* Reduced from 10px to minimize vertical gap */
+      box-sizing: border-box;
     }
-    .cr-modal input:focus,
-    .cr-modal select:focus,
-    .cr-modal textarea:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102,126,234,.12);
-    }
-    .cr-modal textarea { min-height: 88px; resize: vertical; }
-    .cr-readonly { background: #f1f5f9 !important; color: #475569 !important; cursor: not-allowed; }
-    .cr-summary-card,
-    .cr-card {
-      border: 1px solid #e8ecf4;
-      border-radius: 16px;
-      background: #fff;
-      padding: .9rem;
-      box-shadow: 0 8px 18px rgba(0,0,0,.05);
-    }
-    .cr-card-title {
-      margin: 0 0 .35rem;
-      font-size: .98rem;
-      color: #334155;
-      font-weight: 700;
-    }
-    .cr-card-subtitle {
-      margin: 0 0 .75rem;
-      color: #64748b;
-      font-size: .82rem;
-      line-height: 1.4;
-    }
-    .cr-record-row {
-      display: grid;
-      grid-template-columns: minmax(280px, 1fr) auto auto auto;
-      gap: .75rem;
-      align-items: end;
-    }
-    .cr-score-grid {
-      display: grid;
-      gap: .6rem;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      align-items: end;
-    }
-    .cr-score-grid .cr-field label { font-size: .76rem; }
-    .cr-encode-layout {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: minmax(240px, 320px) 1fr;
-      align-items: start;
-    }
-    .cr-encode-stack { display: grid; gap: .9rem; }
-    .cr-roster-list {
-      border: 1px solid #e8ecf4;
-      border-radius: 12px;
-      padding: .4rem;
-      max-height: 280px;
-      overflow: auto;
-      background: #fafbff;
-    }
-    .cr-roster-item {
+
+    #classRecordModal .ctm-cr-title-cell {
+      grid-column: 1 / 2;
+      grid-row: 1 / 2;
+      padding: 8px 14px 2px 14px; /* Significantly reduced top/bottom padding */
+      border-bottom: none;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: .6rem;
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: .65rem .7rem;
-      background: transparent;
-      color: #1f2937;
-      cursor: pointer;
-      text-align: left;
-    }
-    .cr-roster-item:hover { background: rgba(102,126,234,.10); }
-    .cr-roster-item.cr-active {
-      background: linear-gradient(135deg, rgba(102,126,234,.15), rgba(118,75,162,.12));
-      outline: 2px solid rgba(102,126,234,.22);
-    }
-    .cr-preview-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .6rem;
-      align-items: stretch;
-      justify-content: flex-start;
+      align-self: end;
     }
 
-.cr-preview-break {
-  flex-basis: 100%;
-  width: 0;
-  height: 0;
-  padding: 0;
-  margin: 0;
-}
-
-    .cr-preview-grid > .cr-pill {
-      flex: 0 1 auto;
-      width: fit-content;
-      max-width: 100%;
-    }
-    .cr-pill {
-      border-radius: 12px;
-      border: 1px solid #e8ecf4;
-      background: #fafbff;
-      padding: .75rem;
-      min-height: 72px;
-      min-width: max-content;
-    }
-    .cr-pill b {
-      display: block;
-      margin-bottom: .25rem;
-      color: #475569;
-      font-size: .8rem;
-      white-space: nowrap;
-    }
-    .cr-pill span {
-      display: block;
-      font-size: 1rem;
-      font-weight: 800;
-      color: #111827;
-      white-space: nowrap;
-    }
-    .cr-warning,
-    .cr-error,
-    .cr-success {
-      padding: .75rem .85rem;
-      border-radius: 12px;
-      font-size: .9rem;
-      line-height: 1.4;
-      white-space: pre-wrap;
-    }
-    .cr-warning { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
-    .cr-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-    .cr-success { background: #ecfdf5; color: #166534; border: 1px solid #bbf7d0; }
-    .cr-action-row {
+    #classRecordModal .ctm-cr-subtitle-cell {
+      grid-column: 1 / 2;
+      grid-row: 2 / 3;
+      padding: 2px 14px 4px 14px; /* Tightly hugging the title above */
+      border-bottom: none;
       display: flex;
-      gap: .6rem;
-      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.9em;
+      color: #333;
+    }
+
+    #classRecordModal .ctm-cr-close-cell {
+      grid-column: 2 / 3;
+      grid-row: 1 / 3; /* Spans across both the Title and Subtitle rows */
+      padding: 6px 24px; /* Reduced vertical padding */
+      border-left: none;
+      border-bottom: none;
+      display: flex;
+      align-items: center;
       justify-content: flex-end;
     }
-    .cr-action-row.cr-justify-between { justify-content: space-between; }
-    .cr-btn-primary,
-    .cr-btn-secondary,
-    .cr-btn-danger {
-      border: 0;
-      border-radius: 12px;
-      padding: .85rem 1rem;
+
+    /* 3. TABS EXTEND BELOW THE X BUTTON */
+    #classRecordModal .ctm-cr-tabs-container {
+      grid-column: 1 / -1; 
+      grid-row: 3 / 4;
+      display: flex;
+      flex-direction: column;
+      gap: 4px; /* Reduced from 8px */
+      margin-top: 0px; /* Reduced to bring tabs closer to subtitle */
+    }
+
+    #classRecordModal .ctm-cr-tab-row-1 {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px 14px; /* Reduced vertical padding */
+      border-bottom: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #classRecordModal .ctm-cr-tab-row-2 {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0px 14px 12px 14px; /* Kept bottom padding for breathing room before main content */
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #classRecordModal .ctm-cr-tab {
+      flex: 1;
+      padding: 8px 10px; /* Slightly compacted tab height */
+      white-space: nowrap;
+      border-radius: 20px;
+      font-weight: bold;
       cursor: pointer;
-      font-weight: 700;
+      border: none;
+      transition: background-color .18s ease, background-image .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease, opacity .18s ease;
+      background: linear-gradient(135deg, #7c8ef5 0%, #8a63c9 100%);
+      color: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+      opacity: .88;
     }
-    .cr-btn-primary { color: #fff; background: linear-gradient(135deg, #667eea, #764ba2); }
-    .cr-btn-secondary { color: #111827; background: #e2e8f0; }
-    .cr-btn-danger { color: #fff; background: linear-gradient(135deg, #ef4444, #b91c1c); }
-    .cr-table-wrap {
-      overflow: auto;
-      border: 1px solid #e8ecf4;
-      border-radius: 14px;
-      background: #fff;
+
+    #classRecordModal .ctm-cr-tab:hover {
+      opacity: .96;
     }
-    .cr-table { width: 100%; border-collapse: collapse; min-width: 980px; }
-    .cr-table th,
-    .cr-table td {
-      padding: .7rem .6rem;
-      border-bottom: 1px solid #e8ecf4;
-      text-align: left;
-      font-size: .88rem;
-      vertical-align: top;
+
+    #classRecordModal .ctm-cr-tab.active,
+    #classRecordModal .ctm-cr-tab[aria-selected="true"],
+    #classRecordModal .ctm-cr-tab[data-active="true"] {
+      background: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%) !important;
+      color: #ffffff !important;
+      box-shadow: 0 8px 18px rgba(29, 78, 216, 0.28), inset 0 0 0 1px rgba(255,255,255,0.25);
+      opacity: 1;
+      transform: translateY(-1px);
     }
-    .cr-table th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: linear-gradient(135deg,#f0f4ff,#e8f0ff);
-      color: #334155;
-      font-weight: 800;
+
+    #classRecordModal .ctm-cr-tab:not(.active):not([aria-selected="true"]):not([data-active="true"]) {
+      background: linear-gradient(135deg, #8ea0ff 0%, #8b67cf 100%);
+      color: rgba(255,255,255,0.96);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
     }
-    .cr-table td:nth-child(1), .cr-table th:nth-child(1),
-    .cr-table td:nth-child(3), .cr-table th:nth-child(3),
-    .cr-table td:nth-child(4), .cr-table th:nth-child(4),
-    .cr-table td:nth-child(5), .cr-table th:nth-child(5),
-    .cr-table td:nth-child(6), .cr-table th:nth-child(6),
-    .cr-table td:nth-child(7), .cr-table th:nth-child(7),
-    .cr-table td:nth-child(8), .cr-table th:nth-child(8) { text-align: center; }
-    .cr-meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
-    .cr-meta-chip {
-      border: 1px solid #e8ecf4;
-      background: #fafbff;
-      border-radius: 12px;
-      padding: .75rem;
+
+    #classRecordModal .ctm-cr-tab:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, 0.28);
+      outline-offset: 2px;
     }
-    .cr-meta-chip b {
-      display: block;
-      font-size: .76rem;
-      color: #64748b;
-      margin-bottom: .2rem;
-    }
-    .cr-meta-chip span {
-      display: block;
-      color: #111827;
-      font-weight: 700;
-      word-break: break-word;
-    }
-    .cr-status-pill {
+
+    #classRecordModal .ctm-cr-close-btn {
       display: inline-flex;
       align-items: center;
-      gap: .35rem;
-      padding: .35rem .6rem;
-      border-radius: 999px;
-      font-size: .8rem;
-      font-weight: 700;
-      background: #eef2ff;
-      color: #4338ca;
+      justify-content: center;
+      width: 40px; /* Slightly smaller button to save height */
+      min-width: 40px;
+      height: 40px;
+      min-height: 40px;
+      border-radius: 50%;
+      background-color: #ff6b6b;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
-    .cr-status-pill.cr-status-draft { background: #fff7ed; color: #9a3412; }
-    .cr-hidden { display: none !important; }
 
-    @media (max-width: 980px) {
-      .cr-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .cr-score-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .cr-encode-layout { grid-template-columns: 1fr; }
-      .cr-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .cr-record-row:not(.cr-inline-actions-row) { grid-template-columns: 1fr 1fr; }
-      .cr-inline-actions-row { grid-template-columns: minmax(180px, 1fr) repeat(3, max-content); }
-      .cr-score-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-      .cr-score-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .cr-setup-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .cr-meta-pairs,
-      .cr-pairs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* Optional styling for the subtitle text layout */
+    .ctm-cr-subtitle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: #555;
     }
-    @media (max-width: 760px) {
-      .cr-score-grid--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    /* 4. COMPACT HEADER STYLING */
+    #classRecordModal .ctm-cr-compact-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      margin-top: 8px;
+      width: 100%;
     }
-    @media (max-width: 640px) {
-      .cr-modal { padding: .5rem; }
-      .cr-modal-content { max-height: calc(100vh - 1rem); border-radius: 14px; }
-      .cr-modal-header { padding: .85rem; }
-      .cr-tabs { padding: .65rem; }
-      .cr-panel-wrap { padding: .8rem; }
-      .cr-form-grid,
-      .cr-score-grid,
-      .cr-meta-grid,
-      .cr-record-row:not(.cr-inline-actions-row) { grid-template-columns: 1fr; }
-      .cr-action-row > * { flex: 1 1 100%; }
-      .cr-keep-inline > * { flex: 1 1 0; }
-      .cr-pairs-grid,
-      .cr-meta-pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .cr-setup-grid,
-      .cr-score-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .cr-inline-actions-row { grid-template-columns: minmax(0, 1fr) repeat(3, max-content); }
+
+    #classRecordModal .ctm-cr-compact-header .ctm-cr-field {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-width: 120px; /* Ensures inputs don't become unreadable */
     }
-    @media (max-width: 500px) {
-      .cr-modal { padding: .4rem; }
-      .cr-modal-content { width: 100%; max-height: calc(100vh - .8rem); border-radius: 12px; }
-      .cr-modal-header { padding: .75rem .85rem; }
-      .cr-header-meta h3 { font-size: 1rem; }
-      #crBtnClose { width: 36px; height: 36px; }
-      .cr-tabs { gap: .4rem; padding: .55rem; }
-      .cr-tabs button { flex: 1 1 calc(50% - .4rem); padding: .72rem .8rem; font-size: .92rem; }
-      .cr-card, .cr-summary-card { padding: .8rem; border-radius: 14px; }
-      .cr-panel-wrap { padding: .7rem; }
-      .cr-field label { line-height: 1.25; }
-      .cr-modal input,
-      .cr-modal select,
-      .cr-modal textarea { padding: .72rem .82rem; }
-      .cr-inline-actions-row { gap: .45rem; }
-      .cr-inline-actions-row > button,
-      .cr-keep-inline > button { padding: .75rem .7rem; font-size: .88rem; }
-      .cr-keep-inline { gap: .45rem; }
-      .cr-pill { padding: .68rem; min-height: 64px; }
-      .cr-pill span { font-size: .95rem; }
-      .cr-preview-grid > .cr-pill { max-width: 100%; }
-      .cr-pill b,
-      .cr-pill span { overflow: hidden; text-overflow: ellipsis; }
-      .cr-score-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-      .cr-score-grid--3,
-      .cr-setup-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .cr-pairs-grid,
-      .cr-meta-pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    #classRecordModal .ctm-cr-compact-header .ctm-cr-field label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 3px;
+      white-space: nowrap;
     }
-    @media (max-width: 420px) {
-      .cr-tabs button { flex-basis: 100%; }
-      .cr-inline-actions-row {
-        grid-template-columns: 1fr;
+
+    #classRecordModal .ctm-cr-compact-header .ctm-cr-field input,
+    #classRecordModal .ctm-cr-compact-header .ctm-cr-field select {
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      height: 30px; /* Compact vertically */
+      box-sizing: border-box;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 700px){
+      #classRecordModal .ctm-cr-tab-row-1,
+      #classRecordModal .ctm-cr-tab-row-2 {
+        padding: 4px 8px;
+        gap: 6px;
       }
-      .cr-inline-actions-row > button,
-      .cr-keep-inline > button,
-      .cr-action-row > * { flex: 1 1 100%; }
-      .cr-pairs-grid,
-      .cr-meta-pairs,
-      .cr-score-grid--5,
-      .cr-score-grid--3,
-      .cr-setup-grid { grid-template-columns: 1fr; }
-      .cr-preview-pairs .cr-pill:last-child { grid-column: auto; }
+      #classRecordModal .ctm-cr-tab {
+        padding: 6px;
+        font-size: 0.85rem;
+      }
+      #classRecordModal .ctm-cr-close-cell {
+        padding: 8px 16px;
+      }
+    }
+    @media (max-width: 480px){
+      #classRecordModal .ctm-cr-topbar{
+        /* Ensure top mobile notch doesn't cover header, but keep background white */
+        padding-top: max(8px, env(safe-area-inset-top));
+      }
     }
 
-/* =========================================
-   Make Class Record Summary behave like attendanceTable
-   ========================================= */
-
-/* Scroll wrapper like #attendanceTableScroll */
-#crSummaryTableScroll{
-  position: relative;
-  overflow-y: auto;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-gutter: stable;
+/* Flex layout for policy cards to auto-fit as many columns as possible */
+      #classRecordModal .ctm-cr-compact-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 12px;
+        margin-top: 8px;
+        width: 100%;
+      }
+      #classRecordModal .ctm-cr-compact-cards .ctm-cr-card {
+        flex: 1 1 auto;
+        min-width: 120px; /* Allows tight packing while keeping text readable */
+        box-sizing: border-box;
+      }
   
-  
-  /*max-height: 40vh;
-    max-height: min(
-    calc(var(--ctm-head-h, 38px) + (var(--ctm-visible-rows, 6) * var(--ctm-row-h, 34px)) + 6px),
-    var(--ctm-table-max-vh, 45vh)
-  ); */
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+/* Compact card/field layout for term and summary panels */
+#classRecordModal .ctm-cr-section-card {
   background: #fff;
-  margin: 1rem 0;
+  border: 1px solid #e8ecf4;
+  border-radius: 14px;
+  padding: .85rem;
+  box-sizing: border-box;
 }
-
-/* Remove extra spacing because wrapper now handles it */
-#crSummaryTableScroll > table{
-  margin: 0;
-  box-shadow: none;
-  border-radius: 0;
-  overflow: visible !important;
-  table-layout: auto;
-  width: max-content;
-  min-width: 100%;
-}
-
-/* Match compact attendanceTable sizing */
-#crSummaryTable{
-  font-size: 0.8rem;
-  width: max-content;
-  min-width: 100%;
-  border-collapse: collapse;
-}
-
-#crSummaryTable th,
-#crSummaryTable td{
-  padding: 0.5rem 0.375rem;
-  font-size: 0.75rem;
-  border-bottom: 1px solid #e8ecf4;
-  vertical-align: top;
-white-space: nowrap;
-}
-
-/* Sticky header like attendance table */
-#crSummaryTableScroll thead th{
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: linear-gradient(135deg, #f0f4ff, #e8f0ff);
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+#classRecordModal .ctm-cr-section-heading {
+  font-size: .82rem;
   font-weight: 700;
   color: #334155;
 }
-
-/* Hover / selected-row feel similar to table-scroll rows */
-#crSummaryTable tbody tr{
+#classRecordModal .ctm-cr-section-note {
+  margin-top: .28rem;
+  font-size: .78rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+#classRecordModal .ctm-cr-term-layout,
+#classRecordModal .ctm-cr-summary-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-top: .75rem;
+  align-items: stretch;
+}
+#classRecordModal .ctm-cr-term-layout > .ctm-cr-section-card,
+#classRecordModal .ctm-cr-summary-layout > .ctm-cr-section-card {
+  flex: 1 1 280px;
+  min-width: 260px;
+}
+#classRecordModal .ctm-cr-term-layout > .ctm-cr-term-editor,
+#classRecordModal .ctm-cr-summary-layout > .ctm-cr-summary-table {
+  flex: 2 1 420px;
+  min-width: 320px;
+}
+#classRecordModal .ctm-cr-form-grid {
+  display: grid;
+  gap: 10px 12px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+#classRecordModal .ctm-cr-term-entry-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+#classRecordModal .ctm-cr-roster-list {
+  display: grid;
+  gap: .5rem;
+  max-height: min(48vh, 420px);
+  overflow: auto;
+  padding-right: .15rem;
+}
+#classRecordModal .ctm-cr-roster-list .ctm-cr-learner-mini {
+  width: 100%;
+  border: none;
+  text-align: left;
   cursor: pointer;
+  background: #fff;
 }
-
-#crSummaryTable tbody tr:hover{
-  background: rgba(102,126,234,.08);
+#classRecordModal .ctm-cr-roster-list .ctm-cr-learner-mini .ctm-cr-chip {
+  margin-left: auto;
 }
-
-#crSummaryTable tbody tr.cr-row-selected{
-  background: rgba(102,126,234,.18);
-  outline: 2px solid rgba(102,126,234,.28);
-  outline-offset: -2px;
+#classRecordModal .ctm-cr-roster-list .ctm-cr-learner-mini.active .ctm-cr-chip {
+  background: #667eea;
+  color: #fff;
+  border-color: #667eea;
 }
-
-/* Alignment similar to attendance compact style */
-#crSummaryTable th:nth-child(1),
-#crSummaryTable td:nth-child(1),
-#crSummaryTable th:nth-child(3),
-#crSummaryTable td:nth-child(3),
-#crSummaryTable th:nth-child(4),
-#crSummaryTable td:nth-child(4),
-#crSummaryTable th:nth-child(5),
-#crSummaryTable td:nth-child(5),
-#crSummaryTable th:nth-child(6),
-#crSummaryTable td:nth-child(6),
-#crSummaryTable th:nth-child(7),
-#crSummaryTable td:nth-child(7),
-#crSummaryTable th:nth-child(8),
-#crSummaryTable td:nth-child(8){
+#classRecordModal .ctm-cr-compact-cards-tight {
+  gap: 8px 10px;
+}
+#classRecordModal .ctm-cr-compact-cards-tight .ctm-cr-card {
+  min-width: 160px;
+}
+#classRecordModal .ctm-cr-learner-picker-inline {
+  margin-top: .15rem;
+  margin-bottom: .65rem;
+}
+#classRecordModal .ctm-cr-learner-picker-inline label {
+  display: block;
+}
+#classRecordModal .ctm-cr-learner-picker-inline select {
+  width: 100%;
+}
+#classRecordModal .ctm-cr-learner-picker-inline select.ctm-cr-picker-emphasis {
+  width: 100%;
+  text-align: center;
+  text-align-last: center;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+#classRecordModal .ctm-cr-nav-center .ctm-cr-small {
   text-align: center;
 }
-
-
-/* Responsive like attendanceTable */
-@media (max-width: 700px){
-  #crSummaryTable{
-    font-size: .7rem;
+#classRecordModal .ctm-cr-learner-card {
+  background: #fff;
+  border: 1px solid #e8ecf4;
+  border-radius: 14px;
+  padding: .85rem;
+}
+#classRecordModal .ctm-cr-hps-grid,
+#classRecordModal .ctm-cr-score-grid,
+#classRecordModal .ctm-cr-meta-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+#classRecordModal .ctm-cr-summary-detail textarea,
+#classRecordModal .ctm-cr-term-editor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: .55rem .7rem;
+  font-size: .92rem;
+  resize: vertical;
+}
+#classRecordModal .ctm-cr-summary-detail textarea[readonly] {
+  background: #f8fafc;
+}
+/* ===== Compact 5-column term/HPS/learner entry fields for narrow screens ===== */
+#classRecordModal .ctm-cr-term-setup .ctm-cr-form-grid,
+#classRecordModal .ctm-cr-term-setup .ctm-cr-term-setup-grid,
+#classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid,
+#classRecordModal .ctm-cr-hps-grid,
+#classRecordModal .ctm-cr-score-grid {
+  gap: 6px 6px;
+}
+#classRecordModal .ctm-cr-term-setup .ctm-cr-field,
+#classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field,
+#classRecordModal .ctm-cr-hps-grid .ctm-cr-field,
+#classRecordModal .ctm-cr-score-grid .ctm-cr-field {
+  min-width: 0;
+}
+#classRecordModal .ctm-cr-term-setup .ctm-cr-field label,
+#classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field label,
+#classRecordModal .ctm-cr-hps-grid .ctm-cr-field label,
+#classRecordModal .ctm-cr-score-grid .ctm-cr-field label {
+  font-size: 0.68rem;
+  line-height: 1.1;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+#classRecordModal .ctm-cr-term-setup .ctm-cr-field input,
+#classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field input,
+#classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field select,
+#classRecordModal .ctm-cr-hps-grid .ctm-cr-field input,
+#classRecordModal .ctm-cr-score-grid .ctm-cr-field input,
+#classRecordModal .ctm-cr-score-grid .ctm-cr-field select {
+  padding: 3px 5px;
+  min-height: 28px;
+  height: 28px;
+  font-size: 0.78rem;
+  border-radius: 4px;
+}
+#classRecordModal .ctm-cr-term-setup .ctm-cr-field input::placeholder,
+#classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field input::placeholder,
+#classRecordModal .ctm-cr-hps-grid .ctm-cr-field input::placeholder,
+#classRecordModal .ctm-cr-score-grid .ctm-cr-field input::placeholder {
+  font-size: 0.7rem;
+}
+@media (max-width: 500px) {
+  #classRecordModal .ctm-cr-term-layout {
+    gap: 8px;
   }
-  #crSummaryTable th,
-  #crSummaryTable td{
+  #classRecordModal .ctm-cr-term-layout > .ctm-cr-section-card {
+    min-width: 100%;
+    padding: 0.6rem;
+  }
+  #classRecordModal .ctm-cr-term-setup .ctm-cr-form-grid,
+  #classRecordModal .ctm-cr-term-setup .ctm-cr-term-setup-grid,
+  #classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid,
+  #classRecordModal .ctm-cr-hps-grid,
+  #classRecordModal .ctm-cr-score-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 4px;
+  }
+  #classRecordModal .ctm-cr-term-setup .ctm-cr-field label,
+  #classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field label,
+  #classRecordModal .ctm-cr-hps-grid .ctm-cr-field label,
+  #classRecordModal .ctm-cr-score-grid .ctm-cr-field label {
+    font-size: 0.6rem;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #classRecordModal .ctm-cr-term-setup .ctm-cr-field input,
+  #classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field input,
+  #classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field select,
+  #classRecordModal .ctm-cr-hps-grid .ctm-cr-field input,
+  #classRecordModal .ctm-cr-score-grid .ctm-cr-field input,
+  #classRecordModal .ctm-cr-score-grid .ctm-cr-field select {
+    padding: 2px 4px;
+    min-height: 26px;
+    height: 26px;
+    font-size: 0.72rem;
+    border-radius: 3px;
+  }
+  #classRecordModal .ctm-cr-term-editor textarea,
+  #classRecordModal .ctm-cr-term-setup textarea {
+    padding: 0.45rem 0.55rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 700px) {
+  #classRecordModal .ctm-cr-term-layout,
+  #classRecordModal .ctm-cr-summary-layout {
+    gap: 8px;
+  }
+  #classRecordModal .ctm-cr-term-layout > .ctm-cr-section-card,
+  #classRecordModal .ctm-cr-summary-layout > .ctm-cr-section-card {
+    min-width: 100%;
+  }
+}
+
+  
+#classRecordModal.ctm-cr-attendance-tab-active .ctm-cr-hide-on-attendance {
+  display: none !important;
+}
+
+/* Force-hide manager block while Attendance tab is active, even if helper JS is skipped */
+#classRecordModal:has(.ctm-cr-tab[data-tab="attendance"].active) #crHideOnAttendance,
+#classRecordModal:has(.ctm-cr-tab[data-tab="attendance"][aria-selected="true"]) #crHideOnAttendance,
+#classRecordModal:has(#crPanelAttendance.ctm-cr-panel.active) #crHideOnAttendance,
+#classRecordModal:has(#crPanelAttendance.ctm-cr-panel[style*="display: block"]) #crHideOnAttendance,
+#classRecordModal:has(#crPanelAttendance.ctm-cr-panel[style*="display:block"]) #crHideOnAttendance,
+#classRecordModal:has(#crPanelAttendance.ctm-cr-panel[style*="display: flex"]) #crHideOnAttendance,
+#classRecordModal:has(#crPanelAttendance.ctm-cr-panel[style*="display:flex"]) #crHideOnAttendance {
+  display: none !important;
+}
+
+  /* ===== Class Record Attendance Table: auto-fill remaining space + sticky header + row selection ===== */
+#classRecordModal .ctm-cr-panel{ min-width: 0; }
+#classRecordModal #crPanelAttendance.ctm-cr-panel.active{
+  min-width: 0;
+}
+#classRecordModal.ctm-cr-attendance-tab-active #crPanelAttendance.ctm-cr-panel.active{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#classRecordModal .ctm-cr-table-scroll{
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+  margin: .75rem 0 0;
+  min-height: 220px;
+  height: clamp(220px, 46vh, 420px);
+  max-height: min(46vh, 420px);
+}
+#classRecordModal.ctm-cr-attendance-tab-active #crAttendanceTableScroll{
+  flex: 1 1 auto;
+}
+#classRecordModal #crAttendanceTable{
+  width: max-content;
+  min-width: auto;
+  max-width: none;
+  table-layout: auto;
+  border-collapse: collapse;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  background: #fff;
+}
+#classRecordModal #crAttendanceTable th,
+#classRecordModal #crAttendanceTable td{
+  padding: .5rem .375rem;
+  font-size: .75rem;
+  border-bottom: 1px solid #e8ecf4;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+#classRecordModal #crAttendanceTable th{
+  background: linear-gradient(135deg,#f0f4ff,#e8f0ff);
+  font-weight: 700;
+}
+#classRecordModal #crAttendanceTable thead th{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(135deg,#f0f4ff,#e8f0ff);
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+}
+#classRecordModal #crAttendanceTable tbody tr{
+  cursor: pointer;
+}
+#classRecordModal #crAttendanceTable tbody tr:hover{
+  background: rgba(102,126,234,.08);
+}
+#classRecordModal #crAttendanceTable tbody tr.cr-row-selected:hover,
+#classRecordModal #crAttendanceTable tbody tr[aria-selected="true"]:hover{
+  background: rgba(102,126,234,.20);
+}
+#classRecordModal #crAttendanceTable tbody tr.cr-row-selected,
+#classRecordModal #crAttendanceTable tbody tr[aria-selected="true"]{
+  background: rgba(102,126,234,.16);
+  outline: 2px solid rgba(102,126,234,.32);
+  outline-offset: -2px;
+}
+#classRecordModal #crAttendanceTable tbody tr.cr-row-selected td:nth-child(2),
+#classRecordModal #crAttendanceTable tbody tr[aria-selected="true"] td:nth-child(2){
+  font-weight: 700;
+}
+#classRecordModal #crAttendanceTable tbody tr:focus-visible{
+  outline: 2px solid rgba(102,126,234,.48);
+  outline-offset: -2px;
+}
+#classRecordModal #crAttendanceTable th:nth-child(1),
+#classRecordModal #crAttendanceTable td:nth-child(1),
+#classRecordModal #crAttendanceTable th:nth-child(3),
+#classRecordModal #crAttendanceTable td:nth-child(3),
+#classRecordModal #crAttendanceTable th:nth-child(n+4),
+#classRecordModal #crAttendanceTable td:nth-child(n+4){
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+#classRecordModal #crAttendanceTable th:nth-child(2),
+#classRecordModal #crAttendanceTable td:nth-child(2){
+  min-width: 12rem;
+  max-width: 18rem;
+  white-space: normal;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* ===== Class Record Final Summary Table: match Attendance sticky header + selectable rows ===== */
+#classRecordModal #crPanelFinal.ctm-cr-panel,
+#classRecordModal #crPanelFinal.ctm-cr-panel.active,
+#classRecordModal .ctm-cr-summary-table{
+  min-width: 0;
+}
+#classRecordModal .ctm-cr-final-scroll,
+#classRecordModal #crFinalTableScroll{
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+  margin: .75rem 0 0;
+  min-height: 220px;
+  height: clamp(220px, 46vh, 420px);
+  max-height: min(46vh, 420px);
+}
+#classRecordModal #crFinalTable{
+  width: max-content;
+  min-width: auto;
+  max-width: none;
+  table-layout: auto;
+  border-collapse: collapse;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  background: #fff;
+}
+#classRecordModal #crFinalTable th,
+#classRecordModal #crFinalTable td{
+  padding: .5rem .375rem;
+  font-size: .75rem;
+  border-bottom: 1px solid #e8ecf4;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+#classRecordModal #crFinalTable th{
+  background: linear-gradient(135deg,#f0f4ff,#e8f0ff);
+  font-weight: 700;
+}
+#classRecordModal #crFinalTable thead th{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(135deg,#f0f4ff,#e8f0ff);
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+}
+#classRecordModal #crFinalTable tbody tr{
+  cursor: pointer;
+}
+#classRecordModal #crFinalTable tbody tr:hover,
+#classRecordModal #crFinalTable tbody tr.ctm-cr-final-row:hover{
+  background: rgba(102,126,234,.08);
+}
+#classRecordModal #crFinalTable tbody tr.is-selected:hover,
+#classRecordModal #crFinalTable tbody tr[aria-selected="true"]:hover{
+  background: rgba(102,126,234,.20);
+}
+#classRecordModal #crFinalTable tbody tr.is-selected,
+#classRecordModal #crFinalTable tbody tr[aria-selected="true"]{
+  background: rgba(102,126,234,.16);
+  outline: 2px solid rgba(102,126,234,.32);
+  outline-offset: -2px;
+}
+#classRecordModal #crFinalTable tbody tr.is-selected td:nth-child(2),
+#classRecordModal #crFinalTable tbody tr[aria-selected="true"] td:nth-child(2){
+  font-weight: 700;
+}
+#classRecordModal #crFinalTable tbody tr:focus-visible{
+  outline: 2px solid rgba(102,126,234,.48);
+  outline-offset: -2px;
+}
+#classRecordModal #crFinalTable th:nth-child(1),
+#classRecordModal #crFinalTable td:nth-child(1),
+#classRecordModal #crFinalTable th:nth-child(3),
+#classRecordModal #crFinalTable td:nth-child(3),
+#classRecordModal #crFinalTable th:nth-child(4),
+#classRecordModal #crFinalTable td:nth-child(4),
+#classRecordModal #crFinalTable th:nth-child(5),
+#classRecordModal #crFinalTable td:nth-child(5),
+#classRecordModal #crFinalTable th:nth-child(6),
+#classRecordModal #crFinalTable td:nth-child(6){
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+#classRecordModal #crFinalTable th:nth-child(2),
+#classRecordModal #crFinalTable td:nth-child(2){
+  min-width: 10rem;
+  max-width: 14rem;
+  white-space: normal;
+  word-break: break-word;
+  text-align: left;
+}
+
+@media (max-width: 800px){
+  #classRecordModal .ctm-cr-final-scroll,
+  #classRecordModal #crFinalTableScroll{
+    min-height: 200px;
+    height: clamp(200px, 42vh, 380px);
+    max-height: min(42vh, 380px);
+  }
+  #classRecordModal #crFinalTable th,
+  #classRecordModal #crFinalTable td{
     padding: .4rem .25rem;
     font-size: .65rem;
   }
-}
-
-@media (max-width: 432px){
-  #crSummaryTableScroll{
-    overflow-x: auto !important;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  #crSummaryTable{
+  #classRecordModal #crFinalTable{
     width: max-content;
-    min-width: 100%;
-    table-layout: auto;
+  }
+  #classRecordModal #crFinalTable th:nth-child(2),
+  #classRecordModal #crFinalTable td:nth-child(2){
+    min-width: 10rem;
+    max-width: 14rem;
+  }
+  #classRecordModal #crFinalTable th:nth-child(7),
+  #classRecordModal #crFinalTable td:nth-child(7){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+  #classRecordModal #crFinalTable th:nth-child(8),
+  #classRecordModal #crFinalTable td:nth-child(8){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+  #classRecordModal #crFinalTable th:nth-child(9),
+  #classRecordModal #crFinalTable td:nth-child(9){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+  #classRecordModal #crFinalTable th:nth-child(10),
+  #classRecordModal #crFinalTable td:nth-child(10){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+  #classRecordModal #crFinalTable th:nth-child(11),
+  #classRecordModal #crFinalTable td:nth-child(11){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+  #classRecordModal #crFinalTable th:nth-child(12),
+  #classRecordModal #crFinalTable td:nth-child(12){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+  #classRecordModal #crFinalTable th:nth-child(13),
+  #classRecordModal #crFinalTable td:nth-child(13){
+    min-width: 5rem;
+    max-width: 10rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
   }
 }
-  </style>
+@media (max-width: 700px){
+  #classRecordModal .ctm-cr-table-scroll{
+    min-height: 200px;
+    height: clamp(200px, 42vh, 380px);
+    max-height: min(42vh, 380px);
+  }
+  #classRecordModal #crAttendanceTable th,
+  #classRecordModal #crAttendanceTable td{
+    padding: .4rem .25rem;
+    font-size: .65rem;
+  }
+  #classRecordModal #crAttendanceTable{
+    width: max-content;
+  }
+  #classRecordModal #crAttendanceTable th:nth-child(2),
+  #classRecordModal #crAttendanceTable td:nth-child(2){
+    min-width: 10rem;
+    max-width: 14rem;
+  }
+}
 
-  <div class="cr-modal-content">
-    <div class="cr-modal-header">
-      <div class="cr-header-meta">
-        <h3>Class Record</h3>
-        <small id="crHeaderContext">No class loaded</small>
-      </div>
-      <button id="crBtnClose" type="button" aria-label="Close">✕</button>
-    </div>
+@media (max-width: 500px) {
+  #classRecordModal .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-descriptor-field {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+}
+  
+/* ===== Floating Class Record notification ===== */
+#classRecordModal .ctm-cr-flash{
+  position: fixed;
+  top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3005;
+  width: min(420px, calc(100vw - 24px));
+  max-width: 420px;
+  box-sizing: border-box;
+  display: none;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: #ffffff;
+  color: #1f2937;
+  text-align: left;
+  box-shadow: 0 12px 32px rgba(15,23,42,.22);
+  animation: ctmCrFlashSlideIn .18s ease-out;
+  pointer-events: auto;
+}
+#classRecordModal .ctm-cr-flash .ctm-cr-flash-inner{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+#classRecordModal .ctm-cr-flash .ctm-cr-flash-body{
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.45;
+  font-size: .92rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+#classRecordModal .ctm-cr-flash .ctm-cr-flash-close{
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: .82;
+}
+#classRecordModal .ctm-cr-flash .ctm-cr-flash-close:hover,
+#classRecordModal .ctm-cr-flash .ctm-cr-flash-close:focus-visible{
+  opacity: 1;
+  outline: none;
+  background: rgba(255,255,255,.18);
+}
+#classRecordModal .ctm-cr-flash.info{
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+#classRecordModal .ctm-cr-flash.success{
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+#classRecordModal .ctm-cr-flash.error{
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+#classRecordModal .ctm-cr-flash.warning{
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+@keyframes ctmCrFlashSlideIn{
+  from{
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(.985);
+  }
+  to{
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+@keyframes ctmCrFlashSlideInMobile{
+  from{
+    opacity: 0;
+    transform: translateY(-8px) scale(.985);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (max-width: 600px){
+  #classRecordModal .ctm-cr-flash{
+    width: auto;
+    max-width: none;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    animation-name: ctmCrFlashSlideInMobile;
+  }
+}
 
-    <div class="cr-tabs cr-keep-inline" id="crTabs">
-      <button id="crTabBtnHeader" type="button" class="cr-tab-active" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px">Header Fields</button>
-      <button id="crTabBtnSetup" type="button" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px"">Assessment Setup</button>
-      <button id="crTabBtnEncode" type="button" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px"">Encode Data</button>
-      <button id="crTabBtnSummary" type="button" style="white-space: normal; word-wrap: break-word; font-size:12px; padding:5px 1px"">Summary</button>
-    </div>
-	<div class="meta" style="color:#667;font-size:.9rem;margin-bottom:.75rem;font-size:10px;text-align: center;"><br />
-      <b>Production Reference to Conform:</b><br /><a href="https://drive.google.com/file/d/1WRrMV-W-Hf5jYgcdnG40BeA8-G5RbfM_/view?usp=sharing" target="_blank"> REVISED GUIDELINES ON CLASSROOM ASSESSMENT, GRADING SYSTEM, AND AWARDS AND RECOGNITION FOR THE K TO 12 BASIC EDUCATION PROGRAM.</a>
-    </div>
-    <div class="cr-panel-wrap">
-      <div id="crPanelHeader" class="cr-panel">
-        <div class="cr-grid">
 
-          <div class="cr-card">
-            <!--<h4 class="cr-card-title">Shared Class Fields</h4>
-            <p class="cr-card-subtitle">These values are shared across all records under the same advisory class.</p>-->
-            <div class="cr-form-grid cr-pairs-grid">
-              <div class="cr-field cr-grid-full">
-                <label for="crSchoolName">School Name</label>
-                <input id="crSchoolName" placeholder="School Name">
-              </div>
-              <div class="cr-field"><label for="crSchoolYear">School Year</label><input id="crSchoolYear" placeholder="eg. 2026-2027"></div>
-              <div class="cr-field"><label for="crGradeLevel">Grade Level</label>
-                <select id="crGradeLevel">
-                  <option value="">Select Grade Level</option>
-                  <option>Kindergarten</option>
-                  <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
-                  <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
-                  <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option>
-                  <option>Grade 11</option><option>Grade 12</option>
-                </select>
-              </div>
-              <div class="cr-field"><label for="crSection">Class</label><input id="crSection" placeholder="Class" readonly class="cr-readonly"></div>
-              <div class="cr-field"><label for="crTeacher">Teacher / Class Adviser</label><input id="crTeacher" placeholder="Teacher / Class Adviser"></div>
-              <div class="cr-field"><label for="crSchoolId">School ID</label><input id="crSchoolId" placeholder="School ID"></div>
-              <div class="cr-field"><label for="crDistrict">District</label><input id="crDistrict" placeholder="District"></div>
-              <div class="cr-field"><label for="crDivision">Division</label><input id="crDivision" placeholder="Division"></div>
-              <div class="cr-field"><label for="crRegion">Region</label><input id="crRegion" placeholder="Region"></div>
+
+
+
+
+/* ===== Policy Setup compactness patch v2 (UI-only; no logic changes) ===== */
+#classRecordModal #crPanelPolicy {
+  padding-top: 0;
+}
+#classRecordModal #crPanelPolicy > .ctm-cr-panel-title {
+  margin-bottom: .48rem;
+}
+#classRecordModal #crPanelPolicy .ctm-cr-compact-cards {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 6px !important;
+  width: 100%;
+  align-items: stretch;
+}
+#classRecordModal #crPanelPolicy .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .52rem .66rem !important;
+  border-radius: 11px !important;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .18rem;
+}
+/* Row 1 = three compact cards */
+#classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(1),
+#classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(2),
+#classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(3) {
+  grid-column: span 1 !important;
+}
+/* Row 2 = Transition Rule full width */
+#classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(4) {
+  grid-column: 1 / -1 !important;
+}
+/* Remaining metric cards continue in the dense compact grid */
+#classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(n+5) {
+  grid-column: span 1;
+}
+#classRecordModal #crPanelPolicy .ctm-cr-mini-label {
+  font-size: .66rem !important;
+  line-height: 1.05;
+  margin: 0;
+  color: #64748b;
+}
+#classRecordModal #crPanelPolicy .ctm-cr-strong {
+  font-size: clamp(.92rem, 1.35vw, 1rem);
+  line-height: 1.12;
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+#classRecordModal #crResolvedNumericMode,
+#classRecordModal #crResolvedTransition {
+  font-size: clamp(.88rem, 1.2vw, .97rem) !important;
+  line-height: 1.14;
+}
+#classRecordModal #crPanelPolicy > .ctm-cr-field {
+  margin-top: .52rem !important;
+  display: flex;
+  flex-direction: column;
+}
+#classRecordModal #crPanelPolicy > .ctm-cr-field label {
+  font-size: .72rem !important;
+  margin-bottom: 2px !important;
+}
+#classRecordModal #crPolicyNotes {
+  width: 100%;
+  min-height: 56px;
+  padding: 4px 7px !important;
+  font-size: .8rem !important;
+  line-height: 1.28;
+  resize: vertical;
+}
+/* 2 columns on medium/narrow screens, keeping Transition Rule full width */
+@media (max-width: 380px) {
+  #classRecordModal #crPanelPolicy .ctm-cr-compact-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+  #classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(1),
+  #classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(2),
+  #classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(3),
+  #classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(n+5) {
+    grid-column: span 1 !important;
+  }
+  #classRecordModal #crPanelPolicy .ctm-cr-card:nth-child(4) {
+    grid-column: 1 / -1 !important;
+  }
+}
+/* 1 column on very small phones */
+@media (max-width: 380px) {
+  #classRecordModal #crPanelPolicy .ctm-cr-compact-cards {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+  #classRecordModal #crPanelPolicy .ctm-cr-card {
+    grid-column: 1 / -1 !important;
+    padding: .48rem .56rem !important;
+    border-radius: 10px !important;
+  }
+  #classRecordModal #crPanelPolicy .ctm-cr-mini-label {
+    font-size: .62rem !important;
+  }
+  #classRecordModal #crPanelPolicy .ctm-cr-strong,
+  #classRecordModal #crResolvedNumericMode,
+  #classRecordModal #crResolvedTransition {
+    font-size: .89rem !important;
+    line-height: 1.14;
+  }
+  #classRecordModal #crPolicyNotes {
+    min-height: 52px;
+    font-size: .76rem !important;
+  }
+}
+/* ===== Term / Quarter compactness patch v3 (legacy base; overridden by fixed 4x2 patch v4 below) ===== */
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px 10px !important;
+  align-items: stretch;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px 10px !important;
+  align-items: stretch;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .55rem .65rem !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-layout {
+  gap: 8px 10px;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-layout > .ctm-cr-section-card {
+  flex: 1 1 240px;
+  min-width: 220px;
+  padding: .72rem;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-layout > .ctm-cr-term-editor {
+  flex: 1.55 1 360px;
+  min-width: 300px;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-form-grid,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-term-setup-grid,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 6px 8px !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-field,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid .ctm-cr-field,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid .ctm-cr-field {
+  min-width: 0;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-field label,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field label,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid .ctm-cr-field label,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid .ctm-cr-field label {
+  font-size: 0.66rem;
+  line-height: 1.08;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-field input,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field input,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field select,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid .ctm-cr-field input,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid .ctm-cr-field input,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid .ctm-cr-field select {
+  padding: 3px 5px;
+  min-height: 28px;
+  height: 28px;
+  font-size: 0.78rem;
+  border-radius: 4px;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-descriptor-field {
+  grid-column: 1 / -1 !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-header {
+  gap: 8px 10px;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-header .ctm-cr-field {
+  min-width: 0;
+}
+@media (max-width: 980px) {
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-panel-title {
+    margin-bottom: .45rem;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-form-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-term-setup-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 700px) {
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-layout > .ctm-cr-section-card,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-layout > .ctm-cr-term-editor {
+    min-width: 100%;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (max-width: 360px) {
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight),
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-form-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-term-setup-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-setup .ctm-cr-field label,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-editor .ctm-cr-term-entry-grid .ctm-cr-field label,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-hps-grid .ctm-cr-field label,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-score-grid .ctm-cr-field label {
+    font-size: 0.62rem;
+  }
+}
+
+
+
+
+/* ===== Summary compactness patch v4 (UI-only; logic/compat unchanged) ===== */
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px 10px !important;
+  width: 100%;
+  align-items: stretch;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > .ctm-cr-field,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > .ctm-cr-card {
+  min-width: 0 !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card {
+  padding: .55rem .65rem !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid .ctm-cr-field,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid .ctm-cr-card {
+  grid-column: span 1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-computation-card {
+  grid-column: 1 / -1 !important;
+  width: 100%;
+  max-width: 100%;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-computation-card .ctm-cr-strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+#classRecordModal #crPanelFinal .ctm-cr-selected-learner-title {
+  display: block;
+  margin-top: .28rem;
+  font-size: clamp(1rem, 1.65vw, 1.18rem);
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-strong {
+  line-height: 1.18;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-summary-remarks-card {
+  display: flex;
+  flex-direction: column;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-summary-remarks-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: .85rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 52px;
+  resize: vertical;
+  background: #f8fafc;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: .55rem .7rem;
+  font-size: .92rem;
+  resize: vertical;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid textarea[readonly] {
+  background: #f8fafc;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-mini-label,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-mini-label,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid .ctm-cr-field label {
+  font-size: 0.66rem;
+  line-height: 1.08;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-strong,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-strong {
+  font-size: 0.88rem;
+}
+/* Auto-fill partial last row in 5-column summary grids */
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(5n + 1):last-child,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(5n + 1):last-child,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > :nth-child(5n + 1):last-child {
+  grid-column: 1 / -1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2),
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2),
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > :nth-child(5n + 1):nth-last-child(2) {
+  grid-column: span 3;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2) + .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2) + .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > :nth-child(5n + 1):nth-last-child(2) + * {
+  grid-column: span 2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3),
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3) + .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3),
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3) + .ctm-cr-card,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > :nth-child(5n + 1):nth-last-child(3),
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > :nth-child(5n + 1):nth-last-child(3) + * {
+  grid-column: span 2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(4),
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(5n + 1):nth-last-child(4),
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > :nth-child(5n + 1):nth-last-child(4) {
+  grid-column: span 2;
+}
+@media (max-width: 640px) {
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-mini-label,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-mini-label,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid .ctm-cr-field label {
+    font-size: .60rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-card,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-card {
+    padding: .46rem .5rem !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-strong,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-strong {
+    font-size: .76rem !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-summary-remarks-card textarea {
+    padding: 2px 4px;
+    min-height: 46px;
+    font-size: .72rem;
+    border-radius: 3px;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > .ctm-cr-field,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > .ctm-cr-card {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+
+/* ===== Summary compactness patch v5 (UI-only; logic/compat unchanged) ===== */
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px 10px !important;
+  width: 100%;
+  align-items: stretch;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .55rem .65rem !important;
+  grid-column: span 1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card.ctm-cr-summary-row2-half {
+  grid-column: span 2 !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(4n + 1):last-child {
+  grid-column: 1 / -1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(4n + 1):nth-last-child(2):not(.ctm-cr-summary-row2-half) {
+  grid-column: span 2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(4n + 1):nth-last-child(2):not(.ctm-cr-summary-row2-half) + .ctm-cr-card:not(.ctm-cr-summary-row2-half) {
+  grid-column: span 2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(4n + 1):nth-last-child(3),
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(4n + 1):nth-last-child(3) + .ctm-cr-card {
+  grid-column: span 1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid > .ctm-cr-card:nth-child(4n + 1):nth-last-child(3) {
+  grid-column: span 2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px 10px !important;
+  width: 100%;
+  align-items: stretch;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .55rem .65rem !important;
+  grid-column: span 1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(3n + 1):last-child {
+  grid-column: 1 / -1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(3n + 1):nth-last-child(2) {
+  grid-column: span 2;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid > .ctm-cr-card:nth-child(3n + 1):nth-last-child(2) + .ctm-cr-card {
+  grid-column: span 1;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  width: 100%;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > .ctm-cr-field,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid > .ctm-cr-card {
+  grid-column: 1 / -1 !important;
+  min-width: 0 !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-attendance-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-attendance-card .ctm-cr-mini-label {
+  margin-bottom: .45rem;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-attendance-card .ctm-cr-attendance-row {
+  border-top: 1px solid #eef2f7;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-attendance-card .ctm-cr-attendance-row:first-of-type {
+  border-top: none;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-attendance-card .ctm-cr-attendance-counts {
+  gap: .35rem;
+}
+
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-summary-remarks-card {
+  display: flex;
+  flex-direction: column;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-summary-remarks-card textarea,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: .55rem .7rem;
+  font-size: .92rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 52px;
+  resize: vertical;
+  background: #f8fafc;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-mini-label,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-mini-label,
+#classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid .ctm-cr-field label {
+  font-size: 0.66rem;
+  line-height: 1.08;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-strong,
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-strong {
+  font-size: 0.88rem;
+  line-height: 1.18;
+}
+@media (max-width: 640px) {
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-card,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-card {
+    padding: .46rem .5rem !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-mini-label,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-mini-label,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid .ctm-cr-field label {
+    font-size: .60rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-top-grid .ctm-cr-strong,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-strong {
+    font-size: .76rem !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-grid .ctm-cr-summary-remarks-card textarea,
+  #classRecordModal #crPanelFinal .ctm-cr-summary-detail-grid textarea {
+    padding: 2px 4px;
+    min-height: 46px;
+    font-size: .72rem;
+    border-radius: 3px;
+  }
+}
+
+
+/* ===== Summary learner-row order patch v6 (UI-only; logic/compat unchanged) ===== */
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px 10px !important;
+  width: 100%;
+  align-items: stretch;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-row.row-count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-row.row-count-1 {
+  grid-template-columns: 1fr !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-row > .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .55rem .65rem !important;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-row .ctm-cr-summary-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: .85rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 30px;
+  height: 30px;
+  background: #f8fafc;
+}
+#classRecordModal #crPanelFinal .ctm-cr-summary-selected-row .ctm-cr-summary-input[readonly] {
+  color: inherit;
+}
+@media (max-width: 640px) {
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-row.row-count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-row.row-count-1 {
+    grid-template-columns: 1fr !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-row > .ctm-cr-card {
+    padding: .46rem .5rem !important;
+  }
+  #classRecordModal #crPanelFinal .ctm-cr-summary-selected-row .ctm-cr-summary-input {
+    padding: 2px 4px;
+    min-height: 26px;
+    height: 26px;
+    font-size: .72rem;
+    border-radius: 3px;
+  }
+}
+
+
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards > .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) > .ctm-cr-card:nth-child(5n + 1):last-child,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card:nth-child(5n + 1):last-child,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(4),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight > .ctm-cr-card:nth-child(5n + 1):nth-last-child(4) {
+  grid-column: span 1 !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .42rem .52rem !important;
+  border-radius: 11px !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-mini-label,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-mini-label {
+  font-size: .61rem !important;
+  line-height: 1.04;
+  margin: 0;
+  white-space: normal;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-strong,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-strong {
+  font-size: .76rem !important;
+  font-weight: 500 !important;
+  line-height: 1.14;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+@media (max-width: 640px) {
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight),
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, auto));
+    gap: 5px 6px !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-card,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-card {
+    padding: .38rem .45rem !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-mini-label,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-mini-label {
+    font-size: .58rem !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards .ctm-cr-strong,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight .ctm-cr-strong {
+    font-size: .71rem !important;
+  }
+}
+
+/* ===== Term / Quarter compactness patch v5 (4x2 summary cards + 1-column notes; UI-only; logic/compat unchanged) ===== */
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight):not(.ctm-cr-term-notes-stack),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, auto));
+  grid-auto-flow: row;
+  gap: 6px 8px !important;
+  align-items: stretch;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):last-child,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):last-child,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(2) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(3) + .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(4),
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) > .ctm-cr-card:nth-child(5n + 1):nth-last-child(4) {
+  grid-column: span 1 !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) .ctm-cr-card,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) .ctm-cr-card {
+  min-width: 0 !important;
+  padding: .42rem .52rem !important;
+  border-radius: 11px !important;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) .ctm-cr-mini-label,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) .ctm-cr-mini-label {
+  font-size: .61rem !important;
+  line-height: 1.04;
+  margin: 0;
+  white-space: normal;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) .ctm-cr-strong,
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) .ctm-cr-strong {
+  font-size: .76rem !important;
+  font-weight: 500 !important;
+  line-height: 1.14;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-notes-stack {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: none !important;
+  gap: 8px !important;
+  width: 100%;
+  align-items: stretch;
+}
+#classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-term-notes-stack > .ctm-cr-card {
+  grid-column: 1 / -1 !important;
+  width: 100%;
+  min-width: 0 !important;
+}
+@media (max-width: 640px) {
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-compact-cards-tight):not(.ctm-cr-term-notes-stack),
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, auto));
+    gap: 5px 6px !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) .ctm-cr-card,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) .ctm-cr-card {
+    padding: .38rem .45rem !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) .ctm-cr-mini-label,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) .ctm-cr-mini-label {
+    font-size: .58rem !important;
+  }
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards:not(.ctm-cr-term-notes-stack) .ctm-cr-strong,
+  #classRecordModal .ctm-cr-panel[id^="crPanelTerm"] .ctm-cr-compact-cards-tight:not(.ctm-cr-term-notes-stack) .ctm-cr-strong {
+    font-size: .71rem !important;
+  }
+}
+
+
+/* Fix v2026.18: keep Term / Quarter attendance summary on one line without affecting logic */
+#classRecordModal .ctm-cr-attendance-row{
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr);
+  align-items:start;
+  gap:.3rem .75rem;
+  min-width:0;
+  padding:.35rem 0;
+  border-top:1px solid rgba(255,255,255,.35);
+}
+#classRecordModal .ctm-cr-attendance-row:first-of-type{
+  border-top:none;
+  padding-top:0;
+}
+#classRecordModal .ctm-cr-attendance-term{
+  font-weight:700;
+  font-size:.8rem;
+  white-space:nowrap;
+  align-self:start;
+  padding-top:.15rem;
+}
+#classRecordModal .ctm-cr-attendance-body{
+  min-width:0;
+}
+#classRecordModal .ctm-cr-attendance-counts{
+  display:flex;
+  gap:.3rem;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  min-width:0;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+}
+#classRecordModal .ctm-cr-attendance-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:.22rem;
+  padding:.18rem .42rem;
+  border-radius:999px;
+  background:#fff8ed;
+  border:1px solid rgba(0,0,0,.08);
+  font-size:.72rem;
+  line-height:1.2;
+  white-space:nowrap;
+  flex:0 0 auto;
+}
+/* ===== Descriptive term setup visibility patch (UI-only; compatibility-safe) ===== */
+#classRecordModal .ctm-cr-panel[data-show-term-setup="false"] .ctm-cr-term-setup,
+#classRecordModal .ctm-cr-panel.ctm-cr-descriptive-term .ctm-cr-term-setup {
+  display: none !important;
+}
+
+/* ===== Collapsible Tabs Area (UI-only; logic/compat untouched) ===== */
+#classRecordModal .ctm-cr-tabs-shell[hidden] {
+  display: none !important;
+}
+#classRecordModal .ctm-cr-tabs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 14px 4px 14px;
+  flex-wrap: wrap;
+}
+#classRecordModal .ctm-cr-tabs-source {
+  margin: 0;
+  font-size: 11px;
+  text-align: center;
+  flex: 1 1 auto;
+}
+#classRecordModal .ctm-cr-tabs-source a {
+  color: #5b21b6;
+}
+#classRecordModal .ctm-cr-tabs-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 30px;
+  padding: .38rem .95rem;
+  border-radius: 8px;
+  border: 1px solid #76c260;
+  background: #f7fff3;
+  color: #1f2937;
+  font-size: .82rem;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+#classRecordModal .ctm-cr-tabs-toggle:hover {
+  background: #f0faea;
+  border-color: #5fb54b;
+  box-shadow: 0 4px 10px rgba(95,181,75,.15);
+}
+#classRecordModal .ctm-cr-tabs-toggle:focus-visible {
+  outline: 3px solid rgba(95,181,75,.22);
+  outline-offset: 2px;
+}
+#classRecordModal .ctm-cr-tabs-toggle-icon {
+  display: inline-block;
+  min-width: .8rem;
+  text-align: center;
+  font-size: .78rem;
+  line-height: 1;
+  transform-origin: center;
+}
+#classRecordModal .ctm-cr-tabs-toggle[aria-expanded="true"] .ctm-cr-tabs-toggle-icon {
+  transform: rotate(180deg);
+}
+@media (max-width: 700px) {
+  #classRecordModal .ctm-cr-tabs-footer {
+    gap: 8px;
+    padding: 0 8px 8px 8px;
+  }
+  #classRecordModal .ctm-cr-tabs-source {
+    flex-basis: 100%;
+    order: 2;
+  }
+  #classRecordModal .ctm-cr-tabs-toggle {
+    order: 1;
+  }
+}
+
+
+/* ===== Tabs toggle position patch v2: move Show/Hide before close button ===== */
+#classRecordModal .ctm-cr-close-cell {
+  gap: 10px;
+  align-items: center;
+}
+#classRecordModal .ctm-cr-close-cell .ctm-cr-tabs-toggle {
+  order: 1;
+  margin-right: 0;
+}
+#classRecordModal .ctm-cr-close-cell .ctm-cr-close-btn {
+  order: 2;
+}
+#classRecordModal .ctm-cr-tabs-container {
+  gap: 2px;
+}
+#classRecordModal .ctm-cr-tabs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0 14px 6px 14px;
+}
+#classRecordModal .ctm-cr-tabs-source {
+  margin: 0;
+  flex: 0 1 auto;
+  text-align: center;
+}
+#classRecordModal .ctm-cr-tabs-footer .ctm-cr-tabs-toggle {
+  display: none !important;
+}
+@media (max-width: 700px) {
+  #classRecordModal .ctm-cr-close-cell {
+    gap: 8px;
+    padding: 8px 16px;
+  }
+  #classRecordModal .ctm-cr-close-cell .ctm-cr-tabs-toggle {
+    min-height: 28px;
+    padding: .34rem .75rem;
+    font-size: .78rem;
+  }
+  #classRecordModal .ctm-cr-tabs-footer {
+    padding: 0 8px 8px 8px;
+  }
+  #classRecordModal .ctm-cr-tabs-source {
+    flex-basis: 100%;
+  }
+}
+
+
+#classRecordModal .ctm-cr-tabs-footer[hidden] {
+  display: none !important;
+}
+
+#classRecordModal .ctm-cr-attendance-range {
+  display: block;
+  width: 100%;
+  margin-top: .28rem;
+  font-size: .78rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+</style>
+
+  <div class="modal-content ctm-cr-modal-content" style="position:relative">
+  <div class="ctm-cr-sticky-shell">
+  <div class="ctm-cr-topbar">
+      <div class="ctm-cr-topbar-grid" style="background:#bde3fc">
+        <div class="ctm-cr-title-cell">
+          <h3 style="margin:0; font-size: 1.2rem;">Class Record</h3>
+        </div>
+        <div class="ctm-cr-close-cell">
+          <button id="crTabsCollapseToggle" class="ctm-cr-tabs-toggle" type="button" aria-expanded="true" aria-controls="crTabsShell">
+            <span class="ctm-cr-tabs-toggle-label">Tab Buttons</span>
+            <span class="ctm-cr-tabs-toggle-icon" aria-hidden="true">∨</span>
+          </button>
+          <button class="danger ctm-cr-close-btn" id="crBtnClose">✕</button>
+        </div>
+        <div class="ctm-cr-subtitle-cell">
+          <div class="ctm-cr-subtitle">
+            <span id="crTopClassName">No class loaded</span><span>•</span><span id="crTopSubject">No subject</span><span>•</span><span id="crTopSchoolYear">No school year</span>
+          </div>
+        </div>
+        <div class="ctm-cr-tabs-container" aria-label="Class Record Tabs">
+          <div id="crTabsShell" class="ctm-cr-tabs-shell" role="tablist" aria-label="Class Record Tabs" aria-hidden="false">
+            <div class="ctm-cr-tab-row-1">
+              <button class="primary ctm-cr-tab active" data-tab="header" type="button" role="tab" aria-selected="true" data-active="true">Header Fields</button>
+              <button class="edit ctm-cr-tab" data-tab="policy" type="button" role="tab" aria-selected="false" data-active="false">Policy Setup</button>
+              <button class="edit ctm-cr-tab" data-tab="attendance" type="button" role="tab" aria-selected="false" data-active="false">Attendance</button>
+            </div>
+            <div class="ctm-cr-tab-row-2">
+              <button class="edit ctm-cr-tab" data-tab="term1" type="button" role="tab" aria-selected="false" data-active="false">Term 1</button>
+              <button class="edit ctm-cr-tab" data-tab="term2" type="button" role="tab" aria-selected="false" data-active="false">Term 2</button>
+              <button class="edit ctm-cr-tab" data-tab="term3" type="button" role="tab" aria-selected="false" data-active="false">Term 3</button>
+              <button class="edit ctm-cr-tab" data-tab="term4" type="button" role="tab" aria-selected="false" data-active="false">Term 4</button>
+              <button class="edit ctm-cr-tab" data-tab="final" type="button" role="tab" aria-selected="false" data-active="false">Summary</button>
+              <!-- Summary tab Letter / Final Descriptor columns are hidden by default in classrecord-modal.js for DO No. 015, s. 2026 compliance.
+                   To show them again for testing/legacy review, set window.CTM_CLASSRECORD_SHOW_SUMMARY_LETTER_COLUMN = true and/or
+                   window.CTM_CLASSRECORD_SHOW_SUMMARY_FINAL_DESCRIPTOR_COLUMN = true before opening Class Record, or change the JS defaults to true. -->
             </div>
           </div>
-          <div class="cr-card">
-            <h4 class="cr-card-title">Class Record Manager</h4>
-            <p class="cr-card-subtitle" style="text-align: justify;">A Class can have many Class Records, each keeps its own <i>Subject, Subject Group, Term, Setup, Scores, and Intervention data</i>. Editing the selected saved record updates that same record. New entries are created only through New Record + Save, Duplicate + Save, or Import CSV.</p>
-				<div class="cr-field">
-				  <label for="crRecordSelect">Current Saved Class Record</label>
-				  <select id="crRecordSelect" style="font-size: 10px;">
-					<option value="" style="font-size: 11px;">Draft / New Record</option>
-				  </select>
-				</div>
-				<br />
-				<div class="cr-record-row cr-inline-actions-row" style="display: flex; gap: 8px;">
-				  <button id="crBtnDeleteRecord" type="button" class="cr-btn-danger" style="flex: 1; white-space: nowrap;">Delete</button>
-				  <button id="crBtnDuplicateRecord" type="button" class="cr-btn-secondary" style="flex: 1; white-space: nowrap;">Duplicate</button>
-				  <button id="crBtnNewRecord" type="button" class="cr-btn-secondary" style="flex: 1; white-space: nowrap;">New Record</button>
-				</div>
-            <div class="cr-action-row cr-justify-between" style="margin-top:.8rem; align-items:center;">
-              <div>
-                <span id="crRecordStatus" class="cr-status-pill cr-status-draft">Draft / unsaved record</span>
-              </div>
-              <div class="cr-action-row">
-                <button id="crBtnSaveHeader" type="button" class="cr-btn-primary" style="flex: 1; white-space: nowrap;" disabled>Save Class Record</button>
-				<button id="crBtnImportCsv" type="button" class="cr-btn-secondary" style="flex: 1; white-space: nowrap;">Import CSV</button>
-				<input id="crImportFile" type="file" accept=".csv,text/csv" class="cr-hidden">
-              </div>
-            </div>
-            <div id="crHeaderWarnings" class="cr-warning cr-hidden" style="margin-top:.8rem;"></div>
-          </div>
-          <div class="cr-card">
-            <h4 class="cr-card-title">Record-Specific Fields</h4>
-            <p class="cr-card-subtitle">These values define one saved class record profile inside the current Class.</p>
-            <div class="cr-form-grid">
-				<div class="cr-field">
-				  <label for="crSubjectGroup">Subject Group</label>
-				  <select id="crSubjectGroup" style="font-size:11px;">
-					<option value="" style="font-size:11px;">Select Subject Group</option>
-					<optgroup label="Grades 4–10">
-					  <option value="core-jhs" style="font-size:11px;">AP / English / Filipino / Mathematics / Science / GMRC / Values</option>
-					  <option value="skills-jhs" style="font-size:11px;">EPP / TLE / MAPEH</option>
-					</optgroup>
-					<optgroup label="Grades 11–12">
-					  <option value="shs-core" style="font-size:11px;">SHS Core / Other SHS Academic Electives</option>
-					  <option value="shs-field" style="font-size:11px;">SHS Field Exposure / Arts Apprenticeship / Creative Production</option>
-					  <option value="shs-ashw" style="font-size:11px;">SHS Arts / Sports / Health / Wellness</option>
-					  <option value="shs-research" style="font-size:11px;">SHS Research Electives / Design &amp; Innovation</option>
-					  <option value="shs-techpro" style="font-size:11px;">SHS TechPro Electives</option>
-					  <option value="shs-immersion" style="font-size:11px;">SHS Work Immersion</option>
-					</optgroup>
-				  </select>
-				</div>
-			  <div class="cr-field cr-grid-full"><label for="crSubject">Subject</label><input id="crSubject" placeholder="Subject"></div>
-              <div class="cr-field"><label for="crTerm">Term</label>
-                <select id="crTerm">
-                  <option value="">Select Term</option>
-                  <option value="Term 1">Term 1</option>
-                  <option value="Term 2">Term 2</option>
-                  <option value="Term 3">Term 3</option>
-                </select>
-              </div>
-              <div class="cr-field"><label for="crKeyStage">Key Stage</label><input id="crKeyStage" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crGradingMode">Grading Mode</label><input id="crGradingMode" class="cr-readonly" readonly></div>
-              <div class="cr-field cr-grid-full"><label for="crRecordLabel">Record Label</label><textarea id="crRecordLabel" class="cr-readonly" readonly></textarea></div>
-            </div>
-            <div class="cr-action-row" style="margin-top:1rem;">
-              <button id="crBtnHeaderNext" type="button" class="cr-btn-primary">Next: Assessment Setup</button>
-            </div>
+          <div class="ctm-cr-tabs-footer">
+            <p class="ctm-cr-tabs-source">
+              <a href="https://drive.google.com/drive/folders/13APGK-OoX_g2bWqVZ9h-iGd16DCDNa5_?usp=sharing" target="_blank" rel="noopener noreferrer">Source: DO No. 015, s. 2026 / DO No. 8, s. 2015</a>
+            </p>
           </div>
         </div>
       </div>
-
-      <div id="crPanelSetup" class="cr-panel" style="display:none;">
-        <div class="cr-grid">
-          <div class="cr-card">
-            <h4 class="cr-card-title">Assessment Setup (Policy Driven)</h4>
-            <p class="cr-card-subtitle">Setup is recalculated from grade level and the saved record's subject group. Save the header first before encoding learner data.</p>
-            <div class="cr-form-grid cr-setup-grid">
-              <div class="cr-field cr-grid-full"><label for="crSetupProfileName">Profile Name</label><input id="crSetupProfileName" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupWeightsWW">WW Weight</label><input id="crSetupWeightsWW" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupWeightsPT">PT Weight</label><input id="crSetupWeightsPT" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupWeightsST">ST Weight</label><input id="crSetupWeightsST" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupWwCount">WW Count</label><input id="crSetupWwCount" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupPtCount">PT Count</label><input id="crSetupPtCount" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupStCount">ST Count</label><input id="crSetupStCount" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupHasTE">Has TE</label><input id="crSetupHasTE" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupUsesTransmutation">Uses Transmutation</label><input id="crSetupUsesTransmutation" class="cr-readonly" readonly></div>
-              <div class="cr-field"><label for="crSetupUsesDescriptors">Uses Descriptors</label><input id="crSetupUsesDescriptors" class="cr-readonly" readonly></div>
-              <div class="cr-field cr-grid-full"><label for="crSetupValidationBox">Validation / Notes</label><textarea id="crSetupValidationBox" class="cr-readonly" readonly></textarea></div>
-            </div>
-          </div>
-          <div id="crNumericHpsCard" class="cr-card">
-              <h4 class="cr-card-title">Highest Possible Scores (HPS)</h4>
-          <p class="cr-card-subtitle">Enter HPS once only. These scores are common to all learners in the active record. Unused maximum slots may be left blank; calculations use only filled HPS + score pairs.</p>
-              <div class="cr-grid">
-              <div class="cr-score-grid cr-score-grid--5">
-                <div class="cr-field"><label for="crHpsWw1">WW1 HPS</label><input id="crHpsWw1" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsWw2">WW2 HPS</label><input id="crHpsWw2" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsWw3">WW3 HPS</label><input id="crHpsWw3" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsWw4">WW4 HPS</label><input id="crHpsWw4" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsWw5">WW5 HPS</label><input id="crHpsWw5" type="number" min="0" step="1"></div>
-              </div>
-              <div class="cr-score-grid cr-score-grid--3">
-                <div class="cr-field"><label for="crHpsPt1">PT1 HPS</label><input id="crHpsPt1" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsPt2">PT2 HPS</label><input id="crHpsPt2" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsPt3">PT3 HPS</label><input id="crHpsPt3" type="number" min="0" step="1"></div>
-              </div>
-              <div class="cr-score-grid cr-score-grid--3">
-                <div class="cr-field"><label for="crHpsSt1">ST1 HPS</label><input id="crHpsSt1" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsSt2">ST2 HPS</label><input id="crHpsSt2" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crHpsTe">TE HPS</label><input id="crHpsTe" type="number" min="0" step="1"></div>
-              </div>
-            </div>
-
-
-            <div class="cr-action-row cr-keep-inline" style="margin-top:1rem;">
-              <button id="crBtnSetupBack" type="button" class="cr-btn-secondary">Back</button>
-              <button id="crBtnSetupNext" type="button" class="cr-btn-primary">Next: Encode Data</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="crPanelEncode" class="cr-panel" style="display:none;">
-        <div class="cr-encode-layout">
-          <div class="cr-encode-stack">
-
-            <div class="cr-summary-card" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0;">
-              <h4 class="cr-card-title">Current Learner Live Preview</h4>
-              <div class="cr-preview-grid cr-preview-pairs" style="width:100%; display:flex; flex-wrap:wrap; gap:.6rem;">
-			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
-				<b>Initial</b><span id="crPreviewInitial">—</span>
-			  </div>
-			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
-				<b>Final</b><span id="crPreviewTransmuted">—</span>
-			  </div>
-			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
-				<b>Letter</b><span id="crPreviewLetter">—</span>
-			  </div>
-			  <div class="cr-preview-break" aria-hidden="true" style="flex-basis:100%; width:100%; height:0; margin:0; padding:0;"></div>
-			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
-				<b>Descriptor</b><span id="crPreviewDescriptor">—</span>
-			  </div>
-			  <div class="cr-pill" style="flex:1 1 0; width:0; min-width:0; text-align:center;">
-				<b>Intervention</b><span id="crPreviewIntervention">—</span>
-			  </div>
-			  <div class="cr-preview-break" aria-hidden="true" style="flex-basis:100%; width:100%; height:0; margin:0; padding:0;"></div>
-			</div>
-            <div class="cr-card">
-              <!--<h4 class="cr-card-title">Learners</h4>-->
-              <div class="cr-field">
-                <select id="crLearnerSelect"><option value="">Select learner…</option></select>
-              </div>
-			  <div id="crLearnerList" class="cr-roster-list" aria-label="Learner list" hidden></div>
-			  <div class="cr-action-row cr-keep-inline" style="margin-top:.8rem;">
-                <button id="crBtnPrevLearner" type="button" class="cr-btn-secondary">Previous</button>
-                <button id="crBtnNextLearner" type="button" class="cr-btn-secondary">Next</button>
-              </div>
-            </div>			  
-            </div>
-          </div>
-
-          <div class="cr-encode-stack">
-        <div id="crNumericScoresCard" class="cr-card">
-              <h4 class="cr-card-title">Learner Scores</h4>
-              <p class="cr-card-subtitle">Leave unused slots blank if the class did not reach them. Computation uses only filled HPS + score pairs and warns when the recommended minimum is not met.</p>
-              <div class="cr-grid">
-              <div class="cr-score-grid cr-score-grid--5">
-                <div class="cr-field"><label for="crScoreWw1">WW1</label><input id="crScoreWw1" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScoreWw2">WW2</label><input id="crScoreWw2" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScoreWw3">WW3</label><input id="crScoreWw3" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScoreWw4">WW4</label><input id="crScoreWw4" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScoreWw5">WW5</label><input id="crScoreWw5" type="number" min="0" step="1"></div>
-              </div>
-              <div class="cr-score-grid cr-score-grid--3">
-                <div class="cr-field"><label for="crScorePt1">PT1</label><input id="crScorePt1" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScorePt2">PT2</label><input id="crScorePt2" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScorePt3">PT3</label><input id="crScorePt3" type="number" min="0" step="1"></div>
-              </div>
-              <div class="cr-score-grid cr-score-grid--3">
-                <div class="cr-field"><label for="crScoreSt1">ST1</label><input id="crScoreSt1" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScoreSt2">ST2</label><input id="crScoreSt2" type="number" min="0" step="1"></div>
-                <div class="cr-field"><label for="crScoreTe">TE</label><input id="crScoreTe" type="number" min="0" step="1"></div>
-              </div>
-            </div>
-            </div>
-
-            <div id="crKs1Card" class="cr-card cr-hidden">
-              <h4 class="cr-card-title">Descriptive Rating</h4>
-              <p class="cr-card-subtitle">For Kindergarten and Grades 1–3, select the learner's descriptor. The corresponding letter grade is generated automatically.</p>
-              <div class="cr-form-grid">
-                <div class="cr-field cr-grid-full">
-                  <label for="crKs1Descriptor">Descriptor</label>
-                  <select id="crKs1Descriptor"><option value="">Select descriptor</option></select>
-                </div>
-                <!--<div class="cr-field">
-                  <label for="crKs1Letter">Letter Grade</label>
-                  <input id="crKs1Letter" class="cr-readonly" readonly>
-                </div>-->
-              </div>
-            </div>
-
-            <div class="cr-card">
-              <div class="cr-field">
-                <label for="crScoreRemarks">Remarks</label>
-                <textarea id="crScoreRemarks" placeholder="Remarks"></textarea>
-              </div>
-              <div id="crEncodeWarnings" class="cr-warning cr-hidden" style="margin-top:.8rem;"></div>
-              <div class="cr-action-row" style="margin-top:1rem;">
-                <button id="crBtnSaveLearnerScores" type="button" class="cr-btn-primary">Save Learner Scores</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="crPanelSummary" class="cr-panel" style="display:none;">
-        <div class="cr-grid">		
-          <div class="cr-summary-card" hidden>
-            <h4 class="cr-card-title">Summary Meta</h4>
-            <div id="crSummaryMeta" class="cr-meta-grid cr-meta-pairs"></div>
-          </div>
-          <div id="crSummaryWarnings" class="cr-warning cr-hidden"></div>
-          <div class="cr-summary-card">
-            <div class="cr-action-row cr-justify-between" style="margin-bottom:.9rem;">
-              <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-                <button id="crBtnRecomputeAll" type="button" class="cr-btn-secondary">Recompute All</button>
-                <button id="crBtnValidateAll" type="button" class="cr-btn-secondary">Validate All</button>
-                <button id="crBtnExportCsv" type="button" class="cr-btn-primary">Export CSV</button>
-              </div>
-            </div>
-			
-			<div class="table-scroll" id="crSummaryTableScroll" aria-label="Scrollable class record summary table">
-			  <table id="crSummaryTable" class="cr-table" aria-label="Class Record Summary">
-				<thead>
-				  <tr>
-					<th>No.</th>
-					<th>Learner</th>
-					<th>Sex</th>
-					<th>Initial Grade</th>
-					<th>Final Grade</th>
-					<th>Letter Grade</th>
-					<th>Descriptor</th>
-					<th>Intervention</th>
-					<th>Remarks</th>
-				  </tr>
-				</thead>
-				<tbody></tbody>
-			  </table>				  
-			</div>
-	<div class="meta" style="color:#667;font-size:.9rem;margin-bottom:.75rem;font-size:10px;text-align: justify;width:400px; max-width:100%;"><br />
-      <b>Disclaimer:</b> Generated document is not an official DepEd School Form. All recorded entries must be properly transferred and synchronized with the prescribed DepEd LIS-generated official school forms. For Excel quality Class Record printouts use <a href="https://www.raket.ph/esvillamor" target="_blank">ClassTapMark_ECR</a>.
-    </div>			
-          </div>
-        </div>	
-      </div>
     </div>
+
+  <div class="ctm-cr-manager section-lite">
+<div id="crHideOnAttendance" class="ctm-cr-hide-on-attendance">
+<!-- Start of hide this at Attendance tab -->  
+   <div>
+	<div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+	 <select id="crRecordPicker" style="width: 100%; max-width: 400px; box-sizing: border-box;"></select>
+	 <div id="crRecordStatus" class="ctm-cr-status-pill" style="width: 100%; max-width: 400px; box-sizing: border-box; text-align: center;">Draft / unsaved school-year record</div>
+	 <div id="crFlash" class="ctm-cr-flash" style="display: none;" aria-live="polite" aria-atomic="true" aria-hidden="true"></div>
+	</div>
+   </div>
+   <div class="ctm-cr-topbar-actions ctm-cr-manager-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+	  <div style="display: flex; gap: 8px; width: 100%;">
+		<button class="danger" id="crBtnDelete" style="flex: 1; white-space: nowrap;">Delete</button>
+		<button class="edit" id="crBtnDuplicate" style="flex: 1; white-space: nowrap;">Duplicate</button>
+		<button class="edit" id="crBtnNew" style="flex: 1; white-space: nowrap;">New</button>
+		<button class="primary" id="crBtnSave" style="flex: 1; white-space: nowrap;">Save</button>
+	  </div>
+	  <div style="display: flex; gap: 8px; width: 100%;">
+		<button class="primary" id="crBtnImportCsv" style="flex: 1; white-space: nowrap;" disabled>Import CSV</button>
+		<button class="primary" id="crBtnExportCsv" style="flex: 1; white-space: nowrap;" disabled>Export CSV</button>
+	  </div>
+	<br />
+   </div>
+<!-- End of hide this at Attendance tab -->
+</div>
+
+	<section id="crPanelHeader" class="ctm-cr-panel active">
+      <div class="ctm-cr-panel-title">Class Record Settings</div>
+      <div class="ctm-cr-compact-header">
+        <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crSchoolName">School Name</label><input id="crSchoolName" placeholder="School Name"></div>
+        <div class="ctm-cr-field" style="display:inline-block;width:30px"><label class="ctm-cr-label" for="crSchoolYear">School Year</label><input id="crSchoolYear" placeholder="2026-2027"></div>
+        <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crGradeLevel">Grade Level</label>
+          <select id="crGradeLevel"><option value="">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
+        </div>
+        <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crSection">Section</label><input id="crSection" placeholder="Section" title="Set at Manage Class"></div>
+        <div class="ctm-cr-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crSubjectGroup">Subject Group</label>
+          <select id="crSubjectGroup" title="Auto-filtered by School Year and Grade Level"><option value="">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>
+        </div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crSubject">Subject</label><input id="crSubject" placeholder="Subject"></div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crSemester">Semester</label><select id="crSemester"><option value="">Select Semester</option><option value="First Semester">First Semester</option><option value="Second Semester">Second Semester</option></select></div>
+		<div class="ctm-cr-field"><label class="ctm-cr-label" for="crKeyStage">Key Stage</label><input id="crKeyStage" placeholder="Auto" readonly></div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crTeacher">Teacher / Class Adviser</label><input id="crTeacher" placeholder="Teacher / Class Adviser"></div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crSchoolId">School ID</label><input id="crSchoolId" placeholder="School ID"></div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crDistrict">District</label><input id="crDistrict" placeholder="District"></div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crDivision">Division</label><input id="crDivision" placeholder="Division"></div>
+        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crRegion">Region</label><input id="crRegion" placeholder="Region"></div>
+
+      </div>
+    </section>
+	<section id="crPanelPolicy" class="ctm-cr-panel">
+      <div class="ctm-cr-panel-title">Policy Setup (Resolved)</div>
+      
+	<div class="ctm-cr-compact-cards" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">Resolved Grading Mode</div><div id="crResolvedMode" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">Resolved Table</div><div id="crResolvedTable" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">Numeric Mode</div><div id="crResolvedNumericMode" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">Transition Rule</div><div id="crResolvedTransition" class="ctm-cr-strong">—</div></div>
+	  
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">WW Weight</div><div id="crWeightWW" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">PT Weight</div><div id="crWeightPT" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">EX Weight</div><div id="crWeightEX" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">WW Count</div><div id="crCountWW" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">PT Count</div><div id="crCountPT" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">ST Count</div><div id="crCountST" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">Has TE</div><div id="crHasTE" class="ctm-cr-strong">—</div></div>
+	  <div class="ctm-cr-card"><div class="ctm-cr-mini-label">Uses Descriptors</div><div id="crUseDescriptors" class="ctm-cr-strong">—</div></div>
+	</div>
+
+      <div class="ctm-cr-field" style="margin-top:1rem; display: flex; flex-direction: column;">
+        <label class="ctm-cr-label" for="crPolicyNotes" style="font-size: 0.75rem; font-weight: 600; color: #555; margin-bottom: 3px;">Validation / Notes</label>
+        <textarea id="crPolicyNotes" rows="4" readonly style="width: 100%; box-sizing: border-box; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;"></textarea>
+      </div>
+    </section>
+	
+    <section id="crPanelTerm1" class="ctm-cr-panel"></section>
+    <section id="crPanelTerm2" class="ctm-cr-panel"></section>
+    <section id="crPanelTerm3" class="ctm-cr-panel"></section>
+    <section id="crPanelTerm4" class="ctm-cr-panel"></section>
+    <section id="crPanelFinal" class="ctm-cr-panel"></section>
+	<section id="crPanelAttendance" class="ctm-cr-panel">
+      <div class="ctm-cr-panel-title">Attendance (Read-only)</div>
+      <div class="ctm-cr-disclaimer">Source: Read-only attendance / SF2 data tracked by the app.</div>
+      <div class="table-scroll ctm-cr-table-scroll" id="crAttendanceTableScroll" aria-label="Scrollable class record attendance table"><table id="crAttendanceTable" class="ctm-cr-table" data-ctm-cr-inline-select="1" onclick="(window.__ctmCrApply&&window.__ctmCrApply());(window.__ctmCrSelect||(window.__ctmCrSelect=function(e){var tr=e&&e.target&&e.target.closest?e.target.closest('#crAttendanceTable tbody tr'):null;if(!tr)return;var tb=tr.parentElement;if(!tb)return;Array.prototype.forEach.call(tb.querySelectorAll('tr'),function(r){r.classList.remove('cr-row-selected');r.setAttribute('aria-selected','false');});tr.classList.add('cr-row-selected');tr.setAttribute('aria-selected','true');var wrap=document.getElementById('crAttendanceTableScroll');if(wrap){var head=wrap.querySelector('thead');var hh=head?head.offsetHeight:0;var top=tr.offsetTop,bottom=top+tr.offsetHeight;if(top<wrap.scrollTop+hh){wrap.scrollTop=Math.max(0,top-hh);}else if(bottom>wrap.scrollTop+wrap.clientHeight){wrap.scrollTop=bottom-wrap.clientHeight;}}}))(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();(window.__ctmCrApply&&window.__ctmCrApply());(window.__ctmCrSelect&&window.__ctmCrSelect(event));}" onfocusin="(window.__ctmCrApply||(window.__ctmCrApply=function(){var tb=document.querySelector('#crAttendanceTable tbody');if(!tb)return;var m=0,f=0;Array.prototype.forEach.call(tb.rows,function(tr){if(!tr)return;if(!tr.hasAttribute('tabindex'))tr.tabIndex=0;tr.setAttribute('role','button');if(!tr.hasAttribute('aria-selected'))tr.setAttribute('aria-selected','false');var c0=tr.cells&&tr.cells[0],c2=tr.cells&&tr.cells[2];var sex=c2?String(c2.textContent||'').trim().toLowerCase():'';if(sex==='male'){m++;if(c0)c0.textContent=m;tr.dataset.sexGroup='male';}else if(sex==='female'){f++;if(c0)c0.textContent=f;tr.dataset.sexGroup='female';}else{tr.dataset.sexGroup='';}});return true;}))()" onpointerenter="(window.__ctmCrApply||(window.__ctmCrApply=function(){var tb=document.querySelector('#crAttendanceTable tbody');if(!tb)return;var m=0,f=0;Array.prototype.forEach.call(tb.rows,function(tr){if(!tr)return;if(!tr.hasAttribute('tabindex'))tr.tabIndex=0;tr.setAttribute('role','button');if(!tr.hasAttribute('aria-selected'))tr.setAttribute('aria-selected','false');var c0=tr.cells&&tr.cells[0],c2=tr.cells&&tr.cells[2];var sex=c2?String(c2.textContent||'').trim().toLowerCase():'';if(sex==='male'){m++;if(c0)c0.textContent=m;tr.dataset.sexGroup='male';}else if(sex==='female'){f++;if(c0)c0.textContent=f;tr.dataset.sexGroup='female';}else{tr.dataset.sexGroup='';}});return true;}))()" ontouchstart="(window.__ctmCrApply||(window.__ctmCrApply=function(){var tb=document.querySelector('#crAttendanceTable tbody');if(!tb)return;var m=0,f=0;Array.prototype.forEach.call(tb.rows,function(tr){if(!tr)return;if(!tr.hasAttribute('tabindex'))tr.tabIndex=0;tr.setAttribute('role','button');if(!tr.hasAttribute('aria-selected'))tr.setAttribute('aria-selected','false');var c0=tr.cells&&tr.cells[0],c2=tr.cells&&tr.cells[2];var sex=c2?String(c2.textContent||'').trim().toLowerCase():'';if(sex==='male'){m++;if(c0)c0.textContent=m;tr.dataset.sexGroup='male';}else if(sex==='female'){f++;if(c0)c0.textContent=f;tr.dataset.sexGroup='female';}else{tr.dataset.sexGroup='';}});return true;}))()"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>✓</th><th>X</th><th>T</th><th>C</th><th>E</th><th>Pending</th></tr></thead><tbody></tbody></table></div>
+    </section>	
+      <img alt="" aria-hidden="true" style="display:none;width:0;height:0;border:0" src="ctm-cr-inline-trigger.invalid" onerror="(window.__ctmCrApply||(window.__ctmCrApply=function(){var tb=document.querySelector('#crAttendanceTable tbody');if(!tb)return;var m=0,f=0;Array.prototype.forEach.call(tb.rows,function(tr){if(!tr)return;if(!tr.hasAttribute('tabindex'))tr.tabIndex=0;tr.setAttribute('role','button');if(!tr.hasAttribute('aria-selected'))tr.setAttribute('aria-selected','false');var c0=tr.cells&&tr.cells[0],c2=tr.cells&&tr.cells[2];var sex=c2?String(c2.textContent||'').trim().toLowerCase():'';if(sex==='male'){m++;if(c0)c0.textContent=m;tr.dataset.sexGroup='male';}else if(sex==='female'){f++;if(c0)c0.textContent=f;tr.dataset.sexGroup='female';}else{tr.dataset.sexGroup='';}});return true;}))();if(!window.__ctmCrRenumberTimer)window.__ctmCrRenumberTimer=setInterval(function(){try{window.__ctmCrApply&&window.__ctmCrApply();}catch(_e){}},500);this.remove();">
+    <div class="meta" style="color:#667;font-size:.9rem;margin-bottom:.75rem;font-size:10px;text-align: justify;"><br /><b>Disclaimer:</b> Generated document is not an official DepEd School Form. All recorded entries must be properly transferred and synchronized with the prescribed DepEd LIS-generated official school forms. For Excel quality ECR printouts use <a href="https://www.raket.ph/esvillamor" target="_blank" rel="noopener noreferrer">ClassTapMark_ECR</a>.</div>
   </div>
 </div>
+<script>
+(function () {
+  'use strict';
+  if (window.__ctmCrAttendanceEnhancerInstalled) return;
+  window.__ctmCrAttendanceEnhancerInstalled = true;
+
+  function qs(sel, root){ return (root || document).querySelector(sel); }
+  function qsa(sel, root){ return Array.from((root || document).querySelectorAll(sel)); }
+
+  function getModal(){ return qs('#classRecordModal'); }
+  function getContent(){ return qs('#classRecordModal .ctm-cr-modal-content') || getModal(); }
+  function getWrapper(){ return qs('#crAttendanceTableScroll'); }
+  function getTable(){ return qs('#crAttendanceTable'); }
+  function getTbody(){ const t = getTable(); return t ? t.tBodies[0] : null; }
+  function getActivePanel(){ return qs('#crPanelAttendance.ctm-cr-panel.active'); }
+
+  function isAttendanceVisible(){
+    const modal = getModal();
+    const panel = getActivePanel();
+    if (!modal || !panel) return false;
+    const modalStyle = window.getComputedStyle(modal);
+    const panelStyle = window.getComputedStyle(panel);
+    return modalStyle.display !== 'none' && panelStyle.display !== 'none';
+  }
+
+  function scrollSelectedRowIntoView(tr){
+    const wrap = getWrapper();
+    if (!wrap || !tr) return;
+    const head = wrap.querySelector('thead');
+    const headH = head ? head.offsetHeight : 0;
+    const top = tr.offsetTop;
+    const bottom = top + tr.offsetHeight;
+    const viewTop = wrap.scrollTop;
+    const viewBottom = viewTop + wrap.clientHeight;
+    if (top < viewTop + headH){
+      wrap.scrollTop = Math.max(0, top - headH);
+    } else if (bottom > viewBottom){
+      wrap.scrollTop = bottom - wrap.clientHeight;
+    }
+  }
+
+  function clearSelection(){
+    const tbody = getTbody();
+    if (!tbody) return;
+    qsa('tr', tbody).forEach(function (tr) {
+      tr.classList.remove('cr-row-selected');
+      tr.setAttribute('aria-selected', 'false');
+    });
+  }
+
+  function selectRow(tr, opts){
+    const tbody = getTbody();
+    if (!tbody || !tr || tr.parentElement !== tbody) return;
+    clearSelection();
+    tr.classList.add('cr-row-selected');
+    tr.setAttribute('aria-selected', 'true');
+    if (!opts || opts.scroll !== false) scrollSelectedRowIntoView(tr);
+  }
+
+  function prepareRows(){
+    const tbody = getTbody();
+    if (!tbody) return;
+    let maleNo = 0;
+    let femaleNo = 0;
+    qsa('tr', tbody).forEach(function (tr) {
+      if (!tr.hasAttribute('tabindex')) tr.tabIndex = 0;
+      tr.setAttribute('role', 'button');
+      if (!tr.hasAttribute('aria-selected')) tr.setAttribute('aria-selected', 'false');
+      const noCell = tr.cells && tr.cells[0];
+      const sexCell = tr.cells && tr.cells[2];
+      const sex = sexCell ? String(sexCell.textContent || '').trim().toLowerCase() : '';
+      if (sex === 'male') {
+        maleNo += 1;
+        if (noCell) noCell.textContent = String(maleNo);
+        tr.dataset.sexGroup = 'male';
+      } else if (sex === 'female') {
+        femaleNo += 1;
+        if (noCell) noCell.textContent = String(femaleNo);
+        tr.dataset.sexGroup = 'female';
+      } else {
+        tr.dataset.sexGroup = '';
+      }
+    });
+  }
+
+  function syncHeight(){
+    const wrap = getWrapper();
+    const content = getContent();
+    if (!wrap || !content) return;
+    if (!isAttendanceVisible()) return;
+    const contentRect = content.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    let available = Math.floor(contentRect.bottom - wrapRect.top - 18);
+    const viewportAvailable = Math.floor(window.innerHeight - wrapRect.top - 12);
+    if (Number.isFinite(viewportAvailable)) available = Math.min(available, viewportAvailable);
+    if (!Number.isFinite(available)) return;
+    available = Math.max(220, available);
+    wrap.style.height = available + 'px';
+    wrap.style.maxHeight = available + 'px';
+  }
+
+  function handleTableClick(event){
+    const tr = event.target && event.target.closest ? event.target.closest('#crAttendanceTable tbody tr') : null;
+    if (!tr) return;
+    selectRow(tr);
+  }
+
+  function handleTableKeydown(event){
+    const tr = event.target && event.target.closest ? event.target.closest('#crAttendanceTable tbody tr') : null;
+    if (!tr) return;
+    if (event.key === 'Enter' || event.key === ' '){
+      event.preventDefault();
+      selectRow(tr);
+    }
+  }
+
+  function scheduleSync(){
+    window.requestAnimationFrame(function () {
+      prepareRows();
+      syncHeight();
+    });
+  }
+
+  function install(){
+    const table = getTable();
+    const tbody = getTbody();
+    const modal = getModal();
+    const content = getContent();
+    if (!table || !tbody || !modal) return false;
+
+    if (!table.__ctmCrSelBound){
+      table.addEventListener('click', handleTableClick);
+      table.addEventListener('keydown', handleTableKeydown);
+      table.__ctmCrSelBound = true;
+    }
+
+    if (!tbody.__ctmCrObserverBound){
+      const bodyObserver = new MutationObserver(function () {
+        prepareRows();
+        syncHeight();
+      });
+      bodyObserver.observe(tbody, { childList: true, subtree: true });
+      tbody.__ctmCrObserverBound = true;
+    }
+
+    if (!modal.__ctmCrVisibilityObserverBound){
+      const visObserver = new MutationObserver(function () {
+        scheduleSync();
+      });
+      visObserver.observe(modal, { attributes: true, attributeFilter: ['class', 'style'], subtree: true });
+      modal.__ctmCrVisibilityObserverBound = true;
+    }
+
+    if (content && window.ResizeObserver && !content.__ctmCrResizeBound){
+      const ro = new ResizeObserver(function () { syncHeight(); });
+      ro.observe(content);
+      content.__ctmCrResizeBound = true;
+    }
+
+    prepareRows();
+    syncHeight();
+    return true;
+  }
+
+  function boot(){
+    if (!install()){
+      window.setTimeout(boot, 120);
+      return;
+    }
+    window.addEventListener('resize', scheduleSync, { passive: true });
+    document.addEventListener('click', function (event) {
+      const trigger = event.target && event.target.closest
+        ? event.target.closest('#classRecordModal [data-tab], #btnOpenClassRecord, #crRecordPicker')
+        : null;
+      if (trigger) window.setTimeout(scheduleSync, 0);
+    }, true);
+    window.setTimeout(scheduleSync, 0);
+    window.setTimeout(scheduleSync, 120);
+    window.setTimeout(scheduleSync, 320);
+    window.CTMClassRecordAttendanceTable = {
+      syncHeight: syncHeight,
+      prepareRows: prepareRows,
+      clearSelection: clearSelection,
+      selectRow: selectRow
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  if (window.__ctmCrAttendanceHardHideInstalled) return;
+  window.__ctmCrAttendanceHardHideInstalled = true;
+
+  function qs(sel, root){ return (root || document).querySelector(sel); }
+  function qsa(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function getModal(){ return qs('#classRecordModal'); }
+  function getHideWrap(){ return qs('#crHideOnAttendance'); }
+  function getAttendancePanel(){ return qs('#crPanelAttendance'); }
+  function getAttendanceTab(){ return qs('#classRecordModal .ctm-cr-tab[data-tab="attendance"]'); }
+
+  function isVisible(el){
+    if (!el) return false;
+    var style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  function getVisiblePanelId(){
+    var panels = qsa('#classRecordModal .ctm-cr-panel');
+    for (var i = 0; i < panels.length; i++) {
+      if (isVisible(panels[i])) return panels[i].id || '';
+    }
+    return '';
+  }
+
+  function isAttendanceActive(){
+    var attendancePanel = getAttendancePanel();
+    var attendanceTab = getAttendanceTab();
+    var visiblePanelId = getVisiblePanelId();
+
+    var byVisiblePanel = visiblePanelId === 'crPanelAttendance';
+    var byPanelClass = !!(attendancePanel && attendancePanel.classList.contains('active'));
+    var byPanelVisible = !!(attendancePanel && isVisible(attendancePanel));
+    var byTabClass = !!(attendanceTab && attendanceTab.classList.contains('active'));
+    var byAriaSelected = !!(attendanceTab && attendanceTab.getAttribute('aria-selected') === 'true');
+
+    return byVisiblePanel || (byPanelClass && byPanelVisible) || byTabClass || byAriaSelected;
+  }
+
+  function sync(){
+    var modal = getModal();
+    var wrap = getHideWrap();
+    if (!modal || !wrap) return;
+
+    var shouldHide = isAttendanceActive();
+    modal.classList.toggle('ctm-cr-attendance-tab-active', shouldHide);
+
+    if (shouldHide) {
+      if (!wrap.hasAttribute('data-ctm-prev-inline-style')) {
+        wrap.setAttribute('data-ctm-prev-inline-style', wrap.getAttribute('style') || '');
+      }
+      wrap.style.display = 'none';
+      wrap.setAttribute('hidden', 'hidden');
+      wrap.setAttribute('aria-hidden', 'true');
+    } else {
+      wrap.removeAttribute('hidden');
+      wrap.removeAttribute('aria-hidden');
+      wrap.style.display = '';
+      if (!wrap.getAttribute('style')) {
+        wrap.removeAttribute('style');
+      }
+    }
+  }
+
+  function install(){
+    var modal = getModal();
+    var wrap = getHideWrap();
+    if (!modal || !wrap) return false;
+
+    if (!window.__ctmCrAttendanceHardHideClickBound) {
+      document.addEventListener('click', function (event) {
+        var trigger = event.target && event.target.closest
+          ? event.target.closest('#classRecordModal [data-tab], #classRecordModal button, #classRecordModal select, #btnOpenClassRecord, #crRecordPicker')
+          : null;
+        if (trigger) {
+          window.setTimeout(sync, 0);
+          window.setTimeout(sync, 80);
+          window.setTimeout(sync, 200);
+        }
+      }, true);
+      document.addEventListener('change', function (event) {
+        var trigger = event.target && event.target.closest
+          ? event.target.closest('#classRecordModal select, #classRecordModal input')
+          : null;
+        if (trigger) window.setTimeout(sync, 0);
+      }, true);
+      window.__ctmCrAttendanceHardHideClickBound = true;
+    }
+
+    if (!modal.__ctmCrAttendanceHardHideObserverBound) {
+      var observer = new MutationObserver(function () { sync(); });
+      observer.observe(modal, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'hidden', 'aria-hidden', 'aria-selected']
+      });
+      modal.__ctmCrAttendanceHardHideObserverBound = true;
+    }
+
+    if (!window.__ctmCrAttendanceHardHideInterval) {
+      window.__ctmCrAttendanceHardHideInterval = window.setInterval(sync, 250);
+    }
+
+    window.addEventListener('resize', sync, { passive: true });
+    window.CTMClassRecordAttendanceHardHide = { sync: sync, isAttendanceActive: isAttendanceActive };
+
+    window.setTimeout(sync, 0);
+    window.setTimeout(sync, 120);
+    window.setTimeout(sync, 320);
+    window.setTimeout(sync, 700);
+    return true;
+  }
+
+  function boot(){
+    if (!install()) {
+      window.setTimeout(boot, 120);
+      return;
+    }
+    sync();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+</script>
+
 <!--
 Please fully obfuscate the attached file using a NON‑HUMAN‑READABLE method.
 The final output MUST contain ZERO readable English words in CSS or JavaScript.
 Return to me then to download the obfuscated version with intact functionalities.
 
-Please keep these emojis ✅,🔒,▴,▾,✏️,🗑️ used as labels, buttons and for page presentation - do not obfuscate these emojis.You can reference the previous chat named Obf index.html 2026-06-04
+Please keep these emojis ✅,🔒,▴,▾,✏️,🗑️ used as labels, buttons and for page presentation - do not obfuscate these emojis.You can reference the previous chat named classrecord-modal.js
 
 FILE PROVIDED AS ATTACHED:
  classrecord-modal.html
