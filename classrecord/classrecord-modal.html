@@ -1,4 +1,4 @@
-<!-- Fixed build: summary selected learner visibility + silent autosave handled in classrecord-modal-fixed.js; Complete card fix retained compatibility -->
+<!-- Fixed build: achievement meter layout update (remarks/general description/instructional response integration) retained compatibility -->
 <div id="classRecordModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none; z-index:2001">
   <style id="ctm-cr-modal-fab-fix">
     /* Keep Class Record modal above the floating help FAB without changing JS hooks */
@@ -792,6 +792,66 @@
 }
 }
   
+
+/* ===== Descriptor Achievement Meter (safe UI-only enhancement) ===== */
+#classRecordModal .ctm-cr-achievement-wrap{ margin-top: .7rem; }
+#classRecordModal .ctm-cr-achievement-wrap.compact{ margin-top: .35rem; }
+#classRecordModal .ctm-cr-achievement-meter{ border: 1px solid #dbe4f0; border-radius: 14px; background: linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); box-shadow: 0 6px 16px rgba(15,23,42,.06); padding: .7rem .8rem; box-sizing: border-box; }
+#classRecordModal .ctm-cr-achievement-meter.compact{ padding: .45rem .55rem; border-radius: 12px; box-shadow: none; background: #fff; }
+#classRecordModal .ctm-cr-achievement-head{ display:flex; align-items:center; justify-content:space-between; gap: .6rem; margin-bottom: .45rem; }
+#classRecordModal .ctm-cr-achievement-title{ font-size: .72rem; font-weight: 800; color: #475569; letter-spacing: .04em; text-transform: uppercase; }
+#classRecordModal .ctm-cr-achievement-code{ min-width: 34px; height: 34px; padding: 0 .55rem; border-radius: 999px; display:inline-flex; align-items:center; justify-content:center; font-weight: 800; font-size: .84rem; line-height: 1; color: #fff; background: linear-gradient(135deg,#6366f1 0%, #7c3aed 100%); box-shadow: 0 8px 18px rgba(99,102,241,.22); box-sizing: border-box; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-head{ margin-bottom: .28rem; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-title{ font-size: .62rem; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-code{ min-width: 24px; height: 24px; padding: 0 .35rem; font-size: .68rem; box-shadow: none; }
+#classRecordModal .ctm-cr-achievement-scale{ display:grid; gap: 6px; grid-template-columns: repeat(var(--ctm-meter-steps, 5), minmax(0,1fr)); }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-scale{ gap: 4px; }
+#classRecordModal .ctm-cr-achievement-step{ min-width: 0; min-height: 56px; border-radius: 11px; border: 1px solid #dbe4f0; padding: .38rem .2rem; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; box-sizing:border-box; opacity: .56; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease, border-color .18s ease; }
+#classRecordModal .ctm-cr-achievement-step .ctm-cr-achievement-step-code{ display:block; font-size: .76rem; font-weight: 800; line-height: 1.05; }
+#classRecordModal .ctm-cr-achievement-step .ctm-cr-achievement-step-label{ display:block; margin-top: .16rem; font-size: .58rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+#classRecordModal .ctm-cr-achievement-step.is-active{ opacity: 1; transform: translateY(-1px); border-width: 2px; box-shadow: 0 10px 20px rgba(15,23,42,.10); }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-step{ min-height: 28px; border-radius: 9px; padding: .15rem .15rem; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-step .ctm-cr-achievement-step-code{ font-size: .62rem; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-step .ctm-cr-achievement-step-label{ display:none; }
+#classRecordModal .ctm-cr-achievement-step.level-1{ background:#dcfce7; border-color:#86efac; color:#166534; }
+#classRecordModal .ctm-cr-achievement-step.level-2{ background:#ecfccb; border-color:#bef264; color:#3f6212; }
+#classRecordModal .ctm-cr-achievement-step.level-3{ background:#fef9c3; border-color:#fde047; color:#854d0e; }
+#classRecordModal .ctm-cr-achievement-step.level-4{ background:#ffedd5; border-color:#fdba74; color:#9a3412; }
+#classRecordModal .ctm-cr-achievement-step.level-5{ background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+#classRecordModal .ctm-cr-achievement-step.level-neutral{ background:#ede9fe; border-color:#c4b5fd; color:#5b21b6; }
+#classRecordModal .ctm-cr-achievement-meta{ margin-top: .55rem; }
+#classRecordModal .ctm-cr-achievement-name{ font-size: .9rem; font-weight: 800; line-height: 1.25; color: #0f172a; }
+#classRecordModal .ctm-cr-achievement-desc{ margin-top: .18rem; font-size: .78rem; line-height: 1.42; color: #475569; }
+#classRecordModal .ctm-cr-achievement-chip-row{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.5rem; }
+#classRecordModal .ctm-cr-achievement-chip{ display:inline-flex; align-items:center; gap:.35rem; border:1px solid #dbe4f0; background:#f8fafc; border-radius:999px; padding:.24rem .55rem; font-size:.74rem; line-height:1.2; color:#1e293b; }
+#classRecordModal .ctm-cr-achievement-chip-label{ font-weight:700; color:#475569; }
+#classRecordModal .ctm-cr-achievement-chip-value{ font-weight:700; color:#0f172a; }
+#classRecordModal .ctm-cr-achievement-text{ margin-top:.48rem; padding:.55rem .65rem; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0; }
+#classRecordModal .ctm-cr-achievement-text-label{ font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:#475569; margin-bottom:.18rem; }
+#classRecordModal .ctm-cr-achievement-text-body{ font-size:.82rem; line-height:1.45; color:#334155; }
+#classRecordModal .ctm-cr-achievement-desc + .ctm-cr-achievement-text{ margin-top:.48rem; }
+#classRecordModal .ctm-cr-achievement-step-range{ display:block; margin-top:.14rem; font-size:.54rem; font-weight:700; line-height:1.1; opacity:.9; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-step-range,
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-chip-row,
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-text{ display:none; }
+@media (max-width: 560px){
+  #classRecordModal .ctm-cr-achievement-chip{ font-size:.68rem; padding:.2rem .45rem; }
+  #classRecordModal .ctm-cr-achievement-text{ padding:.48rem .55rem; }
+  #classRecordModal .ctm-cr-achievement-text-label{ font-size:.66rem; }
+  #classRecordModal .ctm-cr-achievement-text-body{ font-size:.76rem; }
+}
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-meta{ margin-top: .32rem; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-name{ font-size: .72rem; line-height: 1.2; }
+#classRecordModal .ctm-cr-achievement-meter.compact .ctm-cr-achievement-desc{ display:none; }
+#classRecordModal .ctm-cr-summary-meter-cell{ min-width: 8.25rem; width: 8.25rem; }
+#classRecordModal .ctm-cr-result-chip-card .ctm-cr-strong{ font-size:.86rem; line-height:1.3; }
+#classRecordModal .ctm-cr-result-chip-card{ background:#fff; }
+#classRecordModal .ctm-cr-achievement-chip-row{ align-items:center; }
+#classRecordModal .ctm-cr-summary-selected-row .ctm-cr-result-chip-card .ctm-cr-mini-label{ margin-bottom:.2rem; }
+#classRecordModal .ctm-cr-summary-detail .ctm-cr-achievement-wrap{ margin-top: .25rem; }
+@media (max-width: 800px){ #classRecordModal .ctm-cr-summary-meter-cell{ min-width: 7rem; width: 7rem; } }
+@media (max-width: 560px){ #classRecordModal .ctm-cr-achievement-meter{ padding: .6rem .65rem; border-radius: 12px; } #classRecordModal .ctm-cr-achievement-scale{ gap: 4px; } #classRecordModal .ctm-cr-achievement-step{ min-height: 48px; padding: .25rem .15rem; } #classRecordModal .ctm-cr-achievement-step .ctm-cr-achievement-step-code{ font-size: .68rem; } #classRecordModal .ctm-cr-achievement-step .ctm-cr-achievement-step-label{ font-size: .52rem; } #classRecordModal .ctm-cr-achievement-name{ font-size: .82rem; } #classRecordModal .ctm-cr-achievement-desc{ font-size: .72rem; } }
+
 /* ===== Floating Class Record notification ===== */
 #classRecordModal .ctm-cr-flash{
   position: fixed;
