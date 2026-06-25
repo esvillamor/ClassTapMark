@@ -1022,6 +1022,48 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
   font-variant-numeric: tabular-nums;
 }
 
+/* ===================== Modal learner picker inside learner card (SF1 / SF3 / SF8) ===================== */
+.ctm-learner-slot{
+  width:min(100%, 640px);
+  margin:0 auto .8rem;
+  padding:0 .15rem;
+}
+.ctm-learner-slot > select{
+  display:block;
+  width:100%;
+  margin:0;
+  text-align:center;
+  text-align-last:center;
+  font-size:0.75rem;
+  font-weight:600;
+  color:#1f2937;
+  background:#fff;
+  border:2px solid rgba(102,126,234,.22);
+  border-radius:14px;
+  box-shadow:0 8px 18px rgba(0,0,0,.08);
+}
+.ctm-learner-slot > select:focus{
+  border-color:#667eea;
+  box-shadow:0 0 0 3px rgba(102,126,234,.16),0 8px 18px rgba(0,0,0,.08);
+}
+.ctm-learner-slot > select:disabled{
+  opacity:.72;
+  cursor:not-allowed;
+}
+#sf1PanelRoster .sf1-learner-card > .ctm-learner-slot,
+#sf3LearnerCard > .ctm-learner-slot,
+#sf8Card > .ctm-learner-slot{
+  margin-bottom:.9rem;
+}
+.ctm-title-replaced,
+.ctm-modal-duplicate-title{
+  display:none !important;
+}
+@media (max-width: 480px){
+  .ctm-learner-slot{ margin-bottom:.65rem; }
+  .ctm-learner-slot > select{ font-size:.92rem; }
+}
+
 /* ===================== Modal learner-card swipe navigation (SF1 / SF3 / SF8) ===================== */
 .ctm-swipe-card{
   touch-action: pan-y;
@@ -1537,14 +1579,13 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
 
     <!-- ===================== ENCODE DATA PANEL ===================== -->
     <div id="sf3PanelEncode" style="display:none;">
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;">
-        <select id="sf3LearnerSelect" style="flex:2;min-width:240px;">
-          <option value="">Select learner…</option>
-        </select>
-      </div>
-
       <div id="sf3LearnerCard" class="currentStudent" style="margin-bottom:.75rem;width:100%;box-sizing:border-box;">
-        <div id="sf3LearnerTitle" style="font-weight:700;margin-bottom:.6rem;text-align:center;">No learner selected</div>
+        <div class="ctm-learner-slot">
+          <select id="sf3LearnerSelect" style="width:100%;min-width:0;">
+            <option value="">Select learner…</option>
+          </select>
+        </div>
+        <div id="sf3LearnerTitle" class="ctm-modal-duplicate-title" style="font-weight:700;margin-bottom:.6rem;text-align:center;">No learner selected</div>
 
         <!-- 10 Book/Module entries (text + issued/returned dates) -->
         <div id="sf3ModulesContainer" class="sf3-modules">
@@ -1676,12 +1717,6 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
 </div>
     <!-- ===================== CARD VIEW PANEL ===================== -->
     <div id="sf8PanelCard" style="display:none;">
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;">
-        <select id="sf8LearnerSelect" style="flex:2;min-width:240px;">
-          <option value="">Select learner…</option>
-        </select>
-	  </div>
-
       <!-- Learner Card 
 	   <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.75rem;"> -->
 	   <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.75rem auto 0 auto;width:100%;max-width:800px;justify-items:center;">
@@ -1693,7 +1728,12 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
 	   </div>
 	  
       <div id="sf8Card" class="currentStudent" style="margin-bottom:.75rem;width:100%;box-sizing:border-box;">
-<div id="sf8CardTitle" style="font-weight:500;margin-bottom:.35rem;">
+<div class="ctm-learner-slot">
+  <select id="sf8LearnerSelect" style="width:100%;min-width:0;">
+    <option value="">Select learner…</option>
+  </select>
+</div>
+<div id="sf8CardTitle" class="ctm-modal-duplicate-title" style="font-weight:500;margin-bottom:.35rem;">
   No learner selected
 </div>
 
@@ -5482,6 +5522,221 @@ document.addEventListener('click', function (e) {
   <script src="SF8pdf.js"></script>
   <script src="classrecord/classrecord-modal.js"></script>
   <div id="classRecordHost"></div>
+
+  <script>
+  /* =====================================================================
+     SF1-only learner dropdown-in-card fix
+     - Moves ONLY the SF1 learner dropdown into the learner card
+     - Hides the duplicate learner title after replacement
+     - Preserves IDs, listeners, roster logic, CSV/PDF compatibility
+     ===================================================================== */
+  (function(){
+    'use strict';
+
+    const PANEL_SEL = '#sf1PanelRoster';
+    const CARD_SEL = '.sf1-learner-card, [data-sf1-learner-card]';
+    const TITLE_SEL = '.sf1-card-title';
+    const EXCLUDE_IDS = new Set(['sf1ReligiousAffiliation']);
+
+    function isVisible(el){
+      if (!el) return false;
+      if (el.hidden) return false;
+      const cs = window.getComputedStyle(el);
+      if (!cs || cs.display === 'none' || cs.visibility === 'hidden') return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }
+
+    function normalizeText(s){
+      return String(s || '')
+        .replace(/^\s*\d+\.?\s*/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    }
+
+    function getPanel(){
+      return document.querySelector(PANEL_SEL);
+    }
+
+    function getCard(panel){
+      if (!panel) return null;
+      const cards = Array.from(panel.querySelectorAll(CARD_SEL));
+      return cards.find(isVisible) || cards[0] || null;
+    }
+
+    function getTopLevelLearnerSelect(panel, card){
+      if (!panel) return null;
+      const selects = Array.from(panel.querySelectorAll('select'));
+      const candidates = selects.filter((sel) => {
+        if (!sel || EXCLUDE_IDS.has(sel.id)) return false;
+        if (sel.closest('.ctm-learner-slot')) return false;
+        if (card && card.contains(sel)) return false;
+        if (sel.options.length < 1) return false;
+
+        const selectedText = normalizeText(
+          sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : sel.value
+        );
+        const looksLikeLearner = /select learner|learner|male|female|,/.test(selectedText) || sel.options.length > 1;
+        return looksLikeLearner;
+      });
+      return candidates[0] || null;
+    }
+
+    function ensureSlot(card, titleEl){
+      if (!card) return null;
+      let slot = card.querySelector(':scope > .ctm-learner-slot.ctm-sf1-slot');
+      if (slot) return slot;
+      slot = document.createElement('div');
+      slot.className = 'ctm-learner-slot ctm-sf1-slot';
+      if (titleEl && titleEl.parentElement === card) {
+        card.insertBefore(slot, titleEl);
+      } else {
+        card.insertBefore(slot, card.firstChild);
+      }
+      return slot;
+    }
+
+    function hideIfEmpty(el){
+      if (!el) return;
+      if (el.children.length) return;
+      if ((el.textContent || '').trim()) return;
+      el.style.display = 'none';
+      el.setAttribute('data-ctm-hidden-empty', 'true');
+    }
+
+    function getFirstRealOptionIndex(select){
+      if (!select || !select.options) return -1;
+      for (let i = 0; i < select.options.length; i++) {
+        const opt = select.options[i];
+        if (!opt || opt.disabled) continue;
+        const value = String(opt.value || '').trim();
+        const text = normalizeText(opt.textContent || '');
+        const looksPlaceholder = !value || /select learner|select student|choose learner|choose student/.test(text);
+        if (!looksPlaceholder) return i;
+      }
+      return select.options.length > 1 ? 1 : -1;
+    }
+
+    function ensureDefaultLearner(select){
+      if (!select || !select.options || select.options.length < 2) return;
+      const current = select.selectedIndex;
+      const currentOpt = current >= 0 ? select.options[current] : null;
+      const currentValue = String((currentOpt && currentOpt.value) || '').trim();
+      const currentText = normalizeText((currentOpt && currentOpt.textContent) || '');
+      const currentLooksPlaceholder = !currentValue || /select learner|select student|choose learner|choose student/.test(currentText);
+      if (!currentLooksPlaceholder) return;
+      const firstIndex = getFirstRealOptionIndex(select);
+      if (firstIndex < 0 || firstIndex == current) return;
+      select.selectedIndex = firstIndex;
+      select.dispatchEvent(new Event('change', { bubbles:true }));
+    }
+
+    function findDuplicateTitle(card, select){
+      if (!card) return null;
+      const explicit = card.querySelector(TITLE_SEL);
+      if (explicit) return explicit;
+
+      const chosen = normalizeText(
+        select && select.selectedOptions && select.selectedOptions[0] ? select.selectedOptions[0].textContent : ''
+      );
+      if (!chosen) return null;
+
+      const children = Array.from(card.children).filter((el) => !el.classList.contains('ctm-learner-slot'));
+      for (const el of children){
+        if (!isVisible(el)) continue;
+        const txt = normalizeText(el.textContent || '');
+        if (!txt) continue;
+        if (txt === chosen || txt.includes(chosen) || chosen.includes(txt)) {
+          return el;
+        }
+      }
+      return null;
+    }
+
+    function applySf1Fix(){
+      const panel = getPanel();
+      if (!panel) return;
+
+      const card = getCard(panel);
+      if (!card) return;
+
+      const select = getTopLevelLearnerSelect(panel, card);
+      if (!select) return;
+
+      const title = findDuplicateTitle(card, select);
+      const slot = ensureSlot(card, title);
+      if (!slot) return;
+
+      if (select.parentElement !== slot){
+        const oldParent = select.parentElement;
+        slot.appendChild(select);
+        hideIfEmpty(oldParent);
+      }
+
+      select.classList.add('ctm-learner-picker');
+      select.style.width = '100%';
+      ensureDefaultLearner(select);
+      if (title) {
+        title.classList.add('ctm-title-replaced');
+        title.style.display = 'none';
+      }
+    }
+
+    let raf = 0;
+    function queue(){
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(applySf1Fix);
+    }
+
+    function kickBurst(){
+      queue();
+      setTimeout(queue, 60);
+      setTimeout(queue, 180);
+      setTimeout(queue, 360);
+      setTimeout(queue, 700);
+    }
+
+    document.addEventListener('click', (ev) => {
+      const target = ev.target;
+      if (!target || !target.closest) return;
+      if (target.closest('#btnOpenSF1, #sf1TabRoster')) kickBurst();
+    }, { passive:true });
+
+    document.addEventListener('change', (ev) => {
+      const target = ev.target;
+      if (!target) return;
+      const panel = getPanel();
+      if (panel && panel.contains(target)) kickBurst();
+    }, { passive:true });
+
+    const mo = new MutationObserver((mutations) => {
+      for (const mutation of mutations){
+        if (mutation.type === 'childList' || mutation.type === 'attributes') {
+          kickBurst();
+          break;
+        }
+      }
+    });
+
+    function start(){
+      if (!document.body) return;
+      mo.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class', 'hidden', 'value']
+      });
+      kickBurst();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start, { once:true });
+    } else {
+      start();
+    }
+  })();
+  </script>
 
   <script>
   /* =====================================================================
