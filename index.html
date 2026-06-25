@@ -1021,6 +1021,56 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
   text-align:center; font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
+
+/* ===================== Modal learner-card swipe navigation (SF1 / SF3 / SF8) ===================== */
+.ctm-swipe-card{
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ctm-swipe-nav{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  flex-wrap:wrap;
+  margin:0 0 .8rem 0;
+  padding:.55rem .7rem;
+  border-radius:12px;
+  background:rgba(255,255,255,.42);
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+.ctm-swipe-nav-btn{
+  min-width:42px;
+  height:42px;
+  padding:0 .75rem;
+  border:2px solid rgba(102,126,234,.35);
+  border-radius:10px;
+  background:rgba(255,255,255,.92);
+  color:#3b4cca;
+  font-weight:900;
+  line-height:1;
+  box-shadow:0 8px 18px rgba(0,0,0,.10);
+}
+.ctm-swipe-nav-btn:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+.ctm-swipe-nav-label{
+  min-width:180px;
+  text-align:center;
+  font-size:.86rem;
+  font-weight:700;
+  color:#4b5563;
+  padding:0 .4rem;
+}
+@media (max-width: 520px){
+  .ctm-swipe-nav{ gap:.4rem; }
+  .ctm-swipe-nav-btn{ min-width:40px; height:40px; padding:0 .65rem; }
+  .ctm-swipe-nav-label{ min-width:140px; font-size:.8rem; }
+}
+
 </style>
 </head>
 <body class="locked">
@@ -5432,6 +5482,421 @@ document.addEventListener('click', function (e) {
   <script src="SF8pdf.js"></script>
   <script src="classrecord/classrecord-modal.js"></script>
   <div id="classRecordHost"></div>
+
+  <script>
+  /* =====================================================================
+     Swipe learner-card navigation for SF1 / SF3 / SF8 encode tabs
+     - Non-destructive enhancement
+     - Uses the existing learner <select> / external handlers when available
+     - Safe for rerendered panels via MutationObserver
+     ===================================================================== */
+  (function(){
+    'use strict';
+
+    const CONFIGS = [
+      {
+        key: 'sf1',
+        modal: '#sf1ExportModal',
+        panel: '#sf1PanelRoster',
+        cardSelectors: ['.sf1-learner-card', '[data-sf1-learner-card]', '.currentStudent'],
+        selectSelectors: ['select[data-role="learner"]', 'select[id*="learner"]', 'select[id*="student"]', 'select[name*="learner"]', 'select[name*="student"]'],
+        labels: { hint: 'Swipe learner card', first:'First learner', prev:'Previous learner', next:'Next learner', last:'Last learner' }
+      },
+      {
+        key: 'sf3',
+        modal: '#sf3ExportModal',
+        panel: '#sf3PanelEncode',
+        cardSelectors: ['#sf3LearnerCard'],
+        selectSelectors: ['#sf3LearnerSelect'],
+        labels: { hint: 'Swipe learner card', first:'First learner', prev:'Previous learner', next:'Next learner', last:'Last learner' }
+      },
+      {
+        key: 'sf8',
+        modal: '#sf8ExportModal',
+        panel: '#sf8PanelCard',
+        cardSelectors: ['#sf8Card'],
+        selectSelectors: ['#sf8LearnerSelect'],
+        labels: { hint: 'Swipe learner card', first:'First learner', prev:'Previous learner', next:'Next learner', last:'Last learner' }
+      }
+    ];
+
+    function isElementVisible(el){
+      if (!el) return false;
+      if (el.hidden) return false;
+      const cs = window.getComputedStyle(el);
+      if (!cs || cs.display === 'none' || cs.visibility === 'hidden') return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }
+
+    function isInteractiveTarget(node){
+      return !!(node && node.closest && node.closest('input, select, textarea, button, label, a, [contenteditable="true"], [role="button"]'));
+    }
+
+    function findPanel(cfg){
+      return document.querySelector(cfg.panel);
+    }
+
+    function findCard(cfg, panel){
+      panel = panel || findPanel(cfg);
+      if (!panel) return null;
+      for (const sel of cfg.cardSelectors || []){
+        const card = panel.querySelector(sel);
+        if (card && card.id !== 'currentStudent') return card;
+      }
+      return null;
+    }
+
+    function rankSelectCandidate(sel, card){
+      let score = 0;
+      const idNameClass = `${sel.id || ''} ${sel.name || ''} ${sel.className || ''}`.toLowerCase();
+      if (/learner|student|roster|current/.test(idNameClass)) score += 120;
+      if (card && !card.contains(sel)) score += 90;
+      const options = Array.from(sel.options || []);
+      if (options.length > 1) score += Math.min(options.length, 60);
+      const firstText = (options[0] && options[0].textContent || '').trim().toLowerCase();
+      if (/select|learner|student/.test(firstText)) score += 40;
+      const nonEmpty = options.filter(o => !o.disabled && String(o.value || '').trim() !== '');
+      if (nonEmpty.length > 1) score += Math.min(nonEmpty.length, 60);
+      return score;
+    }
+
+    function findSelect(cfg, panel, card){
+      panel = panel || findPanel(cfg);
+      card = card || findCard(cfg, panel);
+      if (!panel) return null;
+
+      for (const sel of (cfg.selectSelectors || [])){
+        const found = panel.querySelector(sel);
+        if (found && found.tagName === 'SELECT') return found;
+      }
+
+      const candidates = Array.from(panel.querySelectorAll('select')).filter(sel => {
+        if (!isElementVisible(sel) || sel.disabled) return false;
+        const opts = Array.from(sel.options || []);
+        const nonEmpty = opts.filter(o => !o.disabled && String(o.value || '').trim() !== '');
+        return nonEmpty.length > 1;
+      });
+      if (!candidates.length) return null;
+      candidates.sort((a, b) => rankSelectCandidate(b, card) - rankSelectCandidate(a, card));
+      return candidates[0] || null;
+    }
+
+    function getValidOptionIndexes(selectEl){
+      if (!selectEl) return [];
+      const indexes = [];
+      Array.from(selectEl.options || []).forEach((opt, idx) => {
+        if (opt.disabled) return;
+        if (String(opt.value || '').trim() === '') return;
+        indexes.push(idx);
+      });
+      return indexes;
+    }
+
+    function getCurrentValidPosition(selectEl){
+      const indexes = getValidOptionIndexes(selectEl);
+      if (!indexes.length) return -1;
+      const selected = selectEl.selectedIndex;
+      let pos = indexes.indexOf(selected);
+      if (pos >= 0) return pos;
+      const selectedValue = String(selectEl.value || '');
+      if (selectedValue){
+        const found = indexes.findIndex(idx => String(selectEl.options[idx].value || '') === selectedValue);
+        if (found >= 0) return found;
+      }
+      return -1;
+    }
+
+    function selectByValidPosition(selectEl, pos){
+      const indexes = getValidOptionIndexes(selectEl);
+      if (!indexes.length) return false;
+      const bounded = Math.max(0, Math.min(pos, indexes.length - 1));
+      const desiredIndex = indexes[bounded];
+      if (selectEl.selectedIndex !== desiredIndex){
+        selectEl.selectedIndex = desiredIndex;
+      }
+      const opt = selectEl.options[desiredIndex];
+      if (opt) selectEl.value = opt.value;
+      for (const evtName of ['input', 'change']){
+        selectEl.dispatchEvent(new Event(evtName, { bubbles: true }));
+      }
+      return true;
+    }
+
+    function nthOrEdge(pos, dir, last){
+      if (dir === 'first') return 0;
+      if (dir === 'last') return last;
+      if (dir === 'prev') return Math.max(0, pos - 1);
+      if (dir === 'next') return Math.min(last, pos + 1);
+      return pos;
+    }
+
+    function ensureNav(cfg, card){
+      if (!card) return null;
+      let nav = Array.from(card.children || []).find(el => el && el.classList && el.classList.contains('ctm-swipe-nav')) || null;
+      if (nav) return nav;
+      nav = document.createElement('div');
+      nav.className = 'ctm-swipe-nav';
+      nav.setAttribute('data-ctm-swipe-nav', cfg.key);
+      nav.innerHTML = [
+        `<button type="button" class="ctm-swipe-nav-btn" data-nav="first" aria-label="${cfg.labels.first}" title="${cfg.labels.first}">⏮</button>`,
+        `<button type="button" class="ctm-swipe-nav-btn" data-nav="prev" aria-label="${cfg.labels.prev}" title="${cfg.labels.prev}">◀</button>`,
+        `<div class="ctm-swipe-nav-label" aria-hidden="true">↔ ${cfg.labels.hint}</div>`,
+        `<button type="button" class="ctm-swipe-nav-btn" data-nav="next" aria-label="${cfg.labels.next}" title="${cfg.labels.next}">▶</button>`,
+        `<button type="button" class="ctm-swipe-nav-btn" data-nav="last" aria-label="${cfg.labels.last}" title="${cfg.labels.last}">⏭</button>`
+      ].join('');
+      card.insertBefore(nav, card.firstChild);
+      return nav;
+    }
+
+    function syncNavState(cfg){
+      const panel = findPanel(cfg);
+      const card = findCard(cfg, panel);
+      if (!panel || !card) return;
+      card.classList.add('ctm-swipe-card');
+      card.setAttribute('data-ctm-swipe-enabled', 'true');
+      const nav = ensureNav(cfg, card);
+      const selectEl = findSelect(cfg, panel, card);
+      if (!nav) return;
+      const indexes = getValidOptionIndexes(selectEl);
+      const pos = getCurrentValidPosition(selectEl);
+      const haveData = !!selectEl && indexes.length > 0;
+      const firstBtn = nav.querySelector('[data-nav="first"]');
+      const prevBtn  = nav.querySelector('[data-nav="prev"]');
+      const nextBtn  = nav.querySelector('[data-nav="next"]');
+      const lastBtn  = nav.querySelector('[data-nav="last"]');
+      if (firstBtn) firstBtn.disabled = !haveData || pos <= 0;
+      if (prevBtn)  prevBtn.disabled  = !haveData || pos <= 0;
+      if (nextBtn)  nextBtn.disabled  = !haveData || pos < 0 || pos >= indexes.length - 1;
+      if (lastBtn)  lastBtn.disabled  = !haveData || pos < 0 || pos >= indexes.length - 1;
+      nav.style.display = isElementVisible(panel) ? 'flex' : 'none';
+      if (!card._ctmSwipeWired){
+        wireCard(cfg, card);
+      }
+      if (selectEl && !selectEl._ctmSwipeSelectSync){
+        const sync = () => queueRefresh();
+        selectEl.addEventListener('change', sync, { passive: true });
+        selectEl.addEventListener('input', sync, { passive: true });
+        selectEl._ctmSwipeSelectSync = true;
+      }
+    }
+
+    function stepLearner(cfg, dir){
+      const panel = findPanel(cfg);
+      const card = findCard(cfg, panel);
+      const selectEl = findSelect(cfg, panel, card);
+      const indexes = getValidOptionIndexes(selectEl);
+      if (!selectEl || !indexes.length) return false;
+      let pos = getCurrentValidPosition(selectEl);
+      if (pos < 0) pos = 0;
+      const target = nthOrEdge(pos, dir, indexes.length - 1);
+      const changed = selectByValidPosition(selectEl, target);
+      queueRefresh();
+      return changed;
+    }
+
+    function wireNavButtons(cfg, card){
+      const nav = ensureNav(cfg, card);
+      if (!nav || nav._ctmSwipeNavWired) return;
+      nav.addEventListener('click', (ev) => {
+        const btn = ev.target && ev.target.closest && ev.target.closest('[data-nav]');
+        if (!btn) return;
+        const dir = btn.getAttribute('data-nav');
+        if (!dir) return;
+        stepLearner(cfg, dir);
+      });
+      nav._ctmSwipeNavWired = true;
+    }
+
+    function wireCard(cfg, card){
+      if (!card || card._ctmSwipeWired) return;
+      wireNavButtons(cfg, card);
+
+      const SWIPE_THRESHOLD = 42;
+      const AXIS_LOCK_SLOP = 8;
+      const AXIS_DOMINANCE = 1.2;
+
+      let active = false;
+      let pointerId = null;
+      let startX = 0;
+      let startY = 0;
+      let axis = null;
+      let triggered = false;
+
+      function begin(x, y){
+        active = true;
+        pointerId = null;
+        startX = x;
+        startY = y;
+        axis = null;
+        triggered = false;
+      }
+      function move(x, y){
+        if (!active || triggered) return;
+        const dx = x - startX;
+        const dy = y - startY;
+        if (!axis){
+          if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
+          axis = (Math.abs(dx) > Math.abs(dy) * AXIS_DOMINANCE) ? 'x' : 'y';
+        }
+        if (axis !== 'x') return;
+        if (Math.abs(dx) >= SWIPE_THRESHOLD){
+          triggered = true;
+          if (dx > 0) stepLearner(cfg, 'prev');
+          else stepLearner(cfg, 'next');
+        }
+      }
+      function end(){
+        active = false;
+        pointerId = null;
+        axis = null;
+        triggered = false;
+      }
+
+      card.addEventListener('pointerdown', (ev) => {
+        if (isInteractiveTarget(ev.target)) return;
+        if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+        begin(ev.clientX, ev.clientY);
+        pointerId = ev.pointerId;
+        try { card.setPointerCapture(pointerId); } catch(_){ }
+      }, { passive: true });
+
+      card.addEventListener('pointermove', (ev) => {
+        if (!active) return;
+        if (pointerId != null && ev.pointerId !== pointerId) return;
+        const beforeAxis = axis;
+        move(ev.clientX, ev.clientY);
+        if ((beforeAxis === 'x' || axis === 'x') && !triggered) {
+          try { ev.preventDefault(); } catch(_){ }
+        }
+      }, { passive: false });
+
+      const finishPointer = () => {
+        if (pointerId != null){
+          try { card.releasePointerCapture(pointerId); } catch(_){ }
+        }
+        end();
+      };
+      card.addEventListener('pointerup', finishPointer, { passive: true });
+      card.addEventListener('pointercancel', finishPointer, { passive: true });
+
+      if (!('PointerEvent' in window)){
+        let tActive = false;
+        let tStartX = 0;
+        let tStartY = 0;
+        let tAxis = null;
+        let tTriggered = false;
+        card.addEventListener('touchstart', (ev) => {
+          if (isInteractiveTarget(ev.target)) return;
+          const t = ev.touches && ev.touches[0];
+          if (!t) return;
+          tActive = true;
+          tAxis = null;
+          tTriggered = false;
+          tStartX = t.clientX;
+          tStartY = t.clientY;
+        }, { passive: true });
+        card.addEventListener('touchmove', (ev) => {
+          if (!tActive || tTriggered) return;
+          const t = ev.touches && ev.touches[0];
+          if (!t) return;
+          const dx = t.clientX - tStartX;
+          const dy = t.clientY - tStartY;
+          if (!tAxis){
+            if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
+            tAxis = (Math.abs(dx) > Math.abs(dy) * AXIS_DOMINANCE) ? 'x' : 'y';
+          }
+          if (tAxis !== 'x') return;
+          ev.preventDefault();
+          if (Math.abs(dx) >= SWIPE_THRESHOLD){
+            tTriggered = true;
+            if (dx > 0) stepLearner(cfg, 'prev');
+            else stepLearner(cfg, 'next');
+          }
+        }, { passive: false });
+        const clearTouch = () => { tActive = false; tAxis = null; tTriggered = false; };
+        card.addEventListener('touchend', clearTouch, { passive: true });
+        card.addEventListener('touchcancel', clearTouch, { passive: true });
+      }
+
+      card._ctmSwipeWired = true;
+    }
+
+    let refreshQueued = false;
+    function runRefresh(){
+      refreshQueued = false;
+      for (const cfg of CONFIGS){
+        try { syncNavState(cfg); } catch(_){ }
+      }
+    }
+    function queueRefresh(){
+      if (refreshQueued) return;
+      refreshQueued = true;
+      requestAnimationFrame(runRefresh);
+    }
+
+    function modalPanelVisible(cfg){
+      const modal = document.querySelector(cfg.modal);
+      const panel = findPanel(cfg);
+      return isElementVisible(modal) && isElementVisible(panel);
+    }
+
+    document.addEventListener('keydown', (ev) => {
+      if (ev.defaultPrevented) return;
+      const a = document.activeElement;
+      const typing = !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable));
+      if (typing) return;
+      const activeCfg = CONFIGS.find(cfg => modalPanelVisible(cfg));
+      if (!activeCfg) return;
+      if (ev.key === 'ArrowLeft') {
+        stepLearner(activeCfg, 'prev');
+      } else if (ev.key === 'ArrowRight') {
+        stepLearner(activeCfg, 'next');
+      }
+    }, { passive: true });
+
+    const observer = new MutationObserver(() => queueRefresh());
+    function startObserver(){
+      if (!document.body) return;
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'disabled', 'hidden', 'value'] });
+    }
+
+    document.addEventListener('click', (ev) => {
+      const target = ev.target;
+      if (!target || !target.closest) return;
+      if (target.closest('#btnOpenSF1, #btnOpenSF3, #btnOpenSF8, #sf1TabRoster, #sf3TabEncode, #sf8TabCard')) {
+        setTimeout(queueRefresh, 0);
+        setTimeout(queueRefresh, 120);
+        setTimeout(queueRefresh, 350);
+      }
+    }, { passive: true });
+
+    document.addEventListener('change', (ev) => {
+      const target = ev.target;
+      if (!target) return;
+      if (target.matches && target.matches('#sf3LearnerSelect, #sf8LearnerSelect, #sf8Period')) {
+        queueRefresh();
+      }
+      const sf1Panel = document.querySelector('#sf1PanelRoster');
+      if (sf1Panel && sf1Panel.contains(target)) queueRefresh();
+    }, { passive: true });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        startObserver();
+        queueRefresh();
+        setTimeout(queueRefresh, 150);
+        setTimeout(queueRefresh, 500);
+      }, { once: true });
+    } else {
+      startObserver();
+      queueRefresh();
+      setTimeout(queueRefresh, 150);
+      setTimeout(queueRefresh, 500);
+    }
+  })();
+  </script>
+
 </body>
 <!--
 Please fully obfuscate the attached file using a NON‑HUMAN‑READABLE method.
