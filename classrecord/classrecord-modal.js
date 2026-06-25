@@ -2052,6 +2052,144 @@ function missingScoreCount(row, term) { if (!isNumericTable(term.applicableTable
 function descriptorMissing(row, term) { return !isNumericTable(term.applicableTable) && !text(row && row.computed && (row.computed.descriptorCode || row.computed.letterGrade)).trim(); }
 function learnerIndex(termKey, learnerId) { return buildLearnerDisplayList(state[termKey].learners || []).findIndex(entry => entry.row && entry.row.learnerId === learnerId); }
 function jumpLearner(termKey, dir) { const ordered = buildLearnerDisplayList(state[termKey].learners || []); if (!ordered.length) return; let idx = ordered.findIndex(entry => entry.row && entry.row.learnerId === state.activeLearnerId); if (idx < 0) idx = 0; idx = dir === 'prev' ? Math.max(0, idx - 1) : Math.min(ordered.length - 1, idx + 1); state.activeLearnerId = ordered[idx].row.learnerId; render(); switchTab(termKey); }
+
+function jumpFinalLearner(dir) {
+  const ordered = buildLearnerDisplayList((state.finalSummary && state.finalSummary.learners) || []);
+  if (!ordered.length) return;
+  let idx = ordered.findIndex(entry => text(entry && entry.row && (entry.row.learnerId || entry.row.name)).trim() === text(state.finalSelectedLearnerId).trim());
+  if (idx < 0) idx = 0;
+  idx = dir === 'prev' ? Math.max(0, idx - 1) : Math.min(ordered.length - 1, idx + 1);
+  const nextRow = ordered[idx] && ordered[idx].row ? ordered[idx].row : null;
+  if (!nextRow) return;
+  state.finalSelectedLearnerId = text(nextRow.learnerId || nextRow.name).trim();
+  renderFinal();
+}
+function isSwipeInteractiveTarget(target) {
+  return !!(target && target.closest && target.closest('button, a, input, select, textarea, label, option, [role="button"], [data-nav], [data-term-picker], [data-pick-learner]'));
+}
+function bindSwipeNavigator(card, handlers) {
+  if (!card || !handlers || card.__ctmSwipeNavBound) return;
+  card.__ctmSwipeNavBound = true;
+  card.style.touchAction = 'pan-y';
+  card.style.userSelect = 'none';
+  card.style.webkitUserSelect = 'none';
+  const onPrev = typeof handlers.prev === 'function' ? handlers.prev : null;
+  const onNext = typeof handlers.next === 'function' ? handlers.next : null;
+  if (!onPrev || !onNext) return;
+
+  let active = false;
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let axis = null;
+  let triggered = false;
+
+  const SWIPE_THRESHOLD = 40;
+  const AXIS_LOCK_SLOP = 8;
+  const AXIS_DOMINANCE = 1.2;
+
+  function resetPointer() {
+    if (pointerId != null && card.releasePointerCapture) {
+      try { card.releasePointerCapture(pointerId); } catch (_) { }
+    }
+    active = false;
+    pointerId = null;
+    axis = null;
+    triggered = false;
+  }
+  function tryNavigate(dx) {
+    if (triggered) return;
+    triggered = true;
+    if (dx > 0) onPrev(); else onNext();
+  }
+  function onPointerDown(ev) {
+    if (isSwipeInteractiveTarget(ev.target)) return;
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    active = true;
+    triggered = false;
+    axis = null;
+    pointerId = ev.pointerId;
+    startX = ev.clientX;
+    startY = ev.clientY;
+    if (card.setPointerCapture) {
+      try { card.setPointerCapture(pointerId); } catch (_) { }
+    }
+  }
+  function onPointerMove(ev) {
+    if (!active || triggered || ev.pointerId !== pointerId) return;
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    if (!axis) {
+      if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
+      axis = Math.abs(dx) > Math.abs(dy) * AXIS_DOMINANCE ? 'x' : 'y';
+    }
+    if (axis !== 'x') return;
+    if (ev.cancelable) ev.preventDefault();
+    if (Math.abs(dx) >= SWIPE_THRESHOLD) tryNavigate(dx);
+  }
+
+  card.addEventListener('pointerdown', onPointerDown, { passive: true });
+  card.addEventListener('pointermove', onPointerMove, { passive: false });
+  card.addEventListener('pointerup', resetPointer, { passive: true });
+  card.addEventListener('pointercancel', resetPointer, { passive: true });
+
+  if (!('PointerEvent' in window)) {
+    let tActive = false;
+    let tStartX = 0;
+    let tStartY = 0;
+    let tAxis = null;
+    let tTriggered = false;
+    function resetTouch() {
+      tActive = false;
+      tAxis = null;
+      tTriggered = false;
+    }
+    card.addEventListener('touchstart', (ev) => {
+      if (isSwipeInteractiveTarget(ev.target)) return;
+      if (!ev.touches || !ev.touches[0]) return;
+      tActive = true;
+      tAxis = null;
+      tTriggered = false;
+      tStartX = ev.touches[0].clientX;
+      tStartY = ev.touches[0].clientY;
+    }, { passive: true });
+    card.addEventListener('touchmove', (ev) => {
+      if (!tActive || tTriggered || !ev.touches || !ev.touches[0]) return;
+      const dx = ev.touches[0].clientX - tStartX;
+      const dy = ev.touches[0].clientY - tStartY;
+      if (!tAxis) {
+        if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
+        tAxis = Math.abs(dx) > Math.abs(dy) * AXIS_DOMINANCE ? 'x' : 'y';
+      }
+      if (tAxis !== 'x') return;
+      if (ev.cancelable) ev.preventDefault();
+      if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+        tTriggered = true;
+        if (dx > 0) onPrev(); else onNext();
+      }
+    }, { passive: false });
+    card.addEventListener('touchend', resetTouch, { passive: true });
+    card.addEventListener('touchcancel', resetTouch, { passive: true });
+  }
+}
+function bindTermLearnerCardSwipe(termKey) {
+  const panel = dom.panels[termKey];
+  const card = panel && panel.querySelector ? panel.querySelector('.ctm-cr-learner-card') : null;
+  if (!card) return;
+  bindSwipeNavigator(card, {
+    prev: () => jumpLearner(termKey, 'prev'),
+    next: () => jumpLearner(termKey, 'next')
+  });
+}
+function bindFinalLearnerCardSwipe() {
+  const panel = dom.panels.final || $id('crPanelFinal');
+  const card = panel && panel.querySelector ? panel.querySelector('.ctm-cr-summary-detail') : null;
+  if (!card) return;
+  bindSwipeNavigator(card, {
+    prev: () => jumpFinalLearner('prev'),
+    next: () => jumpFinalLearner('next')
+  });
+}
 function termStats(termKey) { const term = state[termKey], rows = term.learners || []; const numericGrades = isNumericTable(term.applicableTable) ? rows.map(r => summaryReportedNumeric(r && r.computed ? r.computed.termGrade : null, 60)).map(Number) : rows.map(r => r && r.computed ? r.computed.termGrade : null).filter(v => typeof v === 'number').map(Number); return { learners: rows.length, encoded: rows.filter(r => isNumericTable(term.applicableTable) ? visibleScoreFields(term).some(f => num(r.scores[f.group][f.key]) != null) : !descriptorMissing(r, term)).length, complete: rows.filter(r => isNumericTable(term.applicableTable) ? missingScoreCount(r, term) === 0 && visibleScoreFields(term).length > 0 : !descriptorMissing(r, term)).length, incomplete: rows.filter(r => isNumericTable(term.applicableTable) ? missingScoreCount(r, term) > 0 : descriptorMissing(r, term)).length, atRisk: rows.filter(r => r.computed.interventionFlag).length, average: (isNumericTable(term.applicableTable) ? rows.length : numericGrades.length) ? roundWhole(numericGrades.reduce((a, b) => a + b, 0) / (isNumericTable(term.applicableTable) ? rows.length : numericGrades.length)) : null }; }
   function hpsField(termKey, field, term) {
     const value = term.hps[field.group][field.key] == null ? '' : term.hps[field.group][field.key];
@@ -2349,7 +2487,7 @@ function buildTermPanel(termKey) {
 
     <div class="ctm-cr-term-layout">
       ${termSetupHtml}
-      <div class="ctm-cr-section-card ctm-cr-term-editor ctm-cr-learner-card" style="background:#defcc7;">
+      <div class="ctm-cr-section-card ctm-cr-term-editor ctm-cr-learner-card" style="background:#defcc7;" role="group" aria-label="Learner card. Swipe left or right to move to the next or previous learner.">
         
         ${learner ? `<div class="ctm-cr-nav" style="margin-top:.65rem;"><button class="edit" type="button" data-nav="prev" data-term="${termKey}" ${navIdx <= 1 ? 'disabled' : ''}>◀</button><div class="ctm-cr-nav-center"><div class="ctm-cr-field ctm-cr-term-mini-field ctm-cr-learner-picker-inline" style="margin:0 0 .35rem 0;"><select class="ctm-cr-picker-emphasis" style="width:100%;text-align:center;text-align-last:center;font-size:1.02rem;font-weight:700;" data-term-picker="${termKey}" aria-label="${esc(term.termLabel)} learner picker">${learnerEntries.map(entry => { const r = entry.row; return `<option value="${esc(r.learnerId)}" ${learner && r.learnerId === learner.learnerId ? 'selected' : ''}>${entry.displayNo}. ${esc(r.name)} (${esc(r.sex)})</option>`; }).join('')}</select></div><div class="ctm-cr-small">Learner ${idx} of ${learnerCount} • ${esc(learner.sex)}${learner.lrn ? ` • ${esc(learner.lrn)}` : ''}</div></div><button class="edit" type="button" data-nav="next" data-term="${termKey}" ${navIdx >= learnerCount ? 'disabled' : ''}>▶</button></div>${learnerInfoHtml}${learnerAttendanceSummaryHtml(learner, termKey)}<div class="ctm-cr-form-grid ctm-cr-term-entry-grid" style="margin-top:.75rem;">${hasNumeric ? scoreHtml : descriptorHtml}</div>${notesHtml}<div class="ctm-cr-actions" style="margin-top:.85rem;"><button class="edit" type="button" data-term-action="clear-active" data-term-key="${termKey}" data-active-learner="${esc(learner.learnerId)}">Clear Active Learner</button><button class="danger" type="button" data-term-action="clear-all-scores" data-term-key="${termKey}">Clear All ${hasNumeric ? 'Scores' : 'Descriptors'}</button></div>` : '<div class="ctm-cr-disclaimer" style="margin-top:.75rem;">No learners available.</div>'}
       </div>
@@ -2429,6 +2567,7 @@ function bindTermPanel(termKey) {
   panel.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', () => jumpLearner(termKey, btn.dataset.nav)));
   panel.querySelectorAll('[data-term-picker]').forEach(el => el.addEventListener('change', () => { state.activeLearnerId = el.value; render(); switchTab(termKey); }));
   panel.querySelectorAll('[data-pick-learner]').forEach(btn => btn.addEventListener('click', () => { state.activeLearnerId = btn.dataset.pickLearner; render(); switchTab(termKey); }));
+  bindTermLearnerCardSwipe(termKey);
   panel.querySelectorAll('[data-term-action]').forEach(btn => btn.addEventListener('click', () => {
     const term = state[termKey];
     if (btn.dataset.termAction === 'save') { persist(); return; }
@@ -2589,6 +2728,7 @@ function renderFinal() {
       </div>
       <div class="ctm-cr-section-card ctm-cr-summary-detail" style="background:#defcc7;">
         <div class="ctm-cr-mini-label ctm-cr-section-heading">Selected Learner Summary</div>
+        <div class="ctm-cr-section-note">Swipe left or right on this card to move through learners.</div>
         ${selected ? `<div class="ctm-cr-selected-learner-title">${esc(selected.name)} • ${esc(selected.sex)}</div>` : '<div class="ctm-cr-section-note">No learner selected.</div>'}
         <div style="margin-top:.75rem;">${selectedSummaryHtml}</div>
       </div>
@@ -2601,6 +2741,7 @@ function renderFinal() {
   dom.finalNonPassingCount = $id('crFinalNonPassingCount');
   dom.finalTableUsed = $id('crFinalTableUsed');
   if (dom.finalTable) syncSelectableFinalRows(dom.finalTable);
+  bindFinalLearnerCardSwipe();
 }
   function renderAttendance() { dom.attBody.innerHTML = state.attendance.rows.map((row, idx) => `<tr><td>${idx + 1}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td><td>${row.Present}</td><td>${row.Absent}</td><td>${row.Tardy}</td><td>${row.Cutting}</td><td>${row.Excuse}</td><td>${row.Pending}</td></tr>`).join('') || '<tr><td colspan="9">No attendance data found.</td></tr>'; }
   function render() { cacheDom(); updateHeaderFields(); renderPolicy(); applyTermVisibility(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); renderFinal(); renderAttendance(); renderRecordPicker(); setStatus(state.recordHeader.recordId ? 'Saved school-year record ready.' : 'Draft / unsaved school-year record'); }
