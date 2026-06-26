@@ -3505,6 +3505,22 @@ function parseStoredJsonSafe(key, fallbackJson) {
     loadAttendance();
   }
 
+  function dispatchRosterChanged(action = 'sync-roster', extra = {}) {
+    try {
+      const roster = Array.isArray(currentStudents) ? currentStudents.slice() : [];
+      const detail = Object.assign({
+        classId: currentClassId || '',
+        className: window.currentClassName || '',
+        action,
+        roster
+      }, extra || {});
+      window.currentStudents = roster;
+      window.dispatchEvent(new CustomEvent('ctm:roster-changed', { detail }));
+      // Legacy/simple event name retained for compatibility with modules that may listen for it.
+      window.dispatchEvent(new CustomEvent('rosterChanged', { detail }));
+    } catch (_) {}
+  }
+
   function renderCurrentStudentPicker(){
     const picker = document.getElementById('currentStudentPicker');
     if (!picker) return;
@@ -3578,10 +3594,12 @@ function parseStoredJsonSafe(key, fallbackJson) {
     }else{
       students.push({ id: generateId(), name, sex, added: new Date().toISOString().slice(0,10) });
     }
+    const rosterAction = (editingStudentIndex > -1 && currentStudents[editingStudentIndex]) ? 'edit-student' : 'add-student';
     students = sortStudentsBySex(students);
     localStorage.setItem(`students-${currentClassId}`, JSON.stringify(students));
     invalidateMonthAggCache();
 	loadClassStudents();
+    dispatchRosterChanged(rosterAction);
     cancelEdit();
     /* updateDebug('Student saved.'); */
   }
@@ -3730,6 +3748,7 @@ function deleteStudent(index){
     }
     loadClassStudents();
     if (editingStudentId === sid) cancelEdit();
+    dispatchRosterChanged('delete-student', { studentId: sid, studentName: s.name });
 	
 	// ✅ Force progress meter refresh after deletions
 	try { refreshProgressMeterAfterImport(); } catch(_) {}
