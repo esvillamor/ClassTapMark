@@ -534,6 +534,27 @@ body:not(.locked) #btnRegister { display: inline-block !important; }
   #statusTable .th-short{ display:inline; font-weight:800; }
 }
 
+
+/* ===== FIX: Prevent text selection on attendance status buttons during touch long-press ===== */
+.status-grid,
+.status-grid .status-btn,
+.status-grid .pending-wrap,
+.status-grid .pending-caret,
+.status-grid .pending-menu,
+.status-grid .pending-menu-item{
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.status-grid .status-btn,
+.status-grid .pending-caret,
+.status-grid .pending-menu-item{
+  touch-action: manipulation;
+}
+
 /* --- Status buttons: 2x3 (<=320), 3x2 (321-574), 1 row (>=575) --- */
 .status-grid{
   display:grid;
