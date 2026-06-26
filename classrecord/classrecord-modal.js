@@ -3,7 +3,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6b'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6c'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
   // To show the hidden columns again for testing/legacy review, either:
@@ -517,14 +517,21 @@ function resolvePolicy() {
     const host = normalizeRoster(hostRoster), saved = normalizeRoster(savedRoster);
     if (!host.length) return saved;
     if (!saved.length) return host;
-    const out = [], usedSaved = new Set(), byId = new Map(saved.map(r => [text(r.id), r])), byMatch = new Map(saved.map(r => [rosterMatchKey(r), r]));
-    host.forEach(item => {
+
+    // Manage Class is the authoritative roster.
+    // Preserve compatible saved metadata only for learners that still exist in the host roster;
+    // never append saved-only learners, because that resurrects learners deleted in Manage Class.
+    const byId = new Map(saved.map(r => [text(r.id), r]));
+    const byMatch = new Map(saved.map(r => [rosterMatchKey(r), r]));
+    return host.map(item => {
       const match = byId.get(text(item.id)) || byMatch.get(rosterMatchKey(item));
-      if (match) usedSaved.add(text(match.id));
-      out.push({ id: text(item.id || (match && match.id) || ''), name: text(item.name || (match && match.name) || ''), sex: normalizeSex(item.sex || (match && match.sex) || ''), lrn: text(item.lrn || (match && match.lrn) || '') });
+      return {
+        id: text(item.id || (match && match.id) || ''),
+        name: text(item.name || (match && match.name) || ''),
+        sex: normalizeSex(item.sex || (match && match.sex) || ''),
+        lrn: text(item.lrn || (match && match.lrn) || '')
+      };
     });
-    saved.forEach(item => { if (!usedSaved.has(text(item.id)) && !out.some(r => rosterMatchKey(r) === rosterMatchKey(item))) out.push(item); });
-    return out;
   }
 
   function currentHostClassContext() {
@@ -594,6 +601,40 @@ function syncHostClassContext() {
     if (dom.modal && dom.modal.style.display === 'block') flash('Previously opened Class Record was reset because the loaded class changed or was removed.', 'success');
   }
 
+  function replaceRosterFromHost(hostRoster, options = {}) {
+    const normalized = normalizeRoster(hostRoster || []);
+    state.savedRoster = clone(normalized);
+    state.roster = clone(normalized);
+    hydrateTerms();
+    buildAttendanceRows();
+    recompute();
+    if (state.htmlInjected) render();
+    if (dom.modal && dom.modal.style.display === 'block' && options.showToast) {
+      flash('Class Record roster synced with Manage Class.', 'success');
+    }
+    scheduleAutoPersist(0);
+  }
+
+  function handleRosterChangedEvent(ev) {
+    try {
+      const detail = (ev && ev.detail) || {};
+      const eventClassId = text(detail.classId || '').trim();
+      const host = currentHostClassContext();
+      const activeClassId = text(state.classId || host.classId || '').trim();
+      if (eventClassId && activeClassId && eventClassId !== activeClassId) return;
+      if (eventClassId && host.classId && eventClassId !== text(host.classId).trim()) return;
+
+      state.classId = text(host.classId || eventClassId || state.classId).trim();
+      state.className = text(host.className || state.className).trim();
+      state.connectedHostClassKey = text(host.key || state.connectedHostClassKey).trim();
+      Object.assign(state.recordHeader, { classId: state.classId, className: state.className });
+
+      replaceRosterFromHost(Array.isArray(detail.roster) ? detail.roster : (window.currentStudents || []), {
+        showToast: detail.action === 'delete-student'
+      });
+    } catch (_) {}
+  }
+
   function bindHostClassSync() {
     if (state.hostSyncBound) return;
     state.hostSyncBound = true;
@@ -612,6 +653,8 @@ function syncHostClassContext() {
       new MutationObserver(schedule).observe(classContent, { attributes: true, attributeFilter: ['class'] });
     }
     window.addEventListener('focus', schedule);
+    window.addEventListener('ctm:roster-changed', handleRosterChangedEvent);
+    window.addEventListener('rosterChanged', handleRosterChangedEvent);
     if (!state.hostSyncTimer && typeof window.setInterval === 'function') {
       state.hostSyncTimer = window.setInterval(() => {
         if (!state.htmlInjected || !dom.modal || dom.modal.style.display !== 'block') return;
@@ -635,6 +678,7 @@ function loadFromHost() {
   const hostRoster = state.suppressHostRosterOnce ? [] : normalizeRoster(window.currentStudents || []);
   state.suppressHostRosterOnce = false;
   state.roster = mergeRosters(hostRoster, state.savedRoster || state.roster || []);
+  if (hostRoster.length) state.savedRoster = clone(state.roster);
 
   Object.assign(state.recordHeader, {
     classId: state.classId,
