@@ -1367,7 +1367,7 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
       <div id="exportModal" class="modal" style="display:none">
         <div class="modal-content">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-            <h3>Select Dates for Export</h3>
+            <h3>Select Months for Export</h3>
             <button id="closeModal" class="danger" style="padding:.25rem .6rem" onclick="closeExportModal()">✕</button>
           </div>
           <div id="dateSelection"></div>
@@ -4383,45 +4383,119 @@ content.innerHTML =
   ========================================================================= */
   function openExportModal(){
     if(!currentClassId){ alert('Select a class first!'); return; }
-    selectedDates = [];
+
     const ds = document.getElementById('dateSelection');
     const today = new Date();
-    const tStr = todayStr();
+    const month0 = new Date(today.getFullYear(), today.getMonth(), 1);
+    const currentMonthKey = monthKeyFromDate(month0);
+
+    // Keep the existing CSV export pipeline unchanged: month checkboxes expand to date arrays.
+    selectedDates = monthDatesFromKey(currentMonthKey);
+
     let html = '';
-    // FUTURE (top)
-    html += '<div class="date-container" id="futureDates">';
-    for (let i=460;i>=1;i--){
-      const d = new Date(today); d.setDate(today.getDate()+i);
-      const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const l = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-      html += `<label title="${s}"><input type="checkbox" value="${s}" onchange="toggleDate('${s}')"> ${l}</label>`;
+    html += '<div class="meta" style="color:#667;font-size:.9rem;margin-bottom:.55rem;text-align:justify;">';
+    html += 'Select month(s) to export. Each checked month automatically includes all calendar dates in that month, preserving the existing CSV format and filename behavior.';
+    html += '</div>';
+    html += '<div id="monthSelectionCount" class="debug" style="max-height:none;margin-bottom:.55rem;text-align:center;">1 month selected · ' + selectedDates.length + ' dates</div>';
+
+    // FUTURE MONTHS (top): 18 months after the current month
+    html += '<div class="date-container" id="futureMonths" aria-label="Future months">';
+    html += '<div style="font-weight:700;margin-bottom:.35rem;color:#4b5563;">Future Months</div>';
+    for (let i=18;i>=1;i--){
+      const d = addMonths(month0, i);
+      const mk = monthKeyFromDate(d);
+      const label = formatMonthLabel(d);
+      const days = daysInMonth(d.getFullYear(), d.getMonth());
+      html += `<label title="${mk}"><input type="checkbox" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
     }
     html += '</div>';
-    // PRESENT (center) – default checked
-    const lToday = today.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-    html += `<label class="current-date-center" title="${tStr}">
-      <input type="checkbox" value="${tStr}" onchange="toggleDate('${tStr}')" checked> Present Date ${lToday}
+
+    // PRESENT MONTH (center) – default checked
+    const currentDays = daysInMonth(month0.getFullYear(), month0.getMonth());
+    const currentLabel = formatMonthLabel(month0);
+    html += `<label class="current-date-center" title="${currentMonthKey}">
+      <input type="checkbox" value="${currentMonthKey}" onchange="toggleMonth('${currentMonthKey}')" checked> Present Month ${currentLabel} (${currentDays} days)
     </label>`;
-    // PAST (bottom)
-    html += '<div class="date-container" id="pastDates">';
-    for (let i=1;i<=460;i++){
-      const d = new Date(today); d.setDate(today.getDate()-i);
-      const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const l = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-      html += `<label title="${s}"><input type="checkbox" value="${s}" onchange="toggleDate('${s}')"> ${l}</label>`;
+
+    // PAST MONTHS (bottom): 18 months before the current month
+    html += '<div class="date-container" id="pastMonths" aria-label="Past months">';
+    html += '<div style="font-weight:700;margin-bottom:.35rem;color:#4b5563;">Past Months</div>';
+    for (let i=1;i<=18;i++){
+      const d = addMonths(month0, -i);
+      const mk = monthKeyFromDate(d);
+      const label = formatMonthLabel(d);
+      const days = daysInMonth(d.getFullYear(), d.getMonth());
+      html += `<label title="${mk}"><input type="checkbox" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
     }
     html += '</div>';
+
     ds.innerHTML = html;
-    selectedDates = [tStr];
+    updateMonthSelectionCount();
     document.getElementById('exportModal').style.display='block';
     setTimeout(()=>{
-      const futureEl = document.getElementById('futureDates');
+      const futureEl = document.getElementById('futureMonths');
       if (futureEl) futureEl.scrollTop = futureEl.scrollHeight;
     }, 0);
   }
+
+  function addMonths(dateObj, offset){
+    return new Date(dateObj.getFullYear(), dateObj.getMonth() + offset, 1);
+  }
+
+  function monthKeyFromDate(dateObj){
+    return `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function formatMonthLabel(dateObj){
+    return dateObj.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+  }
+
+  function daysInMonth(year, monthIndex){
+    return new Date(year, monthIndex + 1, 0).getDate();
+  }
+
+  function monthDatesFromKey(monthKey){
+    const m = /^(\d{4})-(\d{2})$/.exec(String(monthKey || ''));
+    if (!m) return [];
+    const year = Number(m[1]);
+    const monthIndex = Number(m[2]) - 1;
+    const total = daysInMonth(year, monthIndex);
+    const out = [];
+    for (let day=1; day<=total; day++){
+      out.push(`${year}-${String(monthIndex+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`);
+    }
+    return out;
+  }
+
+  function toggleMonth(monthKey){
+    const monthDates = monthDatesFromKey(monthKey);
+    if (!monthDates.length) return;
+    const set = new Set(selectedDates);
+    const isSelected = monthDates.every(d => set.has(d));
+    if (isSelected){
+      monthDates.forEach(d => set.delete(d));
+    } else {
+      monthDates.forEach(d => set.add(d));
+    }
+    selectedDates = Array.from(set).sort((a,b)=>a.localeCompare(b));
+    updateMonthSelectionCount();
+  }
+
+  function updateMonthSelectionCount(){
+    const el = document.getElementById('monthSelectionCount');
+    if (!el) return;
+    const months = new Set((selectedDates || []).map(d => String(d).slice(0,7)).filter(m => /^\d{4}-\d{2}$/.test(m)));
+    const monthCount = months.size;
+    const dateCount = (selectedDates || []).length;
+    el.textContent = `${monthCount} month${monthCount===1?'':'s'} selected · ${dateCount} date${dateCount===1?'':'s'}`;
+  }
+
   function toggleDate(s){
+    // Backward-compatible helper kept for older UI/custom calls.
     const i = selectedDates.indexOf(s);
     if (i>-1) selectedDates.splice(i,1); else selectedDates.push(s);
+    selectedDates = Array.from(new Set(selectedDates)).sort((a,b)=>a.localeCompare(b));
+    updateMonthSelectionCount();
   }
   function closeExportModal(){ document.getElementById('exportModal').style.display='none'; }
   function confirmExport(){
