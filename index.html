@@ -1162,7 +1162,7 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
 		<p id="ctmBuy" style="font-size: 13px; text-align: justify;">
 		<strong style="display:block; margin-bottom:-2px; line-height:0;">What's New...</strong>
 			<ul id="ctmBuy" style="font-size:13px;margin-top:0;margin-left:0;">
-				<li><a href="free-rental.html" id="freeRentalLink">Free Premium Access License</a></li>
+				<!--<li><a href="free-rental.html" id="freeRentalLink">Free Premium Access License</a></li>-->
 				<li><a href="https://drive.google.com/file/d/1WM3owgKb1Z4OcRT994u5ZLNDfRUYo1lm/view?usp=sharing" target="_blank" rel="noopener noreferrer">ClassTapMark VMGO</a></li>
 				<li><a href="https://www.facebook.com/groups/classtapmark" target="_blank" rel="noopener noreferrer">Join ClassTapMark Community</a></li>
 				<li><a href="https://forms.gle/zV1eBaNea4XQniwA9" target="_blank" rel="noopener noreferrer">Report a BUG</a></li>
@@ -4801,19 +4801,22 @@ function initLicenseActionButtons(){
   if (document.getElementById('btnBuyLicense') || document.getElementById('btnRegister')) return;
 
   // Keep these IDs because CSS visibility rules depend on them
-  const BUY_URL = 'https://www.raket.ph/esvillamor';
+  //const BUY_URL = 'https://www.raket.ph/esvillamor';
+  const BUY_URL = 'free-rental.html';
   const REG_URL = 'https://forms.gle/Rdf7MC2g6G6srVFf8';
 
   const buyBtn = document.createElement('button');
   buyBtn.id = 'btnBuyLicense';
   buyBtn.type = 'button';
   buyBtn.style.flex = '1';
-  buyBtn.textContent = 'Buy License';
+  //buyBtn.textContent = 'Buy License';
+  buyBtn.textContent = 'Free License';
 
 buyBtn.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
-  window.open(BUY_URL, '_blank', 'noopener,noreferrer');
+  //window.open(BUY_URL, '_blank', 'noopener,noreferrer');
+  window.open(BUY_URL, 'noopener,noreferrer');
 });
 
 
