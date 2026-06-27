@@ -3,7 +3,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6c'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6d'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
   // To show the hidden columns again for testing/legacy review, either:
@@ -1237,20 +1237,47 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
   }
   function indexKey() { return `classrecord-sy-index::${slugify(state.classId || state.recordHeader.classId)}`; }
   function snapshot() { return { schemaVersion: FORM_VERSION, roster: clone(state.roster), recordHeader: clone(state.recordHeader), setupProfile: clone(state.setupProfile), term1: clone(state.term1), term2: clone(state.term2), term3: clone(state.term3), term4: clone(state.term4), finalSummary: clone(state.finalSummary), attendance: clone(state.attendance) }; }
-  function saveIndex(key) {
+  function cleanIndexList(list, keysToRemove = []) {
+    const removeSet = new Set((Array.isArray(keysToRemove) ? keysToRemove : [keysToRemove]).map(text).filter(Boolean));
+    const seen = new Set();
+    return (Array.isArray(list) ? list : []).filter(item => {
+      const key = text(item && item.key).trim();
+      if (!key || removeSet.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+  function saveIndex(key, oldKey = '') {
     let list = [];
     try { list = JSON.parse(localStorage.getItem(indexKey()) || '[]'); } catch (_) {}
-    list = list.filter(x => x && x.key !== key);
+    list = cleanIndexList(list, [key, oldKey]);
     const semesterLabel = getSemesterLabel(state.recordHeader.semester) || (isLegacyGrade12SemesterLayout() ? 'No Semester' : '');
-    const bits = [state.recordHeader.subject || 'No Subject'];
+    const bits = [state.recordHeader.subject || state.recordHeader.recordLabel || 'No Subject'];
     if (semesterLabel) bits.push(semesterLabel);
     bits.push(state.recordHeader.schoolYear || 'No SY');
     bits.push(state.recordHeader.section || state.className || 'No Class');
     list.unshift({ key, label: bits.join(' • ') });
     localStorage.setItem(indexKey(), JSON.stringify(list));
   }
-  function loadIndex() { try { return JSON.parse(localStorage.getItem(indexKey()) || '[]'); } catch (_) { return []; } }
-  function persist(showToast = true) { const key = storageKey(); state.recordHeader.recordId = key; localStorage.setItem(key, JSON.stringify(snapshot())); saveIndex(key); renderRecordPicker(); if (showToast) flash('Class Record saved.', 'success'); }
+  function loadIndex() { try { return cleanIndexList(JSON.parse(localStorage.getItem(indexKey()) || '[]')); } catch (_) { return []; } }
+  function removeRecordFromCurrentIndex(key) {
+    if (!key) return;
+    try { localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), key))); } catch (_) {}
+  }
+  function persist(showToast = true) {
+    const oldKey = text(state.recordHeader && state.recordHeader.recordId).trim();
+    const key = storageKey();
+    const renamedExistingRecord = !!(oldKey && oldKey !== key);
+    state.recordHeader.recordId = key;
+    localStorage.setItem(key, JSON.stringify(snapshot()));
+    saveIndex(key, oldKey);
+    if (renamedExistingRecord) {
+      try { localStorage.removeItem(oldKey); } catch (_) {}
+      removeRecordFromCurrentIndex(oldKey);
+    }
+    renderRecordPicker();
+    if (showToast) flash(renamedExistingRecord ? 'Class Record renamed and saved.' : 'Class Record saved.', 'success');
+  }
   function scheduleAutoPersist(delay = 160) {
     if (state.autoSaveTimer) clearTimeout(state.autoSaveTimer);
     state.autoSaveTimer = window.setTimeout(() => {
@@ -2963,7 +2990,7 @@ function importCsvText(csvText) {
 }
   function promptImportCsv() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,text/csv'; input.addEventListener('change', () => { const file = input.files && input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { importCsvText(String(reader.result || '')); } catch (err) { flash(err && err.message ? err.message : 'Unable to import CSV.', 'error'); } }; reader.readAsText(file); }); input.click(); }
 
-  function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : el.value; if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'gradeLevel' || k === 'schoolYear') { applySubjectGroupFilter(); if (isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear) && !getSemesterLabel(state.recordHeader.semester)) state.recordHeader.semester = 'First Semester'; if (!isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)) state.recordHeader.semester = ''; } if (k === 'semester') state.recordHeader.semester = getSemesterLabel(el.value); recompute(); render(); }; el.addEventListener('input', handler); el.addEventListener('change', handler); }); dom.recordPicker.addEventListener('change', () => { if (!dom.recordPicker.value) { resetDraft(true); return; } try { applySnapshot(JSON.parse(localStorage.getItem(dom.recordPicker.value) || '{}')); loadFromHost(); recompute(); render(); flash('Saved school-year record loaded.', 'success'); } catch (_) { flash('Unable to load selected record.', 'error'); } }); $id('crBtnSave').addEventListener('click', persist); $id('crBtnNew').addEventListener('click', () => { clearClassScopedHeaderFields(); resetDraft(false); flash('New blank draft ready for the current class.', 'success'); }); $id('crBtnDuplicate').addEventListener('click', () => { state.recordHeader.recordId = ''; state.recordHeader.recordLabel = (state.recordHeader.recordLabel || state.recordHeader.subject || 'Class Record') + ' Copy'; render(); flash('Duplicated as a new draft school-year record.', 'success'); }); $id('crBtnDelete').addEventListener('click', () => { const key = state.recordHeader.recordId; if (!key) { resetDraft(true); return; } if (!window.confirm('Delete this saved school-year Class Record?')) return; localStorage.removeItem(key); localStorage.setItem(indexKey(), JSON.stringify(loadIndex().filter(x => x.key !== key))); resetDraft(true); flash('Saved school-year Class Record deleted.', 'success'); }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
+  function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : el.value; if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'gradeLevel' || k === 'schoolYear') { applySubjectGroupFilter(); if (isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear) && !getSemesterLabel(state.recordHeader.semester)) state.recordHeader.semester = 'First Semester'; if (!isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)) state.recordHeader.semester = ''; } if (k === 'semester') state.recordHeader.semester = getSemesterLabel(el.value); recompute(); render(); }; el.addEventListener('input', handler); el.addEventListener('change', handler); }); dom.recordPicker.addEventListener('change', () => { if (!dom.recordPicker.value) { resetDraft(true); return; } try { applySnapshot(JSON.parse(localStorage.getItem(dom.recordPicker.value) || '{}')); loadFromHost(); recompute(); render(); flash('Saved school-year record loaded.', 'success'); } catch (_) { flash('Unable to load selected record.', 'error'); } }); $id('crBtnSave').addEventListener('click', persist); $id('crBtnNew').addEventListener('click', () => { clearClassScopedHeaderFields(); resetDraft(false); flash('New blank draft ready for the current class.', 'success'); }); $id('crBtnDuplicate').addEventListener('click', () => { state.recordHeader.recordId = ''; state.recordHeader.recordLabel = (state.recordHeader.recordLabel || state.recordHeader.subject || 'Class Record') + ' Copy'; render(); flash('Duplicated as a new draft school-year record.', 'success'); }); $id('crBtnDelete').addEventListener('click', () => { const key = state.recordHeader.recordId; if (!key) { resetDraft(true); return; } if (!window.confirm('Delete this saved school-year Class Record?')) return; localStorage.removeItem(key); localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), key))); resetDraft(true); flash('Saved school-year Class Record deleted.', 'success'); }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
 
   function hasLoadedHostClass() {
     const loadedId = text(window.currentClassId || '').trim();
