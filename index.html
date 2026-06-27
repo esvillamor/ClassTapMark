@@ -1134,10 +1134,102 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
   .ctm-swipe-nav-label{ min-width:140px; font-size:.8rem; }
 }
 
+
+
+/* ===================== In-App Browser Compatibility Banner =====================
+   Shows only inside Facebook/Messenger/Instagram/other in-app WebViews.
+   Purpose: guide users to open ClassTapMark in their external/default browser
+   for reliable PWA install, storage, service worker, and offline behavior.
+*/
+.ctm-inapp-banner{
+  display:none;
+  position:sticky;
+  top:0;
+  z-index:2500;
+  max-width:1200px;
+  margin:0 auto 1rem;
+  padding:.85rem .95rem;
+  border-radius:16px;
+  background:linear-gradient(135deg,#fff7ed,#ffedd5);
+  color:#3b2f24;
+  border:1px solid rgba(251,146,60,.45);
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
+.ctm-inapp-banner strong{ color:#9a3412; }
+.ctm-inapp-banner .ctm-inapp-title{
+  display:flex;
+  align-items:center;
+  gap:.45rem;
+  font-weight:800;
+  margin-bottom:.35rem;
+}
+.ctm-inapp-banner .ctm-inapp-text{
+  font-size:.92rem;
+  line-height:1.35;
+  margin:.2rem 0 .65rem;
+}
+.ctm-inapp-banner .ctm-inapp-steps{
+  margin:.35rem 0 .75rem 1.15rem;
+  padding:0;
+  font-size:.9rem;
+}
+.ctm-inapp-banner .ctm-inapp-actions{
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+}
+.ctm-inapp-banner .ctm-mini-btn{
+  padding:.62rem .78rem;
+  border-radius:12px;
+  font-weight:700;
+}
+.ctm-inapp-banner .ctm-mini-btn.secondary{
+  background:#fff;
+  color:#7c2d12;
+  border:1px solid rgba(251,146,60,.45);
+}
+.ctm-inapp-banner .ctm-mini-btn.close{
+  background:transparent;
+  color:#7c2d12;
+  border:1px dashed rgba(124,45,18,.35);
+}
+.ctm-inapp-banner .ctm-inapp-note{
+  margin-top:.55rem;
+  font-size:.78rem;
+  color:#7c2d12;
+  opacity:.9;
+}
+@media (max-width:520px){
+  .ctm-inapp-banner{ border-radius:14px; padding:.78rem; }
+  .ctm-inapp-banner .ctm-mini-btn{ flex:1 1 100%; }
+}
+
 </style>
 </head>
 <body class="locked">
     <h1>ClassTapMark</h1>
+
+  <!-- In-App Browser Compatibility Banner (Facebook/Messenger/Instagram/etc.) -->
+  <div id="ctmInAppBrowserBanner" class="ctm-inapp-banner" role="status" aria-live="polite" hidden>
+    <div class="ctm-inapp-title">⚠️ Limited browser detected</div>
+    <div class="ctm-inapp-text">
+      ClassTapMark looks like it was opened inside an app browser such as Facebook, Messenger, Instagram, or another social media app.
+      For best results—especially <strong>Install/Add to Home Screen</strong>, offline use, and saved records—open it in your default browser.
+    </div>
+    <ol class="ctm-inapp-steps">
+      <li><strong>Android:</strong> tap the app menu <strong>⋮</strong> then choose <strong>Open in browser</strong> / <strong>Open in Chrome</strong>.</li>
+      <li><strong>iPhone/iPad:</strong> tap the share/menu button, then choose <strong>Open in Safari</strong>. To install, use Safari → Share → <strong>Add to Home Screen</strong>.</li>
+    </ol>
+    <div class="ctm-inapp-actions">
+      <button type="button" id="ctmOpenExternalBtn" class="primary ctm-mini-btn">Open in Browser</button>
+      <button type="button" id="ctmCopyLinkBtn" class="ctm-mini-btn secondary">Copy Link</button>
+      <button type="button" id="ctmDismissInAppBtn" class="ctm-mini-btn close">Hide</button>
+    </div>
+    <div id="ctmInAppCopyStatus" class="ctm-inapp-note">
+      If the button is blocked by the social app, use the manual menu steps above.
+    </div>
+  </div>
   <div class="container">
     <!-- Access Control (License) -->
     <div class="section" id="accessControl" style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
@@ -2033,6 +2125,139 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
     ></iframe>
   </div>
 </div>
+
+
+<script>
+/* =====================================================================
+   CTM In-App Browser Guard
+   ---------------------------------------------------------------------
+   Social apps often open links in an internal WebView. This helper does
+   not change ClassTapMark data/storage logic. It only detects likely
+   in-app browsers and shows guidance + safe external-open/copy options.
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  function getUA() {
+    return String(navigator.userAgent || navigator.vendor || window.opera || '');
+  }
+
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(getUA()) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isAndroid() {
+    return /Android/i.test(getUA());
+  }
+
+  function detectInAppBrowser() {
+    var ua = getUA();
+    var socialMarkers = [
+      'FBAN', 'FBAV', 'FB_IAB', 'FBIOS', 'FB4A', 'FBSS', 'Messenger',
+      'Instagram', 'Line/', 'MicroMessenger', 'Twitter', 'TikTok',
+      'LinkedInApp', 'Pinterest', 'Snapchat', 'GSA/'
+    ];
+    var hasSocialMarker = socialMarkers.some(function (m) { return ua.indexOf(m) !== -1; });
+    var androidWebView = isAndroid() && (ua.indexOf('; wv') !== -1 || ua.indexOf('Version/4.0 Chrome') !== -1);
+    var iosWebView = isIOS() && /AppleWebKit/i.test(ua) && !/Safari/i.test(ua);
+    return hasSocialMarker || androidWebView || iosWebView;
+  }
+
+  function currentAbsoluteUrl() {
+    return window.location.href;
+  }
+
+  function androidIntentUrl(url) {
+    try {
+      var u = new URL(url);
+      var path = u.host + u.pathname + u.search + u.hash;
+      return 'intent://' + path + '#Intent;scheme=' + u.protocol.replace(':', '') +
+        ';package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+    } catch (_) {
+      return url;
+    }
+  }
+
+  function showBanner() {
+    var banner = document.getElementById('ctmInAppBrowserBanner');
+    if (!banner) return;
+    if (sessionStorage.getItem('ctmInAppBannerDismissed') === '1') return;
+    banner.hidden = false;
+    document.body.classList.add('ctm-inapp-browser');
+  }
+
+  function setStatus(message) {
+    var status = document.getElementById('ctmInAppCopyStatus');
+    if (status) status.textContent = message;
+  }
+
+  function copyLink() {
+    var url = currentAbsoluteUrl();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        setStatus('Link copied. Paste it in Chrome/Safari or your default browser.');
+      }).catch(function () {
+        fallbackCopy(url);
+      });
+    } else {
+      fallbackCopy(url);
+    }
+  }
+
+  function fallbackCopy(url) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = url;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setStatus('Link copied. Paste it in Chrome/Safari or your default browser.');
+    } catch (_) {
+      setStatus('Copy failed. Long-press the address/link and copy it manually.');
+    }
+  }
+
+  function openExternal() {
+    var url = currentAbsoluteUrl();
+    setStatus('Trying to open your browser. If nothing happens, use ⋮ / Share → Open in Browser.');
+    if (isAndroid()) {
+      window.location.href = androidIntentUrl(url);
+      return;
+    }
+    // iOS and some app browsers do not allow forcing Safari/default browser.
+    // Opening a new tab may still remain inside the app; keep manual guidance visible.
+    try {
+      var w = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!w) window.location.href = url;
+    } catch (_) {
+      window.location.href = url;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!detectInAppBrowser()) return;
+    showBanner();
+
+    var openBtn = document.getElementById('ctmOpenExternalBtn');
+    var copyBtn = document.getElementById('ctmCopyLinkBtn');
+    var dismissBtn = document.getElementById('ctmDismissInAppBtn');
+
+    if (openBtn) openBtn.addEventListener('click', openExternal);
+    if (copyBtn) copyBtn.addEventListener('click', copyLink);
+    if (dismissBtn) dismissBtn.addEventListener('click', function () {
+      sessionStorage.setItem('ctmInAppBannerDismissed', '1');
+      var banner = document.getElementById('ctmInAppBrowserBanner');
+      if (banner) banner.hidden = true;
+      document.body.classList.remove('ctm-inapp-browser');
+    });
+  });
+})();
+</script>
 
   <!-- ============================ INLINE SCRIPTS ============================ -->
   <script>
