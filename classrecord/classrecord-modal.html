@@ -1963,7 +1963,9 @@
       <div class="ctm-cr-panel-title">Class Record Settings</div>
       <div class="ctm-cr-compact-header">
         <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crSchoolName">School Name</label><input id="crSchoolName" placeholder="School Name"></div>
-        <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crSchoolYear">School Year</label><input id="crSchoolYear" placeholder="2026-2027" size="9"></div>
+        <div class="ctm-cr-field" style="display:inline-block;width:20px"><label class="ctm-cr-label" for="crSchoolYear">School Year</label>
+		<input id="crSchoolYear" placeholder="eg. 2026-2027" maxlength="9" size="9" pattern="[0-9]{4}-[0-9]{4}" onblur="if(!this.checkValidity()) alert('Please use the correct format: YYYY-YYYY');">
+		</div>
         <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crGradeLevel">Grade Level</label>
           <select id="crGradeLevel"><option value="">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
         </div>
@@ -1979,7 +1981,6 @@
         <div class="ctm-cr-field"><label class="ctm-cr-label" for="crDistrict">District</label><input id="crDistrict" placeholder="District"></div>
         <div class="ctm-cr-field"><label class="ctm-cr-label" for="crDivision">Division</label><input id="crDivision" placeholder="Division"></div>
         <div class="ctm-cr-field"><label class="ctm-cr-label" for="crRegion">Region</label><input id="crRegion" placeholder="Region"></div>
-
       </div>
     </section>
 	<section id="crPanelPolicy" class="ctm-cr-panel">
