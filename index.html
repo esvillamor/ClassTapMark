@@ -793,7 +793,9 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
 }
 
 .sf2-setup-grid input,
-#sf8PanelSetup .sf8-setup-grid input{
+.sf2-setup-grid select,
+#sf8PanelSetup .sf8-setup-grid input,
+#sf8PanelSetup .sf8-setup-grid select{
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -803,6 +805,10 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
 .sf2-setup-grid .span-all,
 #sf8PanelSetup .sf8-setup-grid .span-all{
   grid-column: 1 / -1;
+}
+.ctm-shared-grade-select{
+  width:100%;
+  min-width:0;
 }
 
 /* Ultra-small screens */
@@ -1507,7 +1513,22 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
         <input id="sf1Region" placeholder="Region">
         <input id="sf1Semester" placeholder="Semester (eg., First)">
         <input id="sf1SchoolYear" placeholder="School Year (eg., 2026-2027)">
-		<input id="sf1GradeLevel" placeholder="Set Grade at Class Record" readOnly title="Set at Class Record">
+		<select id="sf1GradeLevel" title="Shared Grade Level" class="ctm-shared-grade-select">
+          <option value="">Select Grade Level</option>
+          <option>Kindergarten</option>
+          <option>Grade 1</option>
+          <option>Grade 2</option>
+          <option>Grade 3</option>
+          <option>Grade 4</option>
+          <option>Grade 5</option>
+          <option>Grade 6</option>
+          <option>Grade 7</option>
+          <option>Grade 8</option>
+          <option>Grade 9</option>
+          <option>Grade 10</option>
+          <option>Grade 11</option>
+          <option>Grade 12</option>
+        </select>
         <input id="sf1Section" placeholder="Section">
         <input id="sf1Course" placeholder="Course (For TVL Only)">
         <input id="sf1TrackStrand" placeholder="Track and Strand">
@@ -1549,7 +1570,22 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
   <input id="sf2SchoolName" placeholder="Name of School" class="span-all">
   <input id="sf2SchoolId" placeholder="School ID">
   <input id="sf2SchoolYear" placeholder="Sch.Yr. (eg., 2026-2027)">
-  <input id="sf2GradeLevel" placeholder="Set Grade at Class Record" readOnly title="Set at Class Record">
+  <select id="sf2GradeLevel" title="Shared Grade Level" class="ctm-shared-grade-select">
+    <option value="">Select Grade Level</option>
+    <option>Kindergarten</option>
+    <option>Grade 1</option>
+    <option>Grade 2</option>
+    <option>Grade 3</option>
+    <option>Grade 4</option>
+    <option>Grade 5</option>
+    <option>Grade 6</option>
+    <option>Grade 7</option>
+    <option>Grade 8</option>
+    <option>Grade 9</option>
+    <option>Grade 10</option>
+    <option>Grade 11</option>
+    <option>Grade 12</option>
+  </select>
   <input id="sf2Section" placeholder="Section">
   <input id="sf2Teacher" placeholder="Teacher / Class Adviser">
   <input id="sf2SchoolHead" placeholder="School Head">
@@ -1673,7 +1709,22 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
         <input id="sf3Region" placeholder="Region">
         <input id="sf3Semester" placeholder="Semester (eg., First)">
         <input id="sf3SchoolYear" placeholder="School Year (eg., 2026-2027)">
-		<input id="sf3GradeLevel" placeholder="Set Grade at Class Record" readOnly title="Set at Class Record">
+		<select id="sf3GradeLevel" title="Shared Grade Level" class="ctm-shared-grade-select">
+          <option value="">Select Grade Level</option>
+          <option>Kindergarten</option>
+          <option>Grade 1</option>
+          <option>Grade 2</option>
+          <option>Grade 3</option>
+          <option>Grade 4</option>
+          <option>Grade 5</option>
+          <option>Grade 6</option>
+          <option>Grade 7</option>
+          <option>Grade 8</option>
+          <option>Grade 9</option>
+          <option>Grade 10</option>
+          <option>Grade 11</option>
+          <option>Grade 12</option>
+        </select>
         <input id="sf3Section" placeholder="Section">
 		<input id="sf3Course" placeholder="Course (For TVL Only)">
         <input id="sf3TrackStrand" placeholder="Track and Strand">
@@ -1811,7 +1862,22 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
     <input id="sf8Division" placeholder="Division">
     <input id="sf8Region" placeholder="Region">
     <input id="sf8SchoolId" placeholder="School ID">
-    <input id="sf8Grade" placeholder="Set Grade at Class Record" readOnly title="Set at Class Record">
+    <select id="sf8Grade" title="Shared Grade Level" class="ctm-shared-grade-select">
+    <option value="">Select Grade Level</option>
+    <option>Kindergarten</option>
+    <option>Grade 1</option>
+    <option>Grade 2</option>
+    <option>Grade 3</option>
+    <option>Grade 4</option>
+    <option>Grade 5</option>
+    <option>Grade 6</option>
+    <option>Grade 7</option>
+    <option>Grade 8</option>
+    <option>Grade 9</option>
+    <option>Grade 10</option>
+    <option>Grade 11</option>
+    <option>Grade 12</option>
+    </select>
     <input id="sf8Section" placeholder="Section">
     <!-- Keep Track/Strand flexible; if you want it wider on large screens, uncomment span-2 below -->
     <input id="sf8Track" placeholder="Track/Strand (optional)">
@@ -5791,6 +5857,7 @@ document.addEventListener('click', function (e) {
         if (!el || id === sourceId) return;
         if (normalizeValue(el.value) !== value) {
           el.value = value;
+          try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         }
       });
     },
