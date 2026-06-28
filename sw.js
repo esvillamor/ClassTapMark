@@ -154,7 +154,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App navigations: get latest online, fallback to cached index.html offline.
+  // Special handling for support.html (NO index.html fallback!)
+if (url.pathname.endsWith('/support.html')) {
+  event.respondWith(cacheFirst(req, CACHE_NAME).catch(() =>
+    new Response('Support page not available offline yet.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    })
+  ));
+  return;
+}
+
+// App navigations: get latest online, fallback to cached index.html offline.
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       try {
