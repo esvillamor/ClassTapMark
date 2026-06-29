@@ -1,3 +1,4 @@
+/* CTM form accessibility semantics handled globally by index.html patch v1; Class Record APIs/data formats unchanged. */
 (() => {
   'use strict';
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
@@ -191,6 +192,37 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
   function summaryAverageFromReported(values, floor = 60) { const list = (Array.isArray(values) ? values : []).map(v => summaryReportedNumeric(v, floor)).filter(v => Number.isFinite(Number(v))).map(Number); return list.length ? roundWhole(list.reduce((a, b) => a + b, 0) / list.length) : floor; }
   function normalizeSex(v) { const s = text(v).trim().toLowerCase(); if (s === 'male' || s === 'm') return 'Male'; if (s === 'female' || s === 'f') return 'Female'; return text(v).trim(); }
   function $id(id) { return document.getElementById(id); }
+
+  function prepareModalForHide(modal) {
+    if (!modal || !modal.contains) return;
+    try {
+      if (window.CTMModalA11y && typeof window.CTMModalA11y.prepareForHide === 'function') {
+        window.CTMModalA11y.prepareForHide(modal);
+        return;
+      }
+    } catch (_) {}
+    const active = document.activeElement;
+    if (active && active !== document.body && modal.contains(active)) {
+      try { active.blur(); } catch (_) {}
+      const fallback = document.getElementById('btnOpenClassRecord') || document.body || document.documentElement;
+      if (fallback && typeof fallback.focus === 'function' && modal.contains(document.activeElement)) {
+        const hadTabIndex = fallback.hasAttribute && fallback.hasAttribute('tabindex');
+        try { if (!hadTabIndex && fallback.setAttribute) fallback.setAttribute('tabindex', '-1'); } catch (_) {}
+        try { fallback.focus({ preventScroll: true }); } catch (_) { try { fallback.focus(); } catch (__) {} }
+        if (!hadTabIndex && fallback.removeAttribute) setTimeout(() => { try { fallback.removeAttribute('tabindex'); } catch (_) {} }, 0);
+      }
+    }
+  }
+  function markModalShown(modal) {
+    if (!modal) return;
+    try { modal.inert = false; } catch (_) {}
+    try { if (window.CTMModalA11y && typeof window.CTMModalA11y.markShown === 'function') window.CTMModalA11y.markShown(modal); } catch (_) {}
+  }
+  function markModalHidden(modal) {
+    if (!modal) return;
+    prepareModalForHide(modal);
+    try { modal.inert = true; } catch (_) {}
+  }
   function normalizeName(v) { return text(v).trim().toLowerCase().replace(/\s+/g, ' '); }
   function shouldShowSummaryLetterColumn() {
     return !!((typeof window !== 'undefined' && window.CTM_CLASSRECORD_SHOW_SUMMARY_LETTER_COLUMN != null)
@@ -3080,10 +3112,11 @@ function importCsvText(csvText) {
     recompute();
     render();
     switchTab(state.activeTab || 'header');
+    markModalShown(dom.modal);
     dom.modal.style.display = 'block';
     dom.modal.setAttribute('aria-hidden', 'false');
   }
-  function close() { if (!dom.modal) return; flushAutoPersist(); dom.modal.style.display = 'none'; dom.modal.setAttribute('aria-hidden', 'true'); }
+  function close() { if (!dom.modal) return; flushAutoPersist(); markModalHidden(dom.modal); dom.modal.style.display = 'none'; dom.modal.setAttribute('aria-hidden', 'true'); }
   async function init() { await ensureInjected(); loadFromHost(); purgeTransientPlaceholderRecords(); recompute(); render(); }
 
   window.CTMClassRecord = { init, open, close, recomputeAll: () => { loadFromHost(); recompute(); render(); }, refreshContextFromHost: () => { loadFromHost(); recompute(); render(); }, exportCsv, importCsvText, _debugSnapshot: () => snapshot() };
