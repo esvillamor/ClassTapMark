@@ -810,6 +810,9 @@ body:not(.locked) #ctmStorageWrap{ display:block !important; }
   width:100%;
   min-width:0;
 }
+.ctm-semester-legacy-hidden{
+  display:none !important;
+}
 
 /* Ultra-small screens */
 @media (max-width: 400px){
@@ -1211,7 +1214,106 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
   .ctm-inapp-banner .ctm-mini-btn{ flex:1 1 100%; }
 }
 
+
+
+/* ===== CTM Form Field Accessibility Semantics Patch v1 =====
+   Purpose: reduce Chrome DevTools Issues for dynamic/local forms by ensuring
+   input/select/textarea elements have stable IDs and associated labels.
+   UI-only; does not change stored data, CSV/PDF schemas, event hooks, or field values. */
+.ctm-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
 </style>
+
+<script>
+/* ===================== CTM Modal Accessibility Guard =====================
+   Fixes Chrome warning: "Blocked aria-hidden on an element because its descendant retained focus".
+   The guard moves focus out of a modal before any script hides it with aria-hidden="true".
+   Compatibility: existing modal IDs, open/close functions, CSV/PDF flows, storage logic, and UI behavior are preserved.
+*/
+(function(){
+  'use strict';
+  if (window.CTMModalA11y && window.CTMModalA11y.__installed) return;
+
+  function isModalLike(el){
+    return !!(el && el.nodeType === 1 && (
+      (el.classList && el.classList.contains('modal')) ||
+      (el.getAttribute && (el.getAttribute('role') === 'dialog' || el.getAttribute('aria-modal') === 'true'))
+    ));
+  }
+
+  function focusSafeFallback(){
+    var target = document.getElementById('btnOpenClassRecord') ||
+                 document.getElementById('schoolFormClassHeader') ||
+                 document.querySelector('.container') ||
+                 document.body || document.documentElement;
+    if (!target || typeof target.focus !== 'function') return;
+    var hadTabIndex = target.hasAttribute && target.hasAttribute('tabindex');
+    var oldTabIndex = target.getAttribute && target.getAttribute('tabindex');
+    try {
+      if (target.setAttribute && !hadTabIndex) target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+    } catch (_) {
+      try { target.focus(); } catch (__) {}
+    }
+    if (target.removeAttribute && !hadTabIndex) {
+      setTimeout(function(){ try { target.removeAttribute('tabindex'); } catch (_) {} }, 0);
+    } else if (target.setAttribute && oldTabIndex != null) {
+      try { target.setAttribute('tabindex', oldTabIndex); } catch (_) {}
+    }
+  }
+
+  function prepareForHide(modal){
+    if (!modal || !modal.contains) return;
+    var active = document.activeElement;
+    if (active && active !== document.body && modal.contains(active)) {
+      try { active.blur(); } catch (_) {}
+      if (modal.contains(document.activeElement)) focusSafeFallback();
+    }
+  }
+
+  function markHidden(modal){
+    if (!modal || !isModalLike(modal)) return;
+    prepareForHide(modal);
+    try { modal.inert = true; } catch (_) {}
+  }
+
+  function markShown(modal){
+    if (!modal || !isModalLike(modal)) return;
+    try { modal.inert = false; } catch (_) {}
+  }
+
+  var nativeSetAttribute = Element.prototype.setAttribute;
+  if (!Element.prototype.__ctmAriaHiddenFocusGuard) {
+    Object.defineProperty(Element.prototype, '__ctmAriaHiddenFocusGuard', { value: true, configurable: true });
+    Element.prototype.setAttribute = function(name, value){
+      var attr = String(name || '').toLowerCase();
+      if (attr === 'aria-hidden') {
+        if (String(value) === 'true') markHidden(this);
+        else if (String(value) === 'false') markShown(this);
+      }
+      return nativeSetAttribute.apply(this, arguments);
+    };
+  }
+
+  window.CTMModalA11y = {
+    __installed: true,
+    prepareForHide: prepareForHide,
+    markHidden: markHidden,
+    markShown: markShown
+  };
+})();
+</script>
+
 </head>
 <body class="locked">
     <h1>ClassTapMark</h1>
@@ -1511,7 +1613,11 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
         <input id="sf1District" placeholder="District">
         <input id="sf1Division" placeholder="Division">
         <input id="sf1Region" placeholder="Region">
-        <input id="sf1Semester" placeholder="Semester (eg., First)">
+        <select id="sf1Semester" title="Semester">
+          <option value="">Select Semester</option>
+          <option value="First Semester">First Semester</option>
+          <option value="Second Semester">Second Semester</option>
+        </select>
         <input id="sf1SchoolYear" placeholder="School Year (eg., 2026-2027)">
 		<select id="sf1GradeLevel" title="Shared Grade Level" class="ctm-shared-grade-select">
           <option value="">Select Grade Level</option>
@@ -1707,7 +1813,11 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
         <input id="sf3District" placeholder="District">
 		<input id="sf3Division" placeholder="Division">
         <input id="sf3Region" placeholder="Region">
-        <input id="sf3Semester" placeholder="Semester (eg., First)">
+        <select id="sf3Semester" title="Semester">
+          <option value="">Select Semester</option>
+          <option value="First Semester">First Semester</option>
+          <option value="Second Semester">Second Semester</option>
+        </select>
         <input id="sf3SchoolYear" placeholder="School Year (eg., 2026-2027)">
 		<select id="sf3GradeLevel" title="Shared Grade Level" class="ctm-shared-grade-select">
           <option value="">Select Grade Level</option>
@@ -4722,7 +4832,12 @@ content.innerHTML =
 
     ds.innerHTML = html;
     updateMonthSelectionCount();
-    document.getElementById('exportModal').style.display='block';
+    const exportModalEl = document.getElementById('exportModal');
+    if (exportModalEl) {
+      if (window.CTMModalA11y) window.CTMModalA11y.markShown(exportModalEl);
+      exportModalEl.style.display='block';
+      exportModalEl.setAttribute('aria-hidden','false');
+    }
     setTimeout(()=>{
       const futureEl = document.getElementById('futureMonths');
       if (futureEl) futureEl.scrollTop = futureEl.scrollHeight;
@@ -4788,7 +4903,7 @@ content.innerHTML =
     selectedDates = Array.from(new Set(selectedDates)).sort((a,b)=>a.localeCompare(b));
     updateMonthSelectionCount();
   }
-  function closeExportModal(){ document.getElementById('exportModal').style.display='none'; }
+  function closeExportModal(){ const m=document.getElementById('exportModal'); if(!m) return; if(window.CTMModalA11y) window.CTMModalA11y.markHidden(m); m.style.display='none'; m.setAttribute('aria-hidden','true'); }
   function confirmExport(){
     if(selectedDates.length===0){ alert('Select at least one date!'); return; }
     closeExportModal();
@@ -5755,14 +5870,39 @@ document.addEventListener('click', function (e) {
     return text(v).replace(/\r\n/g, '\n').trim();
   }
 
+  function normalizeSemesterValue(v) {
+    const s = normalizeValue(v).toLowerCase();
+    if (s === '1st' || s === 'first' || s === 'first semester') return 'First Semester';
+    if (s === '2nd' || s === 'second' || s === 'second semester') return 'Second Semester';
+    return '';
+  }
+
+  function isLegacyGrade12SemesterContext(gradeLevel, schoolYear) {
+    return normalizeValue(gradeLevel) === 'Grade 12' && normalizeValue(schoolYear) === '2026-2027';
+  }
+
+  function setSfSemesterVisibility() {
+    const visible = isLegacyGrade12SemesterContext(api.get('gradeLevel'), api.get('schoolYear'));
+    ['sf1Semester', 'sf3Semester'].forEach(id => {
+      const el = getEl(id);
+      if (!el) return;
+      el.classList.toggle('ctm-semester-legacy-hidden', !visible);
+      el.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      el.disabled = !visible;
+      if (!visible && el.value) el.value = '';
+      if (visible && el.value) el.value = normalizeSemesterValue(el.value);
+    });
+  }
+
   function getEl(id) {
     return document.getElementById(id);
   }
 
   function readDomValue(id) {
     const el = getEl(id);
-    if (!el) return '';
-    return normalizeValue(el.value);
+    if (!el || el.disabled) return '';
+    const value = normalizeValue(el.value);
+    return ID_TO_FIELD[id] === 'semester' ? normalizeSemesterValue(value) : value;
   }
 
   const api = {
@@ -5790,6 +5930,7 @@ document.addEventListener('click', function (e) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
           this.data = Object.assign({}, this.data, parsed);
+          this.data.semester = normalizeSemesterValue(this.data.semester);
         }
       } catch (_) {}
     },
@@ -5810,10 +5951,11 @@ document.addEventListener('click', function (e) {
 
     set(field, value, sourceId) {
       if (!FIELD_MAP[field]) return;
-      const normalized = normalizeValue(value);
+      const normalized = field === 'semester' ? normalizeSemesterValue(value) : normalizeValue(value);
       this.data[field] = normalized;
       this.save();
       this.pushToAll(field, normalized, sourceId);
+      if (field === 'schoolYear' || field === 'gradeLevel' || field === 'semester') setSfSemesterVisibility();
       this.emit(field, normalized, sourceId || '');
     },
 
@@ -5835,7 +5977,7 @@ document.addEventListener('click', function (e) {
       let touched = false;
       Object.keys(FIELD_MAP).forEach(field => {
         if (!Object.prototype.hasOwnProperty.call(payload, field)) return;
-        this.data[field] = normalizeValue(payload[field]);
+        this.data[field] = field === 'semester' ? normalizeSemesterValue(payload[field]) : normalizeValue(payload[field]);
         touched = true;
       });
       if (!touched) return;
@@ -5884,12 +6026,15 @@ document.addEventListener('click', function (e) {
       Object.keys(FIELD_MAP).forEach(field => {
         this.pushToAll(field, this.get(field), sourceId || '');
       });
+      setSfSemesterVisibility();
     }
   };
 
   window.CTMSharedHeader = api;
   api.load();
   api.refreshFromDom(true);
+  api.data.semester = normalizeSemesterValue(api.data.semester);
+  setSfSemesterVisibility();
 
   function handleFieldEvent(event) {
     const target = event && event.target;
@@ -5901,6 +6046,13 @@ document.addEventListener('click', function (e) {
 
   document.addEventListener('input', handleFieldEvent, true);
   document.addEventListener('change', handleFieldEvent, true);
+
+  window.addEventListener('ctm:shared-header-sync', function () {
+    window.setTimeout(setSfSemesterVisibility, 0);
+  });
+  window.addEventListener('ctm:shared-header-sync-all', function () {
+    window.setTimeout(setSfSemesterVisibility, 0);
+  });
 
   document.addEventListener('click', function (event) {
     const launcher = event.target && event.target.closest && event.target.closest('#btnOpenSF1, #btnExportSF2Pdf, #btnOpenSF3, #btnOpenSF8, #btnOpenClassRecord');
@@ -6561,6 +6713,175 @@ document.addEventListener('click', function (e) {
     }
   })();
   </script>
+
+
+<script id="ctm-form-a11y-semantics-patch-v1">
+/* ===== CTM Form Field Accessibility Semantics Patch v1 =====
+   Fixes Chrome DevTools Issues:
+   - "A form field element should have an id or name attribute"
+   - "No label associated with a form field"
+   Compatibility notes:
+   - Adds missing IDs only where needed; does not rename existing IDs.
+   - Does not force/change name attributes, avoiding radio-group/form behavior changes.
+   - Adds visually hidden labels only when no native/ARIA label exists.
+   - Works for dynamically rendered modal fields via a debounced MutationObserver.
+*/
+(function () {
+  'use strict';
+  if (window.__ctmFormA11ySemanticsPatchV1) return;
+  window.__ctmFormA11ySemanticsPatchV1 = true;
+
+  var COUNTER_KEY = '__ctmFormA11ySemanticsCounterV1';
+  window[COUNTER_KEY] = window[COUNTER_KEY] || 0;
+
+  function toArray(list) {
+    return Array.prototype.slice.call(list || []);
+  }
+
+  function safeSlug(value) {
+    return String(value || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'field';
+  }
+
+  function uniqueId(base) {
+    var root = safeSlug(base);
+    var id;
+    do {
+      window[COUNTER_KEY] += 1;
+      id = 'ctm-' + root + '-' + window[COUNTER_KEY];
+    } while (document.getElementById(id));
+    return id;
+  }
+
+  function isRelevantField(field) {
+    if (!field || !field.tagName) return false;
+    var tag = field.tagName.toLowerCase();
+    if (tag !== 'input' && tag !== 'select' && tag !== 'textarea') return false;
+    var type = String(field.getAttribute('type') || '').toLowerCase();
+    return type !== 'hidden' && type !== 'button' && type !== 'submit' && type !== 'reset';
+  }
+
+  function hasUsableLabel(field) {
+    if (!field) return true;
+    if (field.labels && field.labels.length > 0) return true;
+    if (field.closest && field.closest('label')) return true;
+    if (field.hasAttribute('aria-label') && field.getAttribute('aria-label').trim()) return true;
+    if (field.hasAttribute('aria-labelledby') && field.getAttribute('aria-labelledby').trim()) return true;
+    return false;
+  }
+
+  function getFriendlyLabelText(field) {
+    var explicit = field.getAttribute('data-label') || field.getAttribute('aria-label') || field.getAttribute('title');
+    if (explicit && explicit.trim()) return explicit.trim();
+
+    var placeholder = field.getAttribute('placeholder');
+    if (placeholder && placeholder.trim()) return placeholder.trim();
+
+    var wrapper = field.closest && field.closest('.ctm-cr-field, .ctm-cr-card, .sf1-grid2, .sf2-setup-grid, .sf8-fields, .sf3-module, .ctm-learner-slot, .ctm-field, .field, .form-field, div');
+    if (wrapper) {
+      var labelled = wrapper.querySelector('.ctm-cr-label, .ctm-cr-mini-label, .sf1-section-label, label');
+      if (labelled && labelled.textContent && labelled.textContent.trim()) return labelled.textContent.trim();
+    }
+
+    return field.getAttribute('name') || field.id || 'Form field';
+  }
+
+  function connectNearbyLabel(field) {
+    if (!field.id) return;
+
+    var prev = field.previousElementSibling;
+    if (prev && prev.tagName && prev.tagName.toLowerCase() === 'label' && !prev.getAttribute('for')) {
+      prev.setAttribute('for', field.id);
+      return;
+    }
+
+    var parent = field.parentElement;
+    if (!parent) return;
+
+    var labels = toArray(parent.querySelectorAll(':scope > label:not([for])'));
+    if (labels.length === 1) labels[0].setAttribute('for', field.id);
+  }
+
+  function generatedLabelExists(fieldId) {
+    return toArray(document.querySelectorAll('label[data-ctm-generated-label]')).some(function (label) {
+      return label.getAttribute('data-ctm-generated-label') === fieldId;
+    });
+  }
+
+  function ensureSemanticsForField(field) {
+    if (!isRelevantField(field)) return;
+
+    if (!field.id) {
+      var base = field.getAttribute('name') || field.getAttribute('data-field') || field.getAttribute('data-key') || field.getAttribute('data-score-key') || field.getAttribute('data-hps-key') || field.getAttribute('placeholder') || field.tagName;
+      field.id = uniqueId(base);
+    }
+
+    connectNearbyLabel(field);
+
+    if (!hasUsableLabel(field) && !generatedLabelExists(field.id)) {
+      var label = document.createElement('label');
+      label.className = 'ctm-sr-only';
+      label.setAttribute('for', field.id);
+      label.setAttribute('data-ctm-generated-label', field.id);
+      label.textContent = getFriendlyLabelText(field);
+      field.insertAdjacentElement('beforebegin', label);
+    }
+  }
+
+  function fixFormFieldSemantics(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    if (isRelevantField(scope)) ensureSemanticsForField(scope);
+    toArray(scope.querySelectorAll ? scope.querySelectorAll('input, select, textarea') : []).forEach(ensureSemanticsForField);
+  }
+
+  window.ctmFixFormFieldSemantics = fixFormFieldSemantics;
+
+  function runInitialFix() {
+    fixFormFieldSemantics(document);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runInitialFix, { once: true });
+  } else {
+    runInitialFix();
+  }
+
+  var pending = false;
+  var observer = new MutationObserver(function (mutations) {
+    if (pending) return;
+    var hasFieldNode = mutations.some(function (mutation) {
+      return toArray(mutation.addedNodes).some(function (node) {
+        return node && node.nodeType === 1 && (
+          isRelevantField(node) ||
+          (node.querySelector && node.querySelector('input, select, textarea'))
+        );
+      });
+    });
+    if (!hasFieldNode) return;
+
+    pending = true;
+    setTimeout(function () {
+      pending = false;
+      fixFormFieldSemantics(document);
+    }, 80);
+  });
+
+  function startObserver() {
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.body) {
+    startObserver();
+  } else {
+    document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+  }
+})();
+</script>
 
 </body>
 <!--
