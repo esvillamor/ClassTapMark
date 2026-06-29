@@ -4,7 +4,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6d'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6f'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
   // To show the hidden columns again for testing/legacy review, either:
@@ -763,8 +763,9 @@ function hydrateTerms() {
   });
 }
 
-function categoryPercent(scores, hps) { let e = 0, t = 0; Object.keys(hps || {}).forEach(k => { const hv = num(hps[k]); const sv = num(scores && scores[k]); if (hv != null && sv != null && hv > 0) { e += sv; t += hv; } }); return t > 0 ? (e / t) * 100 : null; }
-function examPercent(scores, hps) { if (num(hps && hps.qa1) > 0 || num(scores && scores.qa1) != null) { const hv = num(hps && hps.qa1); const sv = num(scores && scores.qa1); return hv != null && sv != null && hv > 0 ? (sv / hv) * 100 : null; } const shares = { st1: 0.3, st2: 0.3, te: 0.4 }; let total = 0, seen = 0; Object.keys(shares).forEach(k => { const hv = num(hps && hps[k]); const sv = num(scores && scores[k]); if (hv != null && sv != null && hv > 0) { total += (sv / hv) * 100 * shares[k]; seen += 1; } }); return seen ? total : null; }
+function scoreAsZeroWhenBlank(scores, key) { const sv = num(scores && scores[key]); return sv == null ? 0 : sv; }
+function categoryPercent(scores, hps) { let e = 0, t = 0; Object.keys(hps || {}).forEach(k => { const hv = num(hps[k]); if (hv != null && hv > 0) { e += scoreAsZeroWhenBlank(scores, k); t += hv; } }); return t > 0 ? (e / t) * 100 : null; }
+function examPercent(scores, hps) { const qaHps = num(hps && hps.qa1); if (qaHps != null && qaHps > 0) return (scoreAsZeroWhenBlank(scores, 'qa1') / qaHps) * 100; const shares = { st1: 0.3, st2: 0.3, te: 0.4 }; let total = 0, seen = 0; Object.keys(shares).forEach(k => { const hv = num(hps && hps[k]); if (hv != null && hv > 0) { total += (scoreAsZeroWhenBlank(scores, k) / hv) * 100 * shares[k]; seen += 1; } }); return seen ? total : null; }
 function computeLearnerTerm(row, term) {
   const table = term.applicableTable;
   const legacyMode = isLegacyGrade12Term(term);
@@ -792,6 +793,25 @@ function computeLearnerTerm(row, term) {
     row.computed.generalDescription = chosen ? chosen.generalDescription : '';
     row.computed.termGrade = chosen ? chosen.code : '';
     row.computed.instructionalResponse = chosen && table === 'table8' ? descriptiveInstruction(chosen.code) : '';
+    return;
+  }
+  // Running-total numeric calculation: compute from the assessments already configured/encoded.
+  // Blank learner score cells under a positive HPS are counted as zero, so grades update immediately while encoding.
+  const activeFields = visibleScoreFields(term);
+  const hasEncodedHps = activeFields.some(field => num(term.hps[field.group][field.key]) > 0);
+  const invalidScore = hasValidationIssue(row, term);
+  if (!activeFields.length || !hasEncodedHps || invalidScore) {
+    row.computed.initialGrade = null;
+    row.computed.transmutedGrade = null;
+    row.computed.termGrade = null;
+    row.computed.finalDisplayedNumeric = null;
+    row.computed.letterGrade = '';
+    row.computed.descriptorCode = '';
+    row.computed.descriptorLabel = '';
+    row.computed.generalDescription = '';
+    row.computed.instructionalResponse = '';
+    if (legacyMode) row.computed.remarks = '';
+    row.computed.interventionFlag = false;
     return;
   }
   const weights = state.setupProfile.componentWeights;
@@ -2358,7 +2378,27 @@ function bindFinalLearnerCardSwipe() {
     next: () => jumpFinalLearner('next')
   });
 }
-function termStats(termKey) { const term = state[termKey], rows = term.learners || []; const numericGrades = isNumericTable(term.applicableTable) ? rows.map(r => summaryReportedNumeric(r && r.computed ? r.computed.termGrade : null, 60)).map(Number) : rows.map(r => r && r.computed ? r.computed.termGrade : null).filter(v => typeof v === 'number').map(Number); return { learners: rows.length, encoded: rows.filter(r => isNumericTable(term.applicableTable) ? visibleScoreFields(term).some(f => num(r.scores[f.group][f.key]) != null) : !descriptorMissing(r, term)).length, complete: rows.filter(r => isNumericTable(term.applicableTable) ? missingScoreCount(r, term) === 0 && visibleScoreFields(term).length > 0 : !descriptorMissing(r, term)).length, incomplete: rows.filter(r => isNumericTable(term.applicableTable) ? missingScoreCount(r, term) > 0 : descriptorMissing(r, term)).length, atRisk: rows.filter(r => r.computed.interventionFlag).length, average: (isNumericTable(term.applicableTable) ? rows.length : numericGrades.length) ? roundWhole(numericGrades.reduce((a, b) => a + b, 0) / (isNumericTable(term.applicableTable) ? rows.length : numericGrades.length)) : null }; }
+function termStats(termKey) {
+  const term = state[termKey], rows = term.learners || [];
+  const hasNumeric = isNumericTable(term.applicableTable);
+  const activeFields = hasNumeric ? visibleScoreFields(term) : [];
+  const hasEncodedHps = hasNumeric && activeFields.some(field => num(term.hps[field.group][field.key]) > 0);
+  const numericGrades = hasNumeric
+    ? rows
+        .filter(r => hasEncodedHps && !hasValidationIssue(r, term))
+        .map(r => r && r.computed ? r.computed.termGrade : null)
+        .filter(v => v != null && Number.isFinite(Number(v)))
+        .map(Number)
+    : rows.map(r => r && r.computed ? r.computed.termGrade : null).filter(v => typeof v === 'number').map(Number);
+  return {
+    learners: rows.length,
+    encoded: rows.filter(r => hasNumeric ? activeFields.some(f => num(r.scores[f.group][f.key]) != null) : !descriptorMissing(r, term)).length,
+    complete: rows.filter(r => hasNumeric ? hasEncodedHps && !hasValidationIssue(r, term) : !descriptorMissing(r, term)).length,
+    incomplete: rows.filter(r => hasNumeric ? !hasEncodedHps || hasValidationIssue(r, term) : descriptorMissing(r, term)).length,
+    atRisk: rows.filter(r => r.computed.interventionFlag).length,
+    average: numericGrades.length ? roundWhole(numericGrades.reduce((a, b) => a + b, 0) / numericGrades.length) : null
+  };
+}
   function hpsField(termKey, field, term) {
     const value = term.hps[field.group][field.key] == null ? '' : term.hps[field.group][field.key];
     return `<div class="ctm-cr-field ctm-cr-term-mini-field"><label class="ctm-cr-label" title="${esc(field.label)} Highest Possible Score">${field.label} HPS</label><input data-term="${termKey}" data-hps-group="${field.group}" data-hps-key="${field.key}" inputmode="decimal" aria-label="${esc(field.label)} highest possible score" value="${esc(value)}" placeholder="HPS"></div>`;
@@ -2545,10 +2585,13 @@ function termStats(termKey) { const term = state[termKey], rows = term.learners 
   function learnerStatusBadge(row, term) {
     const invalid = hasValidationIssue(row, term);
     const missing = missingScoreCount(row, term);
+    const hasNumeric = isNumericTable(term.applicableTable);
+    const hasEncodedHps = hasNumeric && visibleScoreFields(term).some(field => num(term.hps[field.group][field.key]) > 0);
     if (invalid) return '<span class="ctm-cr-status-tag bad">Invalid score</span>';
     if (term.applicableTable !== 'table11' && descriptorMissing(row, term)) return '<span class="ctm-cr-status-tag warn">Descriptor required</span>';
-    if (missing) return `<span class="ctm-cr-status-tag warn">${missing} missing</span>`;
+    if (hasNumeric && !hasEncodedHps) return '<span class="ctm-cr-status-tag warn">Set HPS</span>';
     if (row.computed.interventionFlag) return '<span class="ctm-cr-status-tag bad">Needs support</span>';
+    if (missing) return `<span class="ctm-cr-status-tag">${missing} blank=0</span>`;
     return '<span class="ctm-cr-status-tag">Complete</span>';
   }
 
