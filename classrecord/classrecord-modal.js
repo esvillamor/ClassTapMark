@@ -513,6 +513,8 @@ function isLegacyGrade12Do8(gradeLevel, schoolYear) { return text(gradeLevel).tr
   function getVisibleTerms(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear, semester = state.recordHeader && state.recordHeader.semester) { if (isLegacyGrade12SemesterLayout(gradeLevel, schoolYear)) return getLegacySemesterTerms(semester); if (isG12ModifiedThreeTermLayout(gradeLevel, schoolYear)) return [normalizeModifiedTerm(state.recordHeader && state.recordHeader.modifiedTerm)]; return ['term1', 'term2', 'term3']; }
   function getTermLabel(termKey, gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { if (isLegacyGrade12SemesterLayout(gradeLevel, schoolYear)) return LEGACY_G12_TERM_LABELS[termKey] || TERM_LABELS[termKey] || termKey; if (isG12ModifiedThreeTermLayout(gradeLevel, schoolYear)) return `Modified ${TERM_LABELS[termKey] || termKey}`; return TERM_LABELS[termKey] || termKey; }
   function getModifiedSubjectTabLabel(termKey) { const subject = text(state.recordHeader && state.recordHeader.subject).trim(); return subject || TERM_LABELS[termKey] || termKey; }
+  function getSubjectAchievementMeterTitle(fallbackLabel = 'Subject') { const subject = text(state.recordHeader && state.recordHeader.subject).trim(); return subject || fallbackLabel || 'Subject'; }
+  function getAttendanceTermLabel(termKey) { return isG12ModifiedThreeTermLayout() ? (TERM_LABELS[termKey] || termKey) : getTermLabel(termKey); }
   function getSummaryTermColumnLabel(termKey) { return isG12ModifiedThreeTermLayout() ? getModifiedSubjectTabLabel(termKey) : getTermLabel(termKey); }
   function currentG12SystemLabel() { const key = getG12Sy2026System(); return G12_SY2026_SYSTEMS[key] || ''; }
   function resolveSubjectGroupMode(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { const grade = text(gradeLevel).trim(); if (isLegacyGrade12Do8(grade, schoolYear)) return 'legacyG12'; if (/^Grade\s+(11|12)$/.test(grade)) return 'shs'; return 'basic'; }
@@ -1371,7 +1373,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     const note = attendanceSummaryNote(windowInfo);
     const rangeText = attendanceWindowText(windowInfo, termKey);
     const parts = ATTENDANCE_STATUS_LABELS.map(statusKey => `<span class="ctm-cr-attendance-chip"><b>${ATTENDANCE_STATUS_SHORT[statusKey]}</b> ${counts[statusKey]}</span>`).join('');
-    return `<div class="ctm-cr-card ctm-cr-attendance-summary"><div class="ctm-cr-attendance-row"><div class="ctm-cr-attendance-term">${esc(getTermLabel(termKey))}</div><div class="ctm-cr-attendance-body"><div class="ctm-cr-attendance-counts">${parts}</div>${rangeText ? `<div class="ctm-cr-attendance-range ctm-cr-small ctm-cr-muted">${esc(rangeText)}</div>` : ''}</div></div>${note ? `<div class="ctm-cr-small ctm-cr-muted" style="margin-top:.55rem;">${esc(note)}</div>` : ''}</div>`;
+    return `<div class="ctm-cr-card ctm-cr-attendance-summary"><div class="ctm-cr-attendance-row"><div class="ctm-cr-attendance-term">${esc(getAttendanceTermLabel(termKey))}</div><div class="ctm-cr-attendance-body"><div class="ctm-cr-attendance-counts">${parts}</div>${rangeText ? `<div class="ctm-cr-attendance-range ctm-cr-small ctm-cr-muted">${esc(rangeText)}</div>` : ''}</div></div>${note ? `<div class="ctm-cr-small ctm-cr-muted" style="margin-top:.55rem;">${esc(note)}</div>` : ''}</div>`;
   }
 
   function finalLearnerAttendanceSummaryHtml(learner, termKeys, rangeMarkup) {
@@ -1385,7 +1387,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
       const counts = cloneAttendanceCounts(summaryRoot.terms && summaryRoot.terms[termKey]);
       const rangeText = attendanceWindowText(windowInfo, termKey);
       const parts = ATTENDANCE_STATUS_LABELS.map(statusKey => `<span class="ctm-cr-attendance-chip"><b>${ATTENDANCE_STATUS_SHORT[statusKey]}</b> ${counts[statusKey]}</span>`).join('');
-      return `<div class="ctm-cr-attendance-row"><div class="ctm-cr-attendance-term">${esc(getTermLabel(termKey))}</div><div class="ctm-cr-attendance-body"><div class="ctm-cr-attendance-counts">${parts}</div>${rangeText ? `<div class="ctm-cr-attendance-range ctm-cr-small ctm-cr-muted">${esc(rangeText)}</div>` : ''}</div></div>`;
+      return `<div class="ctm-cr-attendance-row"><div class="ctm-cr-attendance-term">${esc(getAttendanceTermLabel(termKey))}</div><div class="ctm-cr-attendance-body"><div class="ctm-cr-attendance-counts">${parts}</div>${rangeText ? `<div class="ctm-cr-attendance-range ctm-cr-small ctm-cr-muted">${esc(rangeText)}</div>` : ''}</div></div>`;
     }).join('');
     const note = attendanceSummaryNote(windowInfo);
     return `<div class="ctm-cr-card ctm-cr-summary-attendance-card"><div class="ctm-cr-mini-label">Attendance Summary</div>${rows}${note ? `<div class="ctm-cr-small ctm-cr-muted" style="margin-top:.55rem;">${esc(note)}</div>` : ''}</div>`;
@@ -2903,7 +2905,8 @@ function buildTermPanel(termKey) {
   const learnerAchievementSource = learner
     ? Object.assign({}, learner.computed || {}, (hideInstructionalResponse ? { instructionalResponse: '' } : {}))
     : null;
-  const learnerAchievementHtml = learner ? renderAchievementMeter(learnerAchievementSource || {}, { tableKey: term.applicableTable, title: legacyMode ? 'Quarterly Achievement Meter' : `${getTermLabel(termKey)} Achievement Meter`, ariaLabel: learner ? `${learner.name} ${getTermLabel(termKey)} achievement meter` : '' }) : '';
+  const learnerAchievementTitle = getSubjectAchievementMeterTitle('Subject');
+  const learnerAchievementHtml = learner ? renderAchievementMeter(learnerAchievementSource || {}, { tableKey: term.applicableTable, title: learnerAchievementTitle, ariaLabel: learner ? `${learner.name} ${learnerAchievementTitle} achievement meter` : `${learnerAchievementTitle} achievement meter` }) : '';
   const learnerInfoHtml = learner
     ? `${hasNumeric ? `<div class="ctm-cr-pill-list" style="margin-bottom:.65rem;">${learnerStatusBadge(learner, term)}</div>` : ''}${learnerAchievementHtml}`
     : '';
@@ -3189,7 +3192,8 @@ function renderFinal() {
   let selectedSummaryHtml = '<div class="ctm-cr-disclaimer">Select a learner row to review the summary details.</div>';
   if (selected) {
     const row1Cards = [];
-    const selectedAchievementHtml = renderAchievementMeter(selected.finalResult || {}, { tableKey: selected.finalResult.tableUsed || finalSummary.applicableTable, title: 'Final Achievement Meter', ariaLabel: selected ? `${selected.name} final achievement meter` : 'Final achievement meter' });
+    const selectedAchievementTitle = getSubjectAchievementMeterTitle('Subject');
+    const selectedAchievementHtml = renderAchievementMeter(selected.finalResult || {}, { tableKey: selected.finalResult.tableUsed || finalSummary.applicableTable, title: selectedAchievementTitle, ariaLabel: selected ? `${selected.name} ${selectedAchievementTitle} achievement meter` : `${selectedAchievementTitle} achievement meter` });
     if (legacy) {
       const firstKey = visibleTerms[0];
       const secondKey = visibleTerms[1];
