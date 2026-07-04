@@ -1545,7 +1545,20 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
   }
   function applySnapshot(payload) { initDefaults(); if (!payload || typeof payload !== 'object') return; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = normalizeRoster(payload.roster || []); state.roster = clone(state.savedRoster); state.recordHeader = Object.assign(defaultRecordHeader(), clone(payload.recordHeader || {})); state.setupProfile = Object.assign(defaultSetupProfile(), clone(payload.setupProfile || {})); state.term1 = Object.assign(defaultTerm('term1'), clone(payload.term1 || {})); state.term2 = Object.assign(defaultTerm('term2'), clone(payload.term2 || {})); state.term3 = Object.assign(defaultTerm('term3'), clone(payload.term3 || {})); state.term4 = Object.assign(defaultTerm('term4'), clone(payload.term4 || {})); state.finalSummary = Object.assign(defaultFinalSummary(), clone(payload.finalSummary || {})); state.attendance = Object.assign(defaultAttendance(), clone(payload.attendance || {})); state.isTransientDraft = !text(state.recordHeader && state.recordHeader.recordId).trim(); }
 
-  function renderRecordPicker() { dom.recordPicker.innerHTML = '<option value="">Draft / New school-year record</option>' + loadIndex().map(item => `<option value="${esc(item.key)}">${esc(item.label)}</option>`).join(''); if (state.recordHeader.recordId) dom.recordPicker.value = state.recordHeader.recordId; }
+  function getSortedRecordPickerIndex() {
+    // UI-only ordering fix: keep the draft/new entry first, but always show saved
+    // Class Record entries alphabetically by their visible label. Do not mutate
+    // the stored localStorage index so existing save/load/delete/CSV compatibility
+    // and record history formats remain unchanged.
+    return loadIndex().slice().sort((a, b) => {
+      const labelA = text(a && a.label).trim();
+      const labelB = text(b && b.label).trim();
+      const byLabel = labelA.localeCompare(labelB, undefined, { sensitivity: 'base', numeric: true });
+      if (byLabel) return byLabel;
+      return text(a && a.key).localeCompare(text(b && b.key), undefined, { sensitivity: 'base', numeric: true });
+    });
+  }
+  function renderRecordPicker() { dom.recordPicker.innerHTML = '<option value="">Draft / New school-year record</option>' + getSortedRecordPickerIndex().map(item => `<option value="${esc(item.key)}">${esc(item.label)}</option>`).join(''); if (state.recordHeader.recordId) dom.recordPicker.value = state.recordHeader.recordId; }
   function closeFlash() {
     clearTimeout(flash._t);
     if (!dom.flash) return;
