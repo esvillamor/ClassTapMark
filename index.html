@@ -27,6 +27,18 @@
       --radius:16px;
     }
     html,body{height:100%}
+    /* Hide only the main browser/window scrollbar while keeping page scrolling active.
+       Inner scroll areas such as tables and modals keep their existing overflow behavior. */
+    html, body{
+      scrollbar-width: none;      /* Firefox */
+      -ms-overflow-style: none;   /* Legacy Edge / IE */
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar{
+      width: 0;
+      height: 0;
+      display: none;             /* Chrome, Safari, Edge, Android WebView */
+    }
     body{
       margin:0; padding:1rem;
       font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -1232,6 +1244,35 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/* ===== CTM Patch: SF modal Grade 12 controls cleanup =====
+   SF1/SF2/SF3/SF8 no longer display the Grade 12 SY 2026-2027 Grading System
+   dropdown or separate Subject Term fields. SF1/SF3 keep their existing
+   Semester control visible; it automatically becomes a Term control when the
+   saved Class Record grading system is Three Term / Modified Three Term. */
+.ctm-g12-shared-system-field,
+.ctm-g12-shared-modified-term-field{
+  display:none !important;
+}
+.ctm-g12-classrecord-settings-prompt{
+  display:none;
+  margin-top:.7rem;
+  padding:.72rem .85rem;
+  border-radius:14px;
+  border:1px solid rgba(102,126,234,.28);
+  background:linear-gradient(135deg,#eef2ff,#f8fafc);
+  color:#334155;
+  font-size:.86rem;
+  line-height:1.42;
+  box-shadow:0 6px 16px rgba(15,23,42,.06);
+}
+.ctm-g12-classrecord-settings-prompt.is-visible{
+  display:block;
+}
+.ctm-g12-classrecord-settings-prompt strong{
+  color:#1d4ed8;
+}
+
 </style>
 
 <script>
@@ -1640,6 +1681,7 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
         <input id="sf1TrackStrand" placeholder="Track and Strand">
         <input id="sf1Teacher" placeholder="Teacher / Class Adviser" class="span-all">
       </div>
+      <div id="sf1G12SettingsPrompt" class="ctm-g12-classrecord-settings-prompt" role="status" aria-live="polite" hidden></div>
 
       <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
         <button class="primary" id="sf1BtnExportCsv" type="button">Export CSV</button>
@@ -1840,6 +1882,7 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
         <input id="sf3TrackStrand" placeholder="Track and Strand">
         <input id="sf3Teacher" placeholder="Teacher / Class Adviser" class="span-all">
       </div>
+      <div id="sf3G12SettingsPrompt" class="ctm-g12-classrecord-settings-prompt" role="status" aria-live="polite" hidden></div>
 
       <!-- Actions MUST be on Header Fields tab (per SF3 specs) -->
       <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
@@ -4807,7 +4850,7 @@ content.innerHTML =
       const mk = monthKeyFromDate(d);
       const label = formatMonthLabel(d);
       const days = daysInMonth(d.getFullYear(), d.getMonth());
-      html += `<label title="${mk}"><input type="checkbox" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
+      html += `<label title="${mk}"><input type="checkbox" name="exportMonth" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
     }
     html += '</div>';
 
@@ -4815,7 +4858,7 @@ content.innerHTML =
     const currentDays = daysInMonth(month0.getFullYear(), month0.getMonth());
     const currentLabel = formatMonthLabel(month0);
     html += `<label class="current-date-center" title="${currentMonthKey}">
-      <input type="checkbox" value="${currentMonthKey}" onchange="toggleMonth('${currentMonthKey}')" checked> Present Month ${currentLabel} (${currentDays} days)
+      <input type="checkbox" name="exportMonth" value="${currentMonthKey}" onchange="toggleMonth('${currentMonthKey}')" checked> Present Month ${currentLabel} (${currentDays} days)
     </label>`;
 
     // PAST MONTHS (bottom): 18 months before the current month
@@ -4826,7 +4869,7 @@ content.innerHTML =
       const mk = monthKeyFromDate(d);
       const label = formatMonthLabel(d);
       const days = daysInMonth(d.getFullYear(), d.getMonth());
-      html += `<label title="${mk}"><input type="checkbox" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
+      html += `<label title="${mk}"><input type="checkbox" name="exportMonth" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
     }
     html += '</div>';
 
@@ -5848,6 +5891,8 @@ document.addEventListener('click', function (e) {
     gradeLevel: ['crGradeLevel', 'sf1GradeLevel', 'sf2GradeLevel', 'sf3GradeLevel', 'sf8Grade'],
     section: ['crSection', 'sf1Section', 'sf2Section', 'sf3Section', 'sf8Section'],
     semester: ['crSemester', 'sf1Semester', 'sf3Semester'],
+    g12Sy2026System: ['crG12Sy2026System', 'sf1G12Sy2026System', 'sf2G12Sy2026System', 'sf3G12Sy2026System', 'sf8G12Sy2026System'],
+    modifiedTerm: ['crModifiedTerm', 'sf1ModifiedTerm', 'sf2ModifiedTerm', 'sf3ModifiedTerm', 'sf8ModifiedTerm'],
     teacherName: ['crTeacher', 'sf1Teacher', 'sf2Teacher', 'sf3Teacher'],
     schoolId: ['crSchoolId', 'sf1SchoolId', 'sf2SchoolId', 'sf3SchoolId', 'sf8SchoolId'],
     district: ['crDistrict', 'sf1District', 'sf3District', 'sf8District'],
@@ -5877,21 +5922,120 @@ document.addEventListener('click', function (e) {
     return '';
   }
 
-  function isLegacyGrade12SemesterContext(gradeLevel, schoolYear) {
+  function normalizeG12Sy2026SystemValue(v) {
+    const s = normalizeValue(v);
+    if (s === 'threeTerm' || (/three\s*term/i.test(s) && !/modified/i.test(s))) return 'threeTerm';
+    if (s === 'modifiedThreeTerm' || /modified/i.test(s)) return 'modifiedThreeTerm';
+    return 'quarterSemester';
+  }
+
+  function normalizeModifiedTermValue(v) {
+    const s = normalizeValue(v);
+    return ['term1', 'term2', 'term3'].includes(s) ? s : 'term1';
+  }
+
+  function isGrade12Sy2026Context(gradeLevel, schoolYear) {
     return normalizeValue(gradeLevel) === 'Grade 12' && normalizeValue(schoolYear) === '2026-2027';
   }
 
-  function setSfSemesterVisibility() {
-    const visible = isLegacyGrade12SemesterContext(api.get('gradeLevel'), api.get('schoolYear'));
-    ['sf1Semester', 'sf3Semester'].forEach(id => {
-      const el = getEl(id);
-      if (!el) return;
-      el.classList.toggle('ctm-semester-legacy-hidden', !visible);
-      el.setAttribute('aria-hidden', visible ? 'false' : 'true');
-      el.disabled = !visible;
-      if (!visible && el.value) el.value = '';
-      if (visible && el.value) el.value = normalizeSemesterValue(el.value);
+  function isLegacyGrade12SemesterContext(gradeLevel, schoolYear) {
+    return isGrade12Sy2026Context(gradeLevel, schoolYear) && normalizeG12Sy2026SystemValue(api.get('g12Sy2026System')) === 'quarterSemester';
+  }
+
+  function isSchoolFormTermHostId(id) {
+    return /^(sf1|sf3)Semester$/.test(String(id || ''));
+  }
+
+  function shouldUseSchoolFormTermControl() {
+    const gradeLevel = normalizeValue(api.get('gradeLevel'));
+    const schoolYear = normalizeValue(api.get('schoolYear'));
+    const gradeMatch = gradeLevel.match(/^Grade\s+(\d+)$/i);
+    const gradeNo = gradeMatch ? Number(gradeMatch[1]) : null;
+
+    // DO No. 015, s. 2026 uses a Three-Term School Calendar. For SF1/SF3,
+    // Kindergarten through Grade 11 should therefore show Term instead of Semester.
+    // Grade 12 SY 2026-2027 remains special because it may still use the saved
+    // Class Record setting: Quarter/Semester, Three Term, or Modified Three Term.
+    if (gradeLevel === 'Kindergarten') return true;
+    if (Number.isFinite(gradeNo) && gradeNo <= 11) return true;
+    if (gradeNo === 12 && schoolYear === '2026-2027') {
+      return normalizeG12Sy2026SystemValue(api.get('g12Sy2026System')) !== 'quarterSemester';
+    }
+    return false;
+  }
+
+  function configureSchoolFormSemesterTermControl(el, useTerm) {
+    if (!el) return;
+    const desiredMode = useTerm ? 'term' : 'semester';
+    if (el.getAttribute('data-ctm-sf-semester-mode') !== desiredMode) {
+      el.innerHTML = useTerm
+        ? '<option value="">Select Term</option><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option>'
+        : '<option value="">Select Semester</option><option value="First Semester">First Semester</option><option value="Second Semester">Second Semester</option>';
+      el.setAttribute('data-ctm-sf-semester-mode', desiredMode);
+    }
+    el.title = useTerm ? 'Term' : 'Semester';
+    el.setAttribute('aria-label', useTerm ? 'Term' : 'Semester');
+    el.classList.remove('ctm-semester-legacy-hidden');
+    el.setAttribute('aria-hidden', 'false');
+    el.disabled = false;
+    const parent = el.closest('div') || el.parentElement;
+    if (parent) parent.classList.remove('ctm-semester-legacy-hidden');
+    const value = useTerm ? normalizeModifiedTermValue(api.get('modifiedTerm')) : normalizeSemesterValue(api.get('semester'));
+    if (el.value !== value) el.value = value;
+  }
+
+  function updateSchoolFormG12SettingsPrompt() {
+    const gradeLevel = normalizeValue(api.get('gradeLevel'));
+    const schoolYear = normalizeValue(api.get('schoolYear'));
+    const system = normalizeG12Sy2026SystemValue(api.get('g12Sy2026System'));
+    const systemLabel = system === 'threeTerm' ? 'Three Term' : (system === 'modifiedThreeTerm' ? 'Modified Three Term' : 'Quarter / Semester');
+    const show = gradeLevel === 'Grade 12';
+    const message = schoolYear === '2026-2027'
+      ? 'Grade 12 selected. The Grade 12 SY 2026-2027 grading system is controlled in Class Record settings. Open Class Record to switch between Quarter / Semester, Three Term, or Modified Three Term. Current saved setting: ' + systemLabel + '.'
+      : 'Grade 12 selected. If this class is for SY 2026-2027, change the Grade 12 grading system in Class Record settings.';
+    ['sf1G12SettingsPrompt', 'sf3G12SettingsPrompt'].forEach(id => {
+      const prompt = getEl(id);
+      if (!prompt) return;
+      prompt.hidden = !show;
+      prompt.classList.toggle('is-visible', show);
+      prompt.innerHTML = '<strong>Grade 12 notice:</strong> ' + message;
     });
+  }
+
+  function isSchoolFormG12SystemId(id) {
+    return /^sf(?:1|2|3|8)G12Sy2026System$/.test(String(id || ''));
+  }
+
+  function applySchoolFormG12SystemReadOnly(control) {
+    if (!control || !isSchoolFormG12SystemId(control.id)) return false;
+    control.disabled = true;
+    control.setAttribute('aria-readonly', 'true');
+    control.setAttribute('data-ctm-readonly', 'true');
+    control.classList.add('ctm-g12-system-readonly');
+    control.title = 'Read-only here to protect the saved shared class record. Change the Grade 12 SY 2026-2027 grading system only from the class record setup.';
+    if (!control.nextElementSibling || !control.nextElementSibling.classList || !control.nextElementSibling.classList.contains('ctm-readonly-note')) {
+      const note = document.createElement('div');
+      note.className = 'ctm-readonly-note';
+      note.textContent = 'Read-only in School Forms to protect the saved class record.';
+      control.insertAdjacentElement('afterend', note);
+    }
+    return true;
+  }
+
+  function setSfSemesterVisibility() {
+    const useTerm = shouldUseSchoolFormTermControl();
+
+    // Legacy injected controls are intentionally not shown in School Form modals.
+    document.querySelectorAll('.ctm-g12-shared-system-field, .ctm-g12-shared-modified-term-field').forEach(field => {
+      field.style.display = 'none';
+      const control = field.querySelector('select, input');
+      if (control) control.disabled = true;
+    });
+
+    ['sf1Semester', 'sf3Semester'].forEach(id => {
+      configureSchoolFormSemesterTermControl(getEl(id), useTerm);
+    });
+    updateSchoolFormG12SettingsPrompt();
   }
 
   function getEl(id) {
@@ -5900,9 +6044,28 @@ document.addEventListener('click', function (e) {
 
   function readDomValue(id) {
     const el = getEl(id);
-    if (!el || el.disabled) return '';
+    if (!el) return '';
+    if (isSchoolFormG12SystemId(id)) return '';
+    if (el.disabled) return '';
     const value = normalizeValue(el.value);
-    return ID_TO_FIELD[id] === 'semester' ? normalizeSemesterValue(value) : value;
+    const field = ID_TO_FIELD[id];
+    if (field === 'semester' && isSchoolFormTermHostId(id) && shouldUseSchoolFormTermControl()) return '';
+    if (field === 'semester') return normalizeSemesterValue(value);
+    if (field === 'g12Sy2026System') return normalizeG12Sy2026SystemValue(value);
+    if (field === 'modifiedTerm') return normalizeModifiedTermValue(value);
+    return value;
+  }
+
+  function ensureG12SharedControls() {
+    // No visible Grade 12 SY 2026-2027 Grading System or separate Subject Term
+    // controls are injected into SF1/SF2/SF3/SF8. The Class Record remains the
+    // single source for the grading-system setting, while SF1/SF3 reuse their
+    // existing Semester field as a Term selector when applicable.
+    document.querySelectorAll('.ctm-g12-shared-system-field, .ctm-g12-shared-modified-term-field').forEach(field => {
+      field.style.display = 'none';
+      const control = field.querySelector('select, input');
+      if (control) control.disabled = true;
+    });
   }
 
   const api = {
@@ -5919,6 +6082,8 @@ document.addEventListener('click', function (e) {
       district: '',
       division: '',
       region: '',
+      g12Sy2026System: 'quarterSemester',
+      modifiedTerm: 'term1',
       course: '',
       trackStrand: ''
     },
@@ -5931,6 +6096,8 @@ document.addEventListener('click', function (e) {
         if (parsed && typeof parsed === 'object') {
           this.data = Object.assign({}, this.data, parsed);
           this.data.semester = normalizeSemesterValue(this.data.semester);
+          this.data.g12Sy2026System = normalizeG12Sy2026SystemValue(this.data.g12Sy2026System);
+          this.data.modifiedTerm = normalizeModifiedTermValue(this.data.modifiedTerm);
         }
       } catch (_) {}
     },
@@ -5951,11 +6118,16 @@ document.addEventListener('click', function (e) {
 
     set(field, value, sourceId) {
       if (!FIELD_MAP[field]) return;
-      const normalized = field === 'semester' ? normalizeSemesterValue(value) : normalizeValue(value);
+      if (field === 'g12Sy2026System' && isSchoolFormG12SystemId(sourceId)) {
+        this.pushToAll(field, this.get(field), sourceId || '');
+        setSfSemesterVisibility();
+        return;
+      }
+      const normalized = field === 'semester' ? normalizeSemesterValue(value) : (field === 'g12Sy2026System' ? normalizeG12Sy2026SystemValue(value) : (field === 'modifiedTerm' ? normalizeModifiedTermValue(value) : normalizeValue(value)));
       this.data[field] = normalized;
       this.save();
       this.pushToAll(field, normalized, sourceId);
-      if (field === 'schoolYear' || field === 'gradeLevel' || field === 'semester') setSfSemesterVisibility();
+      if (field === 'schoolYear' || field === 'gradeLevel' || field === 'semester' || field === 'g12Sy2026System' || field === 'modifiedTerm') setSfSemesterVisibility();
       this.emit(field, normalized, sourceId || '');
     },
 
@@ -5977,7 +6149,7 @@ document.addEventListener('click', function (e) {
       let touched = false;
       Object.keys(FIELD_MAP).forEach(field => {
         if (!Object.prototype.hasOwnProperty.call(payload, field)) return;
-        this.data[field] = field === 'semester' ? normalizeSemesterValue(payload[field]) : normalizeValue(payload[field]);
+        this.data[field] = field === 'semester' ? normalizeSemesterValue(payload[field]) : (field === 'g12Sy2026System' ? normalizeG12Sy2026SystemValue(payload[field]) : (field === 'modifiedTerm' ? normalizeModifiedTermValue(payload[field]) : normalizeValue(payload[field])));
         touched = true;
       });
       if (!touched) return;
@@ -5997,11 +6169,15 @@ document.addEventListener('click', function (e) {
       (FIELD_MAP[field] || []).forEach(id => {
         const el = getEl(id);
         if (!el || id === sourceId) return;
+        if (field === 'semester' && isSchoolFormTermHostId(id) && shouldUseSchoolFormTermControl()) return;
         if (normalizeValue(el.value) !== value) {
           el.value = value;
           try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         }
       });
+      if (field === 'semester' || field === 'modifiedTerm' || field === 'g12Sy2026System' || field === 'gradeLevel' || field === 'schoolYear') {
+        setSfSemesterVisibility();
+      }
     },
 
     refreshFromDom(preferFilledOnly) {
@@ -6031,16 +6207,29 @@ document.addEventListener('click', function (e) {
   };
 
   window.CTMSharedHeader = api;
+  ensureG12SharedControls();
   api.load();
   api.refreshFromDom(true);
   api.data.semester = normalizeSemesterValue(api.data.semester);
+  api.data.g12Sy2026System = normalizeG12Sy2026SystemValue(api.data.g12Sy2026System);
+  api.data.modifiedTerm = normalizeModifiedTermValue(api.data.modifiedTerm);
   setSfSemesterVisibility();
 
   function handleFieldEvent(event) {
     const target = event && event.target;
     if (!target || !target.id) return;
+    if (isSchoolFormTermHostId(target.id) && shouldUseSchoolFormTermControl()) {
+      api.set('modifiedTerm', target.value, target.id);
+      setSfSemesterVisibility();
+      return;
+    }
     const field = api.detectFieldById(target.id);
     if (!field) return;
+    if (field === 'g12Sy2026System' && isSchoolFormG12SystemId(target.id)) {
+      target.value = api.get('g12Sy2026System');
+      setSfSemesterVisibility();
+      return;
+    }
     api.set(field, target.value, target.id);
   }
 
@@ -6880,6 +7069,75 @@ document.addEventListener('click', function (e) {
   } else {
     document.addEventListener('DOMContentLoaded', startObserver, { once: true });
   }
+})();
+</script>
+
+
+<!-- ctm-a11y-v4-runtime-fix: preserves existing IDs/data hooks, adds missing name attributes, and associates labels for static + dynamically rendered form fields. -->
+<style id="ctm-a11y-v4-style">.ctm-a11y-v4-label,.ctm-a11y-v3-label{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}</style>
+<script id="ctm-a11y-v4-runtime-fix">
+(function(){
+  'use strict';
+  if(window.__CTM_A11Y_V4__)return; window.__CTM_A11Y_V4__=true;
+  var SEL='input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),select,textarea';
+  function escCss(s){return window.CSS&&CSS.escape?CSS.escape(String(s)):String(s).replace(/[^a-zA-Z0-9_-]/g,'\$&');}
+  function words(s){return String(s||'').replace(/[_-]+/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\s+/g,' ').trim();}
+  function slug(s){return (words(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'field');}
+  function hasDuplicateId(id,el){var list=document.querySelectorAll('#'+escCss(id));return list.length>1 || (list.length===1 && list[0]!==el);}
+  function uid(el){
+    var box=el.closest('form,[role="dialog"],.modal,section,.section,.modal-content')||document.body;
+    var base=(box.id?box.id+'-':'ctm-')+slug(el.getAttribute('name')||el.getAttribute('aria-label')||el.getAttribute('placeholder')||el.getAttribute('title')||el.getAttribute('type')||el.tagName);
+    var id=base,n=2;
+    while(document.getElementById(id)&&document.getElementById(id)!==el)id=base+'-'+(n++);
+    return id;
+  }
+  function visibleText(node){return words(node && node.textContent);}
+  function associatedLabel(el){return !!(el.closest('label')||(el.id&&document.querySelector('label[for="'+escCss(el.id)+'"]')));}
+  function labelText(el){
+    var p=el.previousElementSibling;
+    if(p&&p.tagName==='LABEL')return visibleText(p);
+    var pp=el.parentElement, lab=pp&&pp.querySelector(':scope > label');
+    return words((lab&&lab.textContent)||el.getAttribute('aria-label')||el.getAttribute('title')||el.getAttribute('placeholder')||el.getAttribute('name')||el.id)||(el.tagName.toLowerCase()==='select'?'Select field':'Input field');
+  }
+  function ensureIdAndName(el){
+    if(!el.id || hasDuplicateId(el.id,el)) el.id=uid(el);
+    if(!el.getAttribute('name')) el.setAttribute('name', el.id);
+  }
+  function ensureLabel(el){
+    if(associatedLabel(el))return;
+    var prev=el.previousElementSibling;
+    if(prev&&prev.tagName==='LABEL'&&!prev.getAttribute('for')){prev.setAttribute('for',el.id);return;}
+    var labs=el.parentElement?el.parentElement.querySelectorAll(':scope > label:not([for])'):[];
+    if(labs.length===1){labs[0].setAttribute('for',el.id);return;}
+    var lab=document.createElement('label');
+    lab.className='ctm-a11y-v4-label';
+    lab.htmlFor=el.id;
+    lab.textContent=labelText(el);
+    lab.setAttribute('data-ctm-a11y-generated','true');
+    if(el.parentNode)el.parentNode.insertBefore(lab,el);
+  }
+  function fix(el){
+    if(!el||el.nodeType!==1||!el.matches||!el.matches(SEL)||el.dataset.ctmA11ySkip==='true')return;
+    ensureIdAndName(el);
+    ensureLabel(el);
+  }
+  function refresh(root){
+    root=root&&root.nodeType===1?root:document;
+    var fields=[];
+    if(root.matches&&root.matches(SEL))fields.push(root);
+    if(root.querySelectorAll)fields=fields.concat([].slice.call(root.querySelectorAll(SEL)));
+    fields.forEach(fix);
+    return fields.length;
+  }
+  window.CTMFormA11y=window.CTMFormA11y||{};
+  window.CTMFormA11y.refresh=refresh;
+  window.CTMFormA11y.version='4.0.0';
+  function run(){refresh(document); setTimeout(function(){refresh(document);},150); setTimeout(function(){refresh(document);},600);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
+  var timer=0;
+  var mo=new MutationObserver(function(){clearTimeout(timer);timer=setTimeout(function(){refresh(document);},50);});
+  function observe(){mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-hidden','hidden','style','class','id','name']});}
+  if(document.documentElement)observe();
 })();
 </script>
 
