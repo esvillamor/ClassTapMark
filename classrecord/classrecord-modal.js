@@ -4,7 +4,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.6h'; // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; New/Duplicate route to Header Fields; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.13-g12-summary-desc-response-hide'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -14,6 +14,10 @@
   //      and/or window.CTM_CLASSRECORD_SHOW_SUMMARY_FINAL_DESCRIPTOR_COLUMN = true;
   const DEFAULT_SHOW_SUMMARY_LETTER_COLUMN = false;
   const DEFAULT_SHOW_SUMMARY_FINAL_DESCRIPTOR_COLUMN = false;
+  // UI-only: hide General Description / Instructional Response columns in the Summary table
+  // for Grade 12 SY 2026-2027 when Three Term or Modified Three Term is selected.
+  // Data is still computed, stored, CSV-compatible, and available in term/learner detail views.
+  const HIDE_SUMMARY_DESC_RESPONSE_FOR_G12_THREE_TERM = true;
   const PASSING_GRADE = 75;
   const TERMS = ['term1', 'term2', 'term3', 'term4'];
   const TERM_LABELS = { term1: 'Term 1', term2: 'Term 2', term3: 'Term 3', term4: 'Term 4' };
@@ -162,17 +166,17 @@ const LEGACY_G12_DO8_2015_PROFILES = {
   'SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects': { profileName: 'SHS Grade 12 Legacy TVL / Sports / Arts & Design Other Subjects', weights: { ww: 0.20, pt: 0.60, ex: 0.20 }, assessmentCounts: { wwCount: 5, ptCount: 5, stCount: 0, hasTE: false, qaCount: 1 } },
   'SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance': { profileName: 'SHS Grade 12 Legacy TVL / Sports / Arts & Design Immersion / Research / Exhibit / Performance', weights: { ww: 0.20, pt: 0.60, ex: 0.20 }, assessmentCounts: { wwCount: 5, ptCount: 5, stCount: 0, hasTE: false, qaCount: 1 } }
 };
-  const fallbackHtml = "<div id=\"classRecordModal\" class=\"modal\" aria-hidden=\"true\" role=\"dialog\" aria-modal=\"true\" style=\"display:none\">\n  <div class=\"modal-content ctm-cr-modal-content\" style=\"max-width:1200px;\">\n    <div class=\"ctm-cr-topbar\">\n      <div>\n        <h3 style=\"margin:0\">Class Record</h3>\n        <div class=\"ctm-cr-subtitle\"><span id=\"crTopClassName\">No class loaded</span><span>\u2022</span><span id=\"crTopSubject\">No subject</span><span>\u2022</span><span id=\"crTopSchoolYear\">No school year</span></div>\n      </div>\n      <div class=\"ctm-cr-topbar-actions\">\n        <button class=\"primary\" id=\"crBtnSave\">Save Class Record</button>\n        <button class=\"edit\" id=\"crBtnDuplicate\">Duplicate</button>\n        <button class=\"edit\" id=\"crBtnNew\">New Record</button>\n        <button class=\"danger\" id=\"crBtnDelete\">Delete</button>\n        <button class=\"primary\" id=\"crBtnImportCsv\">Import CSV</button>\n        <button class=\"primary\" id=\"crBtnExportCsv\">Export CSV</button>\n        <button class=\"danger\" id=\"crBtnClose\" style=\"padding:.25rem .6rem\">\u2715</button>\n      </div>\n    </div>\n    <div class=\"ctm-cr-disclaimer\"><b>Testing Build:</b> Mobile-first Class Record with shared HPS per term, individual learner cards, full CSV import/export, and validation.</div>\n    <div class=\"ctm-cr-manager section-lite\">\n      <div class=\"ctm-cr-manager-grid\">\n        <div><label class=\"ctm-cr-label\">Saved Record</label><select id=\"crRecordPicker\"></select></div>\n        <div><label class=\"ctm-cr-label\">Record Status</label><div id=\"crRecordStatus\" class=\"ctm-cr-status-pill\">Draft / unsaved school-year record</div></div>\n        <div><label class=\"ctm-cr-label\">Policy Source</label><div class=\"ctm-cr-status-pill\">DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)</div></div>\n      </div>\n    </div>\n    <div class=\"ctm-cr-tabs\" aria-label=\"Class Record Tabs\">\n      <div id=\"crTabsShell\" class=\"ctm-cr-tabs-shell\" role=\"tablist\" aria-label=\"Class Record Tabs\" aria-hidden=\"false\">\n      <button class=\"primary ctm-cr-tab active\" data-tab=\"header\" type=\"button\">Header Fields</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"policy\" type=\"button\">Policy Setup</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term1\" type=\"button\">Term 1</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term2\" type=\"button\">Term 2</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term3\" type=\"button\">Term 3</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term4\" type=\"button\">Term 4</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"final\" type=\"button\">Summary</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"attendance\" type=\"button\">Attendance</button>\n      </div>\n      <div class=\"ctm-cr-tabs-footer\"><p class=\"ctm-cr-tabs-source\"><a href=\"https://drive.google.com/drive/folders/13APGK-OoX_g2bWqVZ9h-iGd16DCDNa5_?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer\">Source: DO No. 015, s. 2026 / DO No. 8, s. 2015</a></p></div>\n    </div>\n    <div id=\"crFlash\" class=\"ctm-cr-flash\" style=\"display:none\" aria-live=\"polite\" aria-atomic=\"true\" aria-hidden=\"true\"></div>\n    <section id=\"crPanelHeader\" class=\"ctm-cr-panel active\">\n      <div class=\"ctm-cr-panel-title\">Record Header</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSchoolName\">School Name</label><input id=\"crSchoolName\" placeholder=\"School Name\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolYear\">School Year</label><input id=\"crSchoolYear\" placeholder=\"2026-2027\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crGradeLevel\">Grade Level</label>\n          <select id=\"crGradeLevel\"><option value=\"\">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>\n        </div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSection\">Class / Section</label><input id=\"crSection\" placeholder=\"Section\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSemester\">Semester</label><select id=\"crSemester\"><option value=\"\">Select Semester</option><option value=\"First Semester\">First Semester</option><option value=\"Second Semester\">Second Semester</option></select></div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crTeacher\">Teacher / Class Adviser</label><input id=\"crTeacher\" placeholder=\"Teacher / Class Adviser\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolId\">School ID</label><input id=\"crSchoolId\" placeholder=\"School ID\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDistrict\">District</label><input id=\"crDistrict\" placeholder=\"District\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDivision\">Division</label><input id=\"crDivision\" placeholder=\"Division\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crRegion\">Region</label><input id=\"crRegion\" placeholder=\"Region\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSubjectGroup\">Subject Group</label>\n          <select id=\"crSubjectGroup\"><option value=\"\">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>\n        </div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSubject\">Subject</label><input id=\"crSubject\" placeholder=\"Subject\"></div>\n<div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crKeyStage\">Key Stage</label><input id=\"crKeyStage\" placeholder=\"Auto\" readonly></div>\n      </div>\n    </section>\n    <!-- Policy Setup fallback remains structurally compatible; primary layout is governed by external HTML/CSS module. -->\n    <section id=\"crPanelPolicy\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Policy Setup (Resolved)</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Grading Mode</div><div id=\"crResolvedMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Table</div><div id=\"crResolvedTable\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Numeric Mode</div><div id=\"crResolvedNumericMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Transition Rule</div><div id=\"crResolvedTransition\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Weight</div><div id=\"crWeightWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Weight</div><div id=\"crWeightPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">EX Weight</div><div id=\"crWeightEX\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Has TE</div><div id=\"crHasTE\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Count</div><div id=\"crCountWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Count</div><div id=\"crCountPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">ST Count</div><div id=\"crCountST\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Uses Descriptors</div><div id=\"crUseDescriptors\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-field\" style=\"margin-top:1rem;\"><label class=\"ctm-cr-label\" for=\"crPolicyNotes\">Validation / Notes</label><textarea id=\"crPolicyNotes\" rows=\"3\" readonly></textarea></div>\n    </section>\n    <section id=\"crPanelTerm1\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm2\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm3\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm4\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelFinal\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Summary</div>\n      <div class=\"ctm-cr-disclaimer\" style=\"margin-bottom:.75rem;\">Final Grade Summary based on Term 1, Term 2, and Term 3.</div>\n      <div class=\"table-scroll ctm-cr-table-scroll ctm-cr-final-scroll\" id=\"crFinalTableScroll\" aria-label=\"Scrollable class record summary table\"><table id=\"crFinalTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th><th>Instructional Response</th></tr></thead><tbody></tbody></table></div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Class Average</div><div id=\"crFinalClassAverage\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Passing Count</div><div id=\"crFinalPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Non-Passing Count</div><div id=\"crFinalNonPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Table Used</div><div id=\"crFinalTableUsed\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n    </section>\n    <section id=\"crPanelAttendance\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Attendance (Read-only)</div>\n      <div class=\"ctm-cr-disclaimer\">Source: attendance / SF2 data already tracked by the app. Read-only inside Class Record.</div>\n      <div class=\"table-scroll\"><table id=\"crAttendanceTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>Present</th><th>Absent</th><th>Tardy</th><th>Cutting</th><th>Excuse</th><th>Pending</th></tr></thead><tbody></tbody></table></div>\n    </section>\n    <div class=\"meta\" style=\"color:#667;font-size:.85rem;margin-top:1rem;text-align:justify;\"><b>Disclaimer:</b> Generated document is not an official DepEd School Form.</div>\n  </div>\n</div>\n";
+  const fallbackHtml = "<div id=\"classRecordModal\" class=\"modal\" aria-hidden=\"true\" role=\"dialog\" aria-modal=\"true\" style=\"display:none\">\n  <div class=\"modal-content ctm-cr-modal-content\" style=\"max-width:1200px;\">\n    <div class=\"ctm-cr-topbar\">\n      <div>\n        <h3 style=\"margin:0\">Class Record</h3>\n        <div class=\"ctm-cr-subtitle\"><span id=\"crTopClassName\">No class loaded</span><span>\u2022</span><span id=\"crTopSubject\">No subject</span><span>\u2022</span><span id=\"crTopSchoolYear\">No school year</span></div>\n      </div>\n      <div class=\"ctm-cr-topbar-actions\">\n<button class=\"edit\" id=\"crBtnNew\">New Record</button>\n        <button class=\"danger\" id=\"crBtnDelete\">Delete</button>\n        <button class=\"primary\" id=\"crBtnImportCsv\">Import CSV</button>\n        <button class=\"primary\" id=\"crBtnExportCsv\">Export CSV</button>\n        <button class=\"danger\" id=\"crBtnClose\" style=\"padding:.25rem .6rem\">\u2715</button>\n      </div>\n    </div>\n    <div class=\"ctm-cr-disclaimer\"><b>Testing Build:</b> Mobile-first Class Record with shared HPS per term, individual learner cards, full CSV import/export, and validation.</div>\n    <div class=\"ctm-cr-manager section-lite\">\n      <div class=\"ctm-cr-manager-grid\">\n        <div><label class=\"ctm-cr-label\">Saved Record</label><select id=\"crRecordPicker\"></select></div>\n        <div><label class=\"ctm-cr-label\">Record Status</label><div id=\"crRecordStatus\" class=\"ctm-cr-status-pill\">Draft / unsaved school-year record</div></div>\n        <div><label class=\"ctm-cr-label\">Policy Source</label><div class=\"ctm-cr-status-pill\">DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)</div></div>\n      </div>\n    </div>\n    <div class=\"ctm-cr-tabs\" aria-label=\"Class Record Tabs\">\n      <div id=\"crTabsShell\" class=\"ctm-cr-tabs-shell\" role=\"tablist\" aria-label=\"Class Record Tabs\" aria-hidden=\"false\">\n      <button class=\"primary ctm-cr-tab active\" data-tab=\"header\" type=\"button\">Header Fields</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"policy\" type=\"button\">Policy Setup</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term1\" type=\"button\">Term 1</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term2\" type=\"button\">Term 2</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term3\" type=\"button\">Term 3</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term4\" type=\"button\">Term 4</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"final\" type=\"button\">Summary</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"attendance\" type=\"button\">Attendance</button>\n      </div>\n      <div class=\"ctm-cr-tabs-footer\"><p class=\"ctm-cr-tabs-source\"><a href=\"https://drive.google.com/drive/folders/13APGK-OoX_g2bWqVZ9h-iGd16DCDNa5_?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer\">Source: DO No. 015, s. 2026 / DO No. 8, s. 2015</a></p></div>\n    </div>\n    <div id=\"crFlash\" class=\"ctm-cr-flash\" style=\"display:none\" aria-live=\"polite\" aria-atomic=\"true\" aria-hidden=\"true\"></div>\n    <section id=\"crPanelHeader\" class=\"ctm-cr-panel active\">\n      <div class=\"ctm-cr-panel-title\">Record Header</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSchoolName\">School Name</label><input id=\"crSchoolName\" placeholder=\"School Name\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolYear\">School Year</label><input id=\"crSchoolYear\" placeholder=\"2026-2027\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crGradeLevel\">Grade Level</label>\n          <select id=\"crGradeLevel\"><option value=\"\">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>\n        </div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSection\">Class / Section</label><input id=\"crSection\" placeholder=\"Section\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSemester\">Semester</label><select id=\"crSemester\"><option value=\"\">Select Semester</option><option value=\"First Semester\">First Semester</option><option value=\"Second Semester\">Second Semester</option></select></div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crTeacher\">Teacher / Class Adviser</label><input id=\"crTeacher\" placeholder=\"Teacher / Class Adviser\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolId\">School ID</label><input id=\"crSchoolId\" placeholder=\"School ID\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDistrict\">District</label><input id=\"crDistrict\" placeholder=\"District\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDivision\">Division</label><input id=\"crDivision\" placeholder=\"Division\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crRegion\">Region</label><input id=\"crRegion\" placeholder=\"Region\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSubjectGroup\">Subject Group</label>\n          <select id=\"crSubjectGroup\"><option value=\"\">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>\n        </div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSubject\">Subject</label><input id=\"crSubject\" placeholder=\"Subject\"></div>\n<div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crKeyStage\">Key Stage</label><input id=\"crKeyStage\" placeholder=\"Auto\" readonly></div>\n      </div>\n    </section>\n    <!-- Policy Setup fallback remains structurally compatible; primary layout is governed by external HTML/CSS module. -->\n    <section id=\"crPanelPolicy\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Policy Setup (Resolved)</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Grading Mode</div><div id=\"crResolvedMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Table</div><div id=\"crResolvedTable\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Numeric Mode</div><div id=\"crResolvedNumericMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Transition Rule</div><div id=\"crResolvedTransition\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Weight</div><div id=\"crWeightWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Weight</div><div id=\"crWeightPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">EX Weight</div><div id=\"crWeightEX\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Has TE</div><div id=\"crHasTE\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Count</div><div id=\"crCountWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Count</div><div id=\"crCountPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">ST Count</div><div id=\"crCountST\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Uses Descriptors</div><div id=\"crUseDescriptors\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-field\" style=\"margin-top:1rem;\"><label class=\"ctm-cr-label\" for=\"crPolicyNotes\">Validation / Notes</label><textarea id=\"crPolicyNotes\" rows=\"3\" readonly></textarea></div>\n    </section>\n    <section id=\"crPanelTerm1\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm2\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm3\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm4\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelFinal\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Summary</div>\n      <div class=\"ctm-cr-disclaimer\" style=\"margin-bottom:.75rem;\">Final Grade Summary based on Term 1, Term 2, and Term 3.</div>\n      <div class=\"table-scroll ctm-cr-table-scroll ctm-cr-final-scroll\" id=\"crFinalTableScroll\" aria-label=\"Scrollable class record summary table\"><table id=\"crFinalTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th><th>Instructional Response</th></tr></thead><tbody></tbody></table></div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Class Average</div><div id=\"crFinalClassAverage\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Passing Count</div><div id=\"crFinalPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Non-Passing Count</div><div id=\"crFinalNonPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Table Used</div><div id=\"crFinalTableUsed\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n    </section>\n    <section id=\"crPanelAttendance\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Attendance (Read-only)</div>\n      <div class=\"ctm-cr-disclaimer\">Source: attendance / SF2 data already tracked by the app. Read-only inside Class Record.</div>\n      <div class=\"table-scroll\"><table id=\"crAttendanceTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>Present</th><th>Absent</th><th>Tardy</th><th>Cutting</th><th>Excuse</th><th>Pending</th></tr></thead><tbody></tbody></table></div>\n    </section>\n    <div class=\"meta\" style=\"color:#667;font-size:.85rem;margin-top:1rem;text-align:justify;\"><b>Disclaimer:</b> Generated document is not an official DepEd School Form.</div>\n  </div>\n</div>\n";
 
   const state = {
-    classId: '', className: '', roster: [], savedRoster: [], activeLearnerId: '', activeTab: 'header', htmlInjected: false, suppressHostRosterOnce: false, connectedHostClassKey: '', hostSyncBound: false, hostSyncTimer: 0, autoSaveTimer: 0, finalSelectedLearnerId: '', isTransientDraft: true,
+    classId: '', className: '', roster: [], savedRoster: [], activeLearnerId: '', activeTab: 'header', htmlInjected: false, suppressHostRosterOnce: false, connectedHostClassKey: '', hostSyncBound: false, hostSyncTimer: 0, autoSaveTimer: 0, finalSelectedLearnerId: '', isTransientDraft: true, headerEditMode: false, headerDirty: false,
     recordHeader: null, setupProfile: null, attendance: null, finalSummary: null, term1: null, term2: null, term3: null, term4: null
   };
   const dom = {};
   const TABS_COLLAPSE_STORAGE_KEY = 'ctm-classrecord-tabs-collapsed-v1';
   const TABS_COLLAPSE_DEFAULT = false;
 
-  function defaultRecordHeader() { return { recordId: '', classId: '', className: '', schoolYear: '', schoolId: '', schoolName: '', district: '', division: '', region: '', gradeLevel: '', keyStage: '', section: '', semester: '', teacherName: '', subject: '', subjectKey: '', subjectGroup: '', recordLabel: '', sourcePolicy: 'DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)' }; }
+  function defaultRecordHeader() { return { recordId: '', classId: '', className: '', schoolYear: '', schoolId: '', schoolName: '', district: '', division: '', region: '', gradeLevel: '', keyStage: '', section: '', semester: '', g12Sy2026System: 'quarterSemester', modifiedTerm: 'term1', teacherName: '', subject: '', subjectKey: '', subjectGroup: '', recordLabel: '', sourcePolicy: 'DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)' }; }
 function defaultSetupProfile() { return { profileKey: '', profileName: '', gradingModeResolved: '', resultTableResolved: '', transitionRuleResolved: { schoolYear: '', gradeLevel: '', table: '', gradingMode: '', numericMode: '', transitionLabel: '' }, componentWeights: { ww: 0, pt: 0, ex: 0 }, assessmentCounts: { wwCount: 0, ptCount: 0, stCount: 0, hasTE: false, qaCount: 0 }, usesTransmutation: false, usesZeroBased: false, usesDescriptors: true, validationNotes: [] }; }
 function blankHps() { return { ww: { ww1: null, ww2: null, ww3: null, ww4: null, ww5: null }, pt: { pt1: null, pt2: null, pt3: null, pt4: null, pt5: null }, ex: { st1: null, st2: null, te: null, qa1: null } }; }
 function blankScores() { return { ww: { ww1: null, ww2: null, ww3: null, ww4: null, ww5: null }, pt: { pt1: null, pt2: null, pt3: null, pt4: null, pt5: null }, ex: { st1: null, st2: null, te: null, qa1: null } }; }
@@ -235,6 +239,11 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
       ? window.CTM_CLASSRECORD_SHOW_SUMMARY_FINAL_DESCRIPTOR_COLUMN
       : DEFAULT_SHOW_SUMMARY_FINAL_DESCRIPTOR_COLUMN);
   }
+  function shouldHideSummaryDescResponseColumnsForG12ThreeTerm() {
+    if (!HIDE_SUMMARY_DESC_RESPONSE_FOR_G12_THREE_TERM) return false;
+    return isLegacyGrade12Do8(state.recordHeader && state.recordHeader.gradeLevel, state.recordHeader && state.recordHeader.schoolYear)
+      && (isG12ThreeTermLayout() || isG12ModifiedThreeTermLayout());
+  }
   function rosterMatchKey(item) { return `${normalizeName(item && item.name)}|${normalizeSex(item && item.sex).toLowerCase()}`; }
   function learnerSexGroup(value) { const sex = normalizeSex(value).toLowerCase(); if (sex === 'male') return 'male'; if (sex === 'female') return 'female'; return 'other'; }
   function buildLearnerDisplayList(list) {
@@ -267,20 +276,46 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
   function getSharedHeaderApi() { return window.CTMSharedHeader && typeof window.CTMSharedHeader === 'object' ? window.CTMSharedHeader : null; }
   function getSharedHeaderValue(field, fallback = '') { const api = getSharedHeaderApi(); return api && typeof api.get === 'function' ? text(api.get(field) || fallback) : text(fallback); }
 
+  function readSharedHeaderSnapshot() {
+    const api = getSharedHeaderApi();
+    const fallbackMap = {
+      schoolName: ['sf1SchoolName', 'sf2SchoolName', 'sf3SchoolName', 'sf8SchoolName'],
+      schoolYear: ['sf1SchoolYear', 'sf2SchoolYear', 'sf3SchoolYear', 'sf8SchoolYear'],
+      gradeLevel: ['sf1GradeLevel', 'sf2GradeLevel', 'sf3GradeLevel', 'sf8Grade'],
+      section: ['sf1Section', 'sf2Section', 'sf3Section', 'sf8Section'],
+      semester: ['sf1Semester', 'sf3Semester'],
+      g12Sy2026System: ['sf1G12Sy2026System', 'sf2G12Sy2026System', 'sf3G12Sy2026System', 'sf8G12Sy2026System', 'crG12Sy2026System'],
+      modifiedTerm: ['sf1ModifiedTerm', 'sf2ModifiedTerm', 'sf3ModifiedTerm', 'sf8ModifiedTerm', 'crModifiedTerm'],
+      teacherName: ['sf1Teacher', 'sf2Teacher', 'sf3Teacher'],
+      schoolId: ['sf1SchoolId', 'sf2SchoolId', 'sf3SchoolId', 'sf8SchoolId'],
+      district: ['sf1District', 'sf3District', 'sf8District'],
+      division: ['sf1Division', 'sf3Division', 'sf8Division'],
+      region: ['sf1Region', 'sf3Region', 'sf8Region']
+    };
+    const snapshot = {};
+    Object.keys(fallbackMap).forEach(field => {
+      let value = '';
+      try { value = api && typeof api.get === 'function' ? text(api.get(field)).trim() : ''; } catch (_) { value = ''; }
+      if (!value) {
+        for (const id of fallbackMap[field]) {
+          const el = $id(id);
+          if (el && text(el.value).trim()) { value = text(el.value).trim(); break; }
+        }
+      }
+      snapshot[field] = field === 'semester' ? getSemesterLabel(value) : value;
+    });
+    return snapshot;
+  }
+
 function clearClassScopedHeaderFields() {
-  const payload = { gradeLevel: '', section: '', semester: '', teacherName: '' };
-  const api = getSharedHeaderApi();
-
-  try {
-    if (api && typeof api.setMany === 'function') api.setMany(payload, 'cr-context-reset');
-    else if (api && typeof api.set === 'function') Object.keys(payload).forEach(field => api.set(field, payload[field], 'cr-context-reset'));
-  } catch (_) {}
-
+  // Class Record local reset only. Do not call CTMSharedHeader.set/setMany here;
+  // otherwise New Record would erase the shared SF1/SF2/SF3/SF8 header values.
+  const payload = { schoolYear: '', gradeLevel: '', subjectGroup: '', subject: '' };
   const domMap = {
-    gradeLevel: ['crGradeLevel', 'sf1GradeLevel', 'sf2GradeLevel', 'sf3GradeLevel', 'sf8Grade'],
-    section: ['crSection', 'sf1Section', 'sf2Section', 'sf3Section', 'sf8Section'],
-    semester: ['crSemester', 'sf1Semester', 'sf3Semester'],
-    teacherName: ['crTeacher', 'sf1Teacher', 'sf2Teacher', 'sf3Teacher']
+    schoolYear: ['crSchoolYear'],
+    gradeLevel: ['crGradeLevel'],
+    subjectGroup: ['crSubjectGroup'],
+    subject: ['crSubject']
   };
 
   Object.keys(domMap).forEach(field => {
@@ -292,11 +327,9 @@ function clearClassScopedHeaderFields() {
   });
 
   Object.assign(state.recordHeader, {
+    schoolYear: '',
     gradeLevel: '',
     keyStage: '',
-    section: '',
-    semester: '',
-    teacherName: '',
     subject: '',
     subjectKey: '',
     subjectGroup: '',
@@ -318,7 +351,9 @@ function applySharedHeaderData(payload, opts = {}) {
     schoolId: 'schoolId',
     district: 'district',
     division: 'division',
-    region: 'region'
+    region: 'region',
+    g12Sy2026System: 'g12Sy2026System',
+    modifiedTerm: 'modifiedTerm'
   };
 
   let changed = false;
@@ -331,7 +366,7 @@ function applySharedHeaderData(payload, opts = {}) {
 
     if (options.forceEmptyOnly && current && incoming) return;
 
-    const nextValue = sharedKey === 'semester' ? getSemesterLabel(incoming) : incoming;
+    const nextValue = sharedKey === 'semester' ? getSemesterLabel(incoming) : (sharedKey === 'g12Sy2026System' ? normalizeG12Sy2026System(incoming) : (sharedKey === 'modifiedTerm' ? normalizeModifiedTerm(incoming) : incoming));
     if (current !== nextValue) {
       state.recordHeader[recordKey] = nextValue;
       changed = true;
@@ -350,6 +385,64 @@ function applySharedHeaderData(payload, opts = {}) {
   }
 
   return changed;
+}
+
+
+function buildSharedHeaderPayloadFromRecordHeader(includeEmpty = true) {
+  const header = state.recordHeader || {};
+  const keys = ['schoolName', 'schoolYear', 'gradeLevel', 'section', 'semester', 'g12Sy2026System', 'modifiedTerm', 'teacherName', 'schoolId', 'district', 'division', 'region'];
+  return keys.reduce((payload, key) => {
+    if (!Object.prototype.hasOwnProperty.call(header, key)) return payload;
+    const value = key === 'semester' ? getSemesterLabel(header[key]) : (key === 'g12Sy2026System' ? normalizeG12Sy2026System(header[key]) : (key === 'modifiedTerm' ? normalizeModifiedTerm(header[key]) : text(header[key]).trim()));
+    if (includeEmpty || value) payload[key] = value;
+    return payload;
+  }, {});
+}
+
+function pushRecordHeaderToSharedSchoolForms(reason = 'class-record') {
+  const payload = buildSharedHeaderPayloadFromRecordHeader(true);
+  if (!Object.keys(payload).length) return;
+
+  const sourceId = `cr-${reason || 'sync'}`;
+  const api = getSharedHeaderApi();
+  if (api && typeof api.setMany === 'function') {
+    api.setMany(payload, sourceId);
+    return;
+  }
+
+  // Fallback for standalone/offline testing if index.html's CTMSharedHeader API is not ready yet.
+  const fallbackMap = {
+    schoolName: ['crSchoolName', 'sf1SchoolName', 'sf2SchoolName', 'sf3SchoolName', 'sf8SchoolName'],
+    schoolYear: ['crSchoolYear', 'sf1SchoolYear', 'sf2SchoolYear', 'sf3SchoolYear', 'sf8SchoolYear'],
+    gradeLevel: ['crGradeLevel', 'sf1GradeLevel', 'sf2GradeLevel', 'sf3GradeLevel', 'sf8Grade'],
+    section: ['crSection', 'sf1Section', 'sf2Section', 'sf3Section', 'sf8Section'],
+    semester: ['crSemester', 'sf1Semester', 'sf3Semester'],
+    g12Sy2026System: ['crG12Sy2026System', 'sf1G12Sy2026System', 'sf2G12Sy2026System', 'sf3G12Sy2026System', 'sf8G12Sy2026System'],
+    modifiedTerm: ['crModifiedTerm', 'sf1ModifiedTerm', 'sf2ModifiedTerm', 'sf3ModifiedTerm', 'sf8ModifiedTerm'],
+    teacherName: ['crTeacher', 'sf1Teacher', 'sf2Teacher', 'sf3Teacher'],
+    schoolId: ['crSchoolId', 'sf1SchoolId', 'sf2SchoolId', 'sf3SchoolId', 'sf8SchoolId'],
+    district: ['crDistrict', 'sf1District', 'sf3District', 'sf8District'],
+    division: ['crDivision', 'sf1Division', 'sf3Division', 'sf8Division'],
+    region: ['crRegion', 'sf1Region', 'sf3Region', 'sf8Region']
+  };
+
+  Object.keys(payload).forEach(field => {
+    (fallbackMap[field] || []).forEach(id => {
+      const el = $id(id);
+      if (!el) return;
+      const next = text(payload[field]);
+      if (text(el.value) !== next) {
+        el.value = next;
+        try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      }
+    });
+  });
+
+  try {
+    window.dispatchEvent(new CustomEvent('ctm:shared-header-sync-all', {
+      detail: { sourceId, data: Object.assign({}, payload) }
+    }));
+  } catch (_) {}
 }
 
   function transitionYearKey(sy) { const normalized = normalizeSchoolYearRange(sy); if (KS1_TRANSITION[normalized]) return normalized; const m = normalized.match(/^(\d{4})-(\d{4})$/); return m && Number(m[1]) >= 2028 ? '2028-2029+' : normalized; }
@@ -396,13 +489,33 @@ function clearLearnerTermEntry(row, term) {
   if (term) computeLearnerTerm(row, term);
 }
 function isLegacyGrade12Do8(gradeLevel, schoolYear) { return text(gradeLevel).trim() === 'Grade 12' && normalizeSchoolYearRange(schoolYear) === '2026-2027'; }
-  function isLegacyGrade12SemesterLayout(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { return text(gradeLevel).trim() === 'Grade 12' && text(schoolYear).trim() === '2026-2027'; }
+  const G12_SY2026_SYSTEMS = {
+    quarterSemester: 'Quarter / Semester',
+    threeTerm: 'Three Term',
+    modifiedThreeTerm: 'Modified Three Term'
+  };
+  function normalizeG12Sy2026System(v) {
+    const s = text(v).trim();
+    if (s === 'threeTerm' || /three\s*term/i.test(s) && !/modified/i.test(s)) return 'threeTerm';
+    if (s === 'modifiedThreeTerm' || /modified/i.test(s)) return 'modifiedThreeTerm';
+    return 'quarterSemester';
+  }
+  function getG12Sy2026System(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) {
+    return isLegacyGrade12Do8(gradeLevel, schoolYear) ? normalizeG12Sy2026System(state.recordHeader && state.recordHeader.g12Sy2026System) : '';
+  }
+  function normalizeModifiedTerm(v) { return ['term1','term2','term3'].includes(text(v).trim()) ? text(v).trim() : 'term1'; }
+  function isLegacyGrade12SemesterLayout(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { return isLegacyGrade12Do8(gradeLevel, schoolYear) && getG12Sy2026System(gradeLevel, schoolYear) === 'quarterSemester'; }
+  function isG12ThreeTermLayout(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { return isLegacyGrade12Do8(gradeLevel, schoolYear) && getG12Sy2026System(gradeLevel, schoolYear) === 'threeTerm'; }
+  function isG12ModifiedThreeTermLayout(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { return isLegacyGrade12Do8(gradeLevel, schoolYear) && getG12Sy2026System(gradeLevel, schoolYear) === 'modifiedThreeTerm'; }
   function normalizeSemesterLabel(v) { const s = text(v).trim().toLowerCase(); if (s === '1st' || s === 'first' || s === 'first semester') return 'First Semester'; if (s === '2nd' || s === 'second' || s === 'second semester') return 'Second Semester'; return ''; }
   function getSemesterLabel(semester = state.recordHeader && state.recordHeader.semester) { return normalizeSemesterLabel(semester); }
   function getLegacySemesterTerms(semester = state.recordHeader && state.recordHeader.semester) { return getSemesterLabel(semester) === 'Second Semester' ? ['term3', 'term4'] : ['term1', 'term2']; }
-  function getVisibleTerms(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear, semester = state.recordHeader && state.recordHeader.semester) { return isLegacyGrade12SemesterLayout(gradeLevel, schoolYear) ? getLegacySemesterTerms(semester) : ['term1', 'term2', 'term3']; }
-  function getTermLabel(termKey, gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { const labels = isLegacyGrade12SemesterLayout(gradeLevel, schoolYear) ? LEGACY_G12_TERM_LABELS : TERM_LABELS; return labels[termKey] || TERM_LABELS[termKey] || termKey; }
-  function resolveSubjectGroupMode(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { const grade = text(gradeLevel).trim(); if (isLegacyGrade12SemesterLayout(grade, schoolYear)) return 'legacyG12'; if (/^Grade\s+(11|12)$/.test(grade)) return 'shs'; return 'basic'; }
+  function getVisibleTerms(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear, semester = state.recordHeader && state.recordHeader.semester) { if (isLegacyGrade12SemesterLayout(gradeLevel, schoolYear)) return getLegacySemesterTerms(semester); if (isG12ModifiedThreeTermLayout(gradeLevel, schoolYear)) return [normalizeModifiedTerm(state.recordHeader && state.recordHeader.modifiedTerm)]; return ['term1', 'term2', 'term3']; }
+  function getTermLabel(termKey, gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { if (isLegacyGrade12SemesterLayout(gradeLevel, schoolYear)) return LEGACY_G12_TERM_LABELS[termKey] || TERM_LABELS[termKey] || termKey; if (isG12ModifiedThreeTermLayout(gradeLevel, schoolYear)) return `Modified ${TERM_LABELS[termKey] || termKey}`; return TERM_LABELS[termKey] || termKey; }
+  function getModifiedSubjectTabLabel(termKey) { const subject = text(state.recordHeader && state.recordHeader.subject).trim(); return subject || TERM_LABELS[termKey] || termKey; }
+  function getSummaryTermColumnLabel(termKey) { return isG12ModifiedThreeTermLayout() ? getModifiedSubjectTabLabel(termKey) : getTermLabel(termKey); }
+  function currentG12SystemLabel() { const key = getG12Sy2026System(); return G12_SY2026_SYSTEMS[key] || ''; }
+  function resolveSubjectGroupMode(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) { const grade = text(gradeLevel).trim(); if (isLegacyGrade12Do8(grade, schoolYear)) return 'legacyG12'; if (/^Grade\s+(11|12)$/.test(grade)) return 'shs'; return 'basic'; }
   function getGradeAwareSubjectGroups(gradeLevel = state.recordHeader && state.recordHeader.gradeLevel, schoolYear = state.recordHeader && state.recordHeader.schoolYear) {
   const grade = text(gradeLevel).trim();
   const config = GRADE_AWARE_SUBJECT_GROUP_OPTIONS[grade];
@@ -487,7 +600,7 @@ function resolvePolicy() {
     setup.gradingModeResolved = 'numeric-legacy-g12';
     setup.resultTableResolved = 'table10';
     setup.transitionRuleResolved.numericMode = 'legacy-do8-appendix-b';
-    setup.transitionRuleResolved.transitionLabel = `${gradeLevel} • ${schoolYear} • ${getSemesterLabel() || 'Semester not set'} • DO No. 8, s. 2015 legacy Grade 12`;
+    setup.transitionRuleResolved.transitionLabel = `${gradeLevel} • ${schoolYear} • ${currentG12SystemLabel() || 'Quarter / Semester'} • ${isLegacyGrade12SemesterLayout() ? (getSemesterLabel() || 'Semester not set') : 'No semester'} • DO No. 8, s. 2015 legacy Grade 12 weights`;
     setup.assessmentCounts = Object.assign({ wwCount: 5, ptCount: 5, stCount: 0, hasTE: false, qaCount: 1 }, setup.assessmentCounts || {});
     setup.assessmentCounts.ptCount = 5;
     setup.assessmentCounts.qaCount = 1;
@@ -519,8 +632,15 @@ function resolvePolicy() {
     setup.validationNotes.push('Grade 12 in SY 2026-2027 legacy mode uses DO No. 8, s. 2015 SHS component weights.');
     setup.validationNotes.push('Legacy Grade 12 score slots are WW1–WW5, PT1–PT5, and QA1 only.');
     setup.validationNotes.push('Quarterly grades use Appendix B transmutation of DO No. 8, s. 2015 and descriptors/remarks from Table 10.');
-    setup.validationNotes.push('Grade 12 SY 2026-2027 follows the semester layout of DO No. 8, s. 2015: First Semester = Quarter 1 and Quarter 2 with Semester Final Grade; Second Semester = Quarter 3 and Quarter 4 with Semester Final Grade.');
-    setup.validationNotes.push(`Active record scope: ${getSemesterLabel() || 'Semester not set'}. Save First Semester and Second Semester as separate subject records.`);
+    if (isLegacyGrade12SemesterLayout()) {
+      setup.validationNotes.push('Selected system: Quarter / Semester. First Semester = Quarter 1 and Quarter 2; Second Semester = Quarter 3 and Quarter 4.');
+      setup.validationNotes.push(`Active record scope: ${getSemesterLabel() || 'Semester not set'}. Save First Semester and Second Semester as separate subject records.`);
+    } else if (isG12ThreeTermLayout()) {
+      setup.validationNotes.push('Selected system: Three Term. Quarter 1, Quarter 2, and Quarter 3 slots are reused as Term 1, Term 2, and Term 3; Quarter 4 is preserved but excluded/NA.');
+    } else if (isG12ModifiedThreeTermLayout()) {
+      setup.validationNotes.push(`Selected system: Modified Three Term. This subject is term-bound to ${getTermLabel(normalizeModifiedTerm(state.recordHeader.modifiedTerm))}; other terms are preserved but excluded/NA.`);
+      setup.validationNotes.push('Modified Three Term observes the DO No. 8, s. 2015 Grade 12 weights/transmutation while treating each subject as lasting only in its enrolled term.');
+    }
     if (legacyProfileInfo && legacyProfileInfo.exact) setup.validationNotes.push(`Legacy Grade 12 profile applied: ${legacyProfileInfo.selectedKey}.`);
     if (legacyProfileInfo && !legacyProfileInfo.exact) {
       setup.validationNotes.push(legacyProfileInfo.advisory);
@@ -534,6 +654,8 @@ function resolvePolicy() {
   return setup;
 }
   function initDefaults() {
+    state.headerEditMode = false;
+    state.headerDirty = false;
     state.recordHeader = defaultRecordHeader();
     state.setupProfile = defaultSetupProfile();
     state.attendance = defaultAttendance();
@@ -851,7 +973,7 @@ function recomputeFinal() {
   final.gradingMode = state.setupProfile.gradingModeResolved;
   final.numericMode = state.setupProfile.transitionRuleResolved.numericMode || 'none';
   const visibleTerms = getVisibleTerms();
-  final.finalComputationMode = isLegacyGrade12SemesterLayout() ? 'semester-average-rounded' : (final.applicableTable === 'table11' || final.applicableTable === 'table10' ? 'average-of-term-grades-rounded' : 'evidence-based-holistic');
+  final.finalComputationMode = isLegacyGrade12SemesterLayout() ? 'semester-average-rounded' : (isG12ModifiedThreeTermLayout() ? 'term-bound-single-term' : (final.applicableTable === 'table11' || final.applicableTable === 'table10' ? 'average-of-term-grades-rounded' : 'evidence-based-holistic'));
   // Semester Final Grade remarks fix: Summary Register remarks must come from the computed semester final grade, not concatenated quarter remarks.
   final.learners = state.roster.map(learner => {
     const id = text(learner.id || learner.name);
@@ -1340,7 +1462,9 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
 
   function storageKey() {
     const semesterSuffix = isLegacyGrade12SemesterLayout() ? `::${slugify(getSemesterLabel() || 'first-semester')}` : '';
-    return `classrecord-sy::${slugify(state.recordHeader.classId || state.classId)}::${slugify(state.recordHeader.schoolYear)}::${slugify(state.recordHeader.subject)}${semesterSuffix}`;
+    const g12System = getG12Sy2026System();
+    const g12Suffix = g12System && g12System !== 'quarterSemester' ? `::${slugify(g12System)}${isG12ModifiedThreeTermLayout() ? `::${slugify(normalizeModifiedTerm(state.recordHeader.modifiedTerm))}` : ''}` : '';
+    return `classrecord-sy::${slugify(state.recordHeader.classId || state.classId)}::${slugify(state.recordHeader.schoolYear)}::${slugify(state.recordHeader.subject)}${semesterSuffix}${g12Suffix}`;
   }
   function indexKey() { return `classrecord-sy-index::${slugify(state.classId || state.recordHeader.classId)}`; }
   function snapshot() { return { schemaVersion: FORM_VERSION, roster: clone(state.roster), recordHeader: clone(state.recordHeader), setupProfile: clone(state.setupProfile), term1: clone(state.term1), term2: clone(state.term2), term3: clone(state.term3), term4: clone(state.term4), finalSummary: clone(state.finalSummary), attendance: clone(state.attendance) }; }
@@ -1388,12 +1512,19 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     localStorage.setItem(key, JSON.stringify(snapshot()));
     saveIndex(key, oldKey);
     state.isTransientDraft = false;
+    state.headerEditMode = false;
+    state.headerDirty = false;
     if (renamedExistingRecord) {
       try { localStorage.removeItem(oldKey); } catch (_) {}
       removeRecordFromCurrentIndex(oldKey);
     }
     renderRecordPicker();
-    if (showToast) flash(renamedExistingRecord ? 'Class Record renamed and saved.' : 'Class Record saved.', 'success');
+    // Save-then-lock fix: persist() updates the saved/edit state flags, but the
+    // already-rendered Header Fields must also be re-protected immediately.
+    // This keeps New Save, Edit→Save, and Load→Edit→Save in the same locked
+    // saved-record state without changing storage, CSV, roster, or computation formats.
+    try { applyHeaderSettingsLock(); } catch (_) {}
+    if (showToast) flash(renamedExistingRecord ? 'Class Record renamed and saved. Header Fields locked.' : 'Class Record saved. Header Fields locked.', 'success');
     return true;
   }
   function scheduleAutoPersist(delay = 160) {
@@ -1410,7 +1541,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     }
     try { persist(false, { auto: true }); } catch (_) {}
   }
-  function applySnapshot(payload) { initDefaults(); if (!payload || typeof payload !== 'object') return; state.savedRoster = normalizeRoster(payload.roster || []); state.roster = clone(state.savedRoster); state.recordHeader = Object.assign(defaultRecordHeader(), clone(payload.recordHeader || {})); state.setupProfile = Object.assign(defaultSetupProfile(), clone(payload.setupProfile || {})); state.term1 = Object.assign(defaultTerm('term1'), clone(payload.term1 || {})); state.term2 = Object.assign(defaultTerm('term2'), clone(payload.term2 || {})); state.term3 = Object.assign(defaultTerm('term3'), clone(payload.term3 || {})); state.term4 = Object.assign(defaultTerm('term4'), clone(payload.term4 || {})); state.finalSummary = Object.assign(defaultFinalSummary(), clone(payload.finalSummary || {})); state.attendance = Object.assign(defaultAttendance(), clone(payload.attendance || {})); state.isTransientDraft = !text(state.recordHeader && state.recordHeader.recordId).trim(); }
+  function applySnapshot(payload) { initDefaults(); if (!payload || typeof payload !== 'object') return; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = normalizeRoster(payload.roster || []); state.roster = clone(state.savedRoster); state.recordHeader = Object.assign(defaultRecordHeader(), clone(payload.recordHeader || {})); state.setupProfile = Object.assign(defaultSetupProfile(), clone(payload.setupProfile || {})); state.term1 = Object.assign(defaultTerm('term1'), clone(payload.term1 || {})); state.term2 = Object.assign(defaultTerm('term2'), clone(payload.term2 || {})); state.term3 = Object.assign(defaultTerm('term3'), clone(payload.term3 || {})); state.term4 = Object.assign(defaultTerm('term4'), clone(payload.term4 || {})); state.finalSummary = Object.assign(defaultFinalSummary(), clone(payload.finalSummary || {})); state.attendance = Object.assign(defaultAttendance(), clone(payload.attendance || {})); state.isTransientDraft = !text(state.recordHeader && state.recordHeader.recordId).trim(); }
 
   function renderRecordPicker() { dom.recordPicker.innerHTML = '<option value="">Draft / New school-year record</option>' + loadIndex().map(item => `<option value="${esc(item.key)}">${esc(item.label)}</option>`).join(''); if (state.recordHeader.recordId) dom.recordPicker.value = state.recordHeader.recordId; }
   function closeFlash() {
@@ -1446,6 +1577,85 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     flash._t = setTimeout(() => { closeFlash(); }, 2200);
   }
   function setStatus(msg) { dom.recordStatus.textContent = msg; }
+
+  function hasSavedClassRecordLoaded() {
+    return !!text(state.recordHeader && state.recordHeader.recordId).trim();
+  }
+  function canEditHeaderSettings() {
+    return !hasSavedClassRecordLoaded() || !!state.headerEditMode || !!state.headerDirty;
+  }
+  function shouldLockHeaderSettings() {
+    return hasSavedClassRecordLoaded() && !canEditHeaderSettings();
+  }
+  function isHeaderSettingsFieldKey(key) {
+    return !!({
+      schoolName: 1, schoolYear: 1, gradeLevel: 1, section: 1, semester: 1,
+      teacherName: 1, schoolId: 1, district: 1, division: 1, region: 1,
+      subjectGroup: 1, subject: 1, recordLabel: 1, g12Sy2026System: 1, modifiedTerm: 1
+    }[key]);
+  }
+  function updateSaveEditButton() {
+    const btn = $id('crBtnSave');
+    if (!btn) return;
+    const saved = hasSavedClassRecordLoaded();
+    const showSave = !saved || !!state.headerDirty;
+    btn.textContent = showSave ? 'Save' : 'Edit';
+    btn.classList.toggle('primary', showSave);
+    btn.classList.toggle('edit', !showSave);
+    btn.title = showSave
+      ? 'Save this Class Record.'
+      : (state.headerEditMode ? 'Header Fields are editable. The button will change to Save after a change is detected.' : 'Unlock Header Fields for editing.');
+    btn.setAttribute('aria-label', btn.textContent);
+  }
+  function applyHeaderSettingsLock() {
+    const locked = shouldLockHeaderSettings();
+    const headerPanel = $id('crPanelHeader');
+    if (headerPanel) {
+      headerPanel.classList.toggle('ctm-cr-header-locked', locked);
+      headerPanel.setAttribute('data-header-locked', locked ? 'true' : 'false');
+    }
+    Object.keys(dom.headerInputs || {}).forEach(key => {
+      const el = dom.headerInputs[key];
+      if (!el) return;
+      const alwaysReadonly = key === 'keyStage';
+      const shouldProtect = locked && isHeaderSettingsFieldKey(key);
+      if (el.tagName === 'SELECT') {
+        // Header-lock fix: when Edit is clicked, saved-record dropdowns must be
+        // explicitly re-enabled. The previous logic preserved an old true
+        // disabled state, so Grade Level and Grade 12 SY 2026-2027 Grading
+        // System could remain locked after headerEditMode became true.
+        el.disabled = !!(shouldProtect || alwaysReadonly);
+        el.setAttribute('aria-disabled', el.disabled ? 'true' : 'false');
+      } else {
+        el.readOnly = shouldProtect || alwaysReadonly;
+        if (shouldProtect || alwaysReadonly) el.setAttribute('readonly', 'readonly');
+        else el.removeAttribute('readonly');
+        el.setAttribute('aria-readonly', (shouldProtect || alwaysReadonly) ? 'true' : 'false');
+      }
+      if (shouldProtect) {
+        el.classList.add('ctm-cr-header-field-locked');
+        el.title = 'Locked because this is a loaded saved Class Record. Click Edit to allow changes.';
+      } else if (el.classList.contains('ctm-cr-header-field-locked')) {
+        el.classList.remove('ctm-cr-header-field-locked');
+        if (key !== 'section') el.removeAttribute('title');
+      }
+    });
+    updateSaveEditButton();
+  }
+  function enableSavedHeaderEditing() {
+    if (!hasSavedClassRecordLoaded()) return true;
+    state.headerEditMode = true;
+    state.headerDirty = false;
+    applyHeaderSettingsLock();
+    updateSaveEditButton();
+    flash('Header Fields unlocked. Edit the Class Record Settings; the button will change back to Save after a change is detected.', 'info');
+    return true;
+  }
+  function markHeaderSettingsDirty() {
+    if (!hasSavedClassRecordLoaded() || !state.headerEditMode) return;
+    state.headerDirty = true;
+    updateSaveEditButton();
+  }
 
   function ensureActiveTabHighlightStyle() {
     if (document.getElementById('ctm-cr-active-tab-highlight-style')) return;
@@ -1625,11 +1835,35 @@ function switchTab(name) {
     Object.keys(dom.panels).forEach(k => dom.panels[k].classList.toggle('active', k === name));
   }
 
-  function cacheDom() {
-    dom.modal = $id('classRecordModal'); dom.recordPicker = $id('crRecordPicker'); dom.recordStatus = $id('crRecordStatus'); dom.flash = $id('crFlash'); dom.topClassName = $id('crTopClassName'); dom.topSubject = $id('crTopSubject'); dom.topSchoolYear = $id('crTopSchoolYear'); dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); dom.panels = { header:$id('crPanelHeader'), policy:$id('crPanelPolicy'), term1:$id('crPanelTerm1'), term2:$id('crPanelTerm2'), term3:$id('crPanelTerm3'), term4:$id('crPanelTerm4'), final:$id('crPanelFinal'), attendance:$id('crPanelAttendance') }; dom.headerInputs = { schoolName:$id('crSchoolName'), schoolYear:$id('crSchoolYear'), gradeLevel:$id('crGradeLevel'), section:$id('crSection'), semester:$id('crSemester'), teacherName:$id('crTeacher'), schoolId:$id('crSchoolId'), district:$id('crDistrict'), division:$id('crDivision'), region:$id('crRegion'), subjectGroup:$id('crSubjectGroup'), subject:$id('crSubject'), recordLabel:$id('crRecordLabel'), keyStage:$id('crKeyStage') }; dom.policy = { mode:$id('crResolvedMode'), table:$id('crResolvedTable'), numericMode:$id('crResolvedNumericMode'), transition:$id('crResolvedTransition'), ww:$id('crWeightWW'), pt:$id('crWeightPT'), ex:$id('crWeightEX'), hasTE:$id('crHasTE'), countWW:$id('crCountWW'), countPT:$id('crCountPT'), countST:$id('crCountST'), useDescriptors:$id('crUseDescriptors'), notes:$id('crPolicyNotes') }; dom.finalTable = $id('crFinalTable'); dom.finalBody = document.querySelector('#crFinalTable tbody'); dom.attBody = document.querySelector('#crAttendanceTable tbody'); dom.finalClassAverage = $id('crFinalClassAverage'); dom.finalPassingCount = $id('crFinalPassingCount'); dom.finalNonPassingCount = $id('crFinalNonPassingCount'); dom.finalTableUsed = $id('crFinalTableUsed'); dom.tabsFooter = dom.modal ? dom.modal.querySelector('.ctm-cr-tabs-footer') : null; } ensureActiveTabHighlightStyle(); (dom.tabs || []).forEach(btn => { if (!btn.hasAttribute('role')) btn.setAttribute('role', 'tab'); if (!btn.hasAttribute('aria-selected')) btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false'); if (!btn.hasAttribute('data-active')) btn.setAttribute('data-active', btn.classList.contains('active') ? 'true' : 'false'); });
+  
+  function ensureG12Sy2026Controls() {
+    const subjectField = $id('crSubject') && $id('crSubject').closest('.ctm-cr-field');
+    const semesterField = $id('crSemester') && $id('crSemester').closest('.ctm-cr-field');
+    const anchor = semesterField || subjectField;
+    if (!anchor || !anchor.parentNode) return;
+    if (!$id('crG12Sy2026System')) {
+      const field = document.createElement('div');
+      field.className = 'ctm-cr-field ctm-cr-g12-system-field';
+      field.innerHTML = '<label class="ctm-cr-label" for="crG12Sy2026System">Grade 12 SY 2026-2027 System</label><select id="crG12Sy2026System"><option value="quarterSemester">Quarter / Semester</option><option value="threeTerm">Three Term</option><option value="modifiedThreeTerm">Modified Three Term</option></select>';
+      anchor.parentNode.insertBefore(field, anchor.nextSibling);
+    }
+    if (!$id('crModifiedTerm')) {
+      const field = document.createElement('div');
+      field.className = 'ctm-cr-field ctm-cr-modified-term-field';
+      field.innerHTML = '<label class="ctm-cr-label" for="crModifiedTerm">Subject Term</label><select id="crModifiedTerm" title="Select the term where this subject belongs"><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select>';
+      const systemField = $id('crG12Sy2026System') && $id('crG12Sy2026System').closest('.ctm-cr-field');
+      (systemField || anchor).parentNode.insertBefore(field, (systemField || anchor).nextSibling);
+    }
+  }
+
+function cacheDom() {
+    ensureG12Sy2026Controls();
+    dom.modal = $id('classRecordModal'); dom.recordPicker = $id('crRecordPicker'); dom.recordStatus = $id('crRecordStatus'); dom.flash = $id('crFlash'); dom.topClassName = $id('crTopClassName'); dom.topSubject = $id('crTopSubject'); dom.topSchoolYear = $id('crTopSchoolYear'); dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); dom.panels = { header:$id('crPanelHeader'), policy:$id('crPanelPolicy'), term1:$id('crPanelTerm1'), term2:$id('crPanelTerm2'), term3:$id('crPanelTerm3'), term4:$id('crPanelTerm4'), final:$id('crPanelFinal'), attendance:$id('crPanelAttendance') }; dom.headerInputs = { schoolName:$id('crSchoolName'), schoolYear:$id('crSchoolYear'), gradeLevel:$id('crGradeLevel'), section:$id('crSection'), semester:$id('crSemester'), teacherName:$id('crTeacher'), schoolId:$id('crSchoolId'), district:$id('crDistrict'), division:$id('crDivision'), region:$id('crRegion'), subjectGroup:$id('crSubjectGroup'), subject:$id('crSubject'), recordLabel:$id('crRecordLabel'), g12Sy2026System:$id('crG12Sy2026System'), modifiedTerm:$id('crModifiedTerm'), keyStage:$id('crKeyStage') }; dom.policy = { mode:$id('crResolvedMode'), table:$id('crResolvedTable'), numericMode:$id('crResolvedNumericMode'), transition:$id('crResolvedTransition'), ww:$id('crWeightWW'), pt:$id('crWeightPT'), ex:$id('crWeightEX'), hasTE:$id('crHasTE'), countWW:$id('crCountWW'), countPT:$id('crCountPT'), countST:$id('crCountST'), useDescriptors:$id('crUseDescriptors'), notes:$id('crPolicyNotes') }; dom.finalTable = $id('crFinalTable'); dom.finalBody = document.querySelector('#crFinalTable tbody'); dom.attBody = document.querySelector('#crAttendanceTable tbody'); dom.finalClassAverage = $id('crFinalClassAverage'); dom.finalPassingCount = $id('crFinalPassingCount'); dom.finalNonPassingCount = $id('crFinalNonPassingCount'); dom.finalTableUsed = $id('crFinalTableUsed'); dom.tabsFooter = dom.modal ? dom.modal.querySelector('.ctm-cr-tabs-footer') : null; } ensureActiveTabHighlightStyle(); (dom.tabs || []).forEach(btn => { if (!btn.hasAttribute('role')) btn.setAttribute('role', 'tab'); if (!btn.hasAttribute('aria-selected')) btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false'); if (!btn.hasAttribute('data-active')) btn.setAttribute('data-active', btn.classList.contains('active') ? 'true' : 'false'); });
 
   function applyTermVisibility() {
     const legacy = isLegacyGrade12SemesterLayout();
+    const threeTerm = isG12ThreeTermLayout();
+    const modified = isG12ModifiedThreeTermLayout();
     const visibleTerms = getVisibleTerms();
     ['term1','term2','term3','term4'].forEach(termKey => {
       const tab = document.querySelector(`.ctm-cr-tab[data-tab="${termKey}"]`);
@@ -1637,22 +1871,25 @@ function switchTab(name) {
       const visible = visibleTerms.includes(termKey);
       if (tab) {
         tab.style.display = visible ? '' : 'none';
-        tab.textContent = getTermLabel(termKey);
+        tab.textContent = modified ? getModifiedSubjectTabLabel(termKey) : getTermLabel(termKey);
+        tab.title = modified ? `${getModifiedSubjectTabLabel(termKey)} belongs to ${TERM_LABELS[termKey] || termKey}` : getTermLabel(termKey);
       }
       if (panel && !visible && state.activeTab !== termKey) panel.style.display = 'none';
       else if (panel) panel.style.display = '';
     });
     const finalTab = document.querySelector('.ctm-cr-tab[data-tab="final"]');
-    if (finalTab) finalTab.textContent = legacy ? `${getSemesterLabel() || 'Semester'} Final Grade` : 'Summary';
+    if (finalTab) finalTab.textContent = legacy ? `${getSemesterLabel() || 'Semester'} Final Grade` : (modified ? `${getModifiedSubjectTabLabel(visibleTerms[0])} Final Grade` : 'Summary');
     const finalTitle = dom.panels.final && dom.panels.final.querySelector('.ctm-cr-panel-title');
-    if (finalTitle) finalTitle.textContent = legacy ? `${getSemesterLabel() || 'Semester'} Final Grade Summary` : 'Summary';
+    if (finalTitle) finalTitle.textContent = legacy ? `${getSemesterLabel() || 'Semester'} Final Grade Summary` : (modified ? `${getModifiedSubjectTabLabel(visibleTerms[0])} Subject Final Grade Summary` : 'Summary');
     const finalNote = dom.panels.final && dom.panels.final.querySelector('.ctm-cr-disclaimer');
     if (finalNote) {
       finalNote.textContent = legacy
         ? (getSemesterLabel() === 'Second Semester'
             ? 'Second Semester subject record based on Quarter 3 and Quarter 4. Final Grade = average of Quarter 3 and Quarter 4.'
             : 'First Semester subject record based on Quarter 1 and Quarter 2. Final Grade = average of Quarter 1 and Quarter 2.')
-        : 'Final Grade Summary based on Term 1, Term 2, and Term 3.';
+        : (modified
+            ? `Modified Three Term: this subject belongs to ${TERM_LABELS[visibleTerms[0]] || visibleTerms[0]}. Final Grade = selected term grade; other terms are NA/excluded.`
+            : (threeTerm ? 'Three Term Summary based on Term 1, Term 2, and Term 3. Quarter 4 is preserved but NA/excluded.' : 'Final Grade Summary based on Term 1, Term 2, and Term 3.'));
     }
     if (['term1','term2','term3','term4'].includes(state.activeTab) && !visibleTerms.includes(state.activeTab)) state.activeTab = visibleTerms[0] || 'final';
   }
@@ -2172,7 +2409,7 @@ function updateHeaderFields() {
     dom.headerInputs[k].value =
       (k === 'semester')
         ? getSemesterLabel(state.recordHeader[k])
-        : (state.recordHeader[k] || '');
+        : (k === 'g12Sy2026System' ? normalizeG12Sy2026System(state.recordHeader[k]) : (k === 'modifiedTerm' ? normalizeModifiedTerm(state.recordHeader[k]) : (state.recordHeader[k] || '')));
   });
 
   dom.headerInputs.keyStage.value = state.recordHeader.keyStage || '';
@@ -2191,10 +2428,25 @@ function updateHeaderFields() {
     dom.headerInputs.section.title = 'Shared across School Forms';
   }
 
+  if (dom.headerInputs.g12Sy2026System && dom.headerInputs.g12Sy2026System.closest('.ctm-cr-field')) {
+    dom.headerInputs.g12Sy2026System.closest('.ctm-cr-field').style.display = isLegacyGrade12Do8(state.recordHeader.gradeLevel, state.recordHeader.schoolYear) ? '' : 'none';
+  }
+  if (dom.headerInputs.modifiedTerm && dom.headerInputs.modifiedTerm.closest('.ctm-cr-field')) {
+    const modifiedTermField = dom.headerInputs.modifiedTerm.closest('.ctm-cr-field');
+    modifiedTermField.style.display = isG12ModifiedThreeTermLayout() ? '' : 'none';
+    const modifiedTermLabel = modifiedTermField.querySelector('label');
+    if (modifiedTermLabel) modifiedTermLabel.textContent = 'Subject Term';
+    dom.headerInputs.modifiedTerm.title = 'Select the term where this subject belongs';
+    Array.from(dom.headerInputs.modifiedTerm.options || []).forEach(opt => {
+      const key = normalizeModifiedTerm(opt.value);
+      opt.textContent = TERM_LABELS[key] || opt.textContent;
+    });
+  }
   if (dom.headerInputs.semester && dom.headerInputs.semester.closest('.ctm-cr-field')) {
     dom.headerInputs.semester.closest('.ctm-cr-field').style.display =
       isLegacyGrade12SemesterLayout() ? '' : 'none';
   }
+  applyHeaderSettingsLock();
 }
 
 
@@ -2217,12 +2469,12 @@ function updateHeaderFields() {
       select.value = '';
       state.recordHeader.subjectGroup = '';
       select.disabled = true;
-      select.title = 'Select School Year first to resolve the KS1 Table 12 subject-group template.';
+      select.title = shouldLockHeaderSettings() ? 'Locked because this is a loaded saved Class Record. Click Edit to allow changes.' : 'Select School Year first to resolve the KS1 Table 12 subject-group template.';
       return;
     }
     const coerced = coerceSubjectGroupForContext(select.value || state.recordHeader.subjectGroup, state.recordHeader.gradeLevel, state.recordHeader.schoolYear);
-    select.disabled = !allowedList.length;
-    select.title = isKs1DescriptiveContext(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)
+    select.disabled = shouldLockHeaderSettings() || !allowedList.length;
+    select.title = shouldLockHeaderSettings() ? 'Locked because this is a loaded saved Class Record. Click Edit to allow changes.' : isKs1DescriptiveContext(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)
       ? 'Integrated KS1 subject-group template enforced for this grade level and school year.'
       : (allowedList.length <= 1
           ? 'Context-resolved subject-group template for this grade level and school year.'
@@ -2410,7 +2662,7 @@ function termStats(termKey) {
     const lockedAttrs = hpsLocked
       ? ' disabled aria-disabled="true" data-hps-draft-locked="true" title="Save or select a school-year record before editing HPS."'
       : '';
-    return `<div class="ctm-cr-field ctm-cr-term-mini-field${hpsLocked ? ' ctm-cr-hps-draft-locked' : ''}"><label class="ctm-cr-label" title="${esc(field.label)} Highest Possible Score">${field.label} HPS</label><input data-term="${termKey}" data-hps-group="${field.group}" data-hps-key="${field.key}" inputmode="decimal" aria-label="${esc(field.label)} highest possible score" value="${esc(value)}" placeholder="HPS"${lockedAttrs}></div>`;
+    return `<div class="ctm-cr-field ctm-cr-term-mini-field${hpsLocked ? ' ctm-cr-hps-draft-locked' : ''}"><label class="ctm-cr-label" for="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" title="${esc(field.label)} Highest Possible Score">${field.label} HPS</label><input id="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" name="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" data-term="${termKey}" data-hps-group="${field.group}" data-hps-key="${field.key}" inputmode="decimal" aria-label="${esc(field.label)} highest possible score" value="${esc(value)}" placeholder="HPS"${lockedAttrs}></div>`;
   }
 
   function isScoreFieldEnabledByHps(term, field) {
@@ -2428,7 +2680,7 @@ function termStats(termKey) {
     const disabledAttrs = hpsEnabled ? '' : ' disabled aria-disabled="true"';
     const disabledClass = hpsEnabled ? '' : ' ctm-cr-score-disabled';
     const placeholder = hpsEnabled ? 'Score' : 'No HPS';
-    return `<div class="ctm-cr-field ctm-cr-term-mini-field${disabledClass}"><label class="ctm-cr-label" title="${esc(titleText)}">${esc(labelText)}</label><input class="${bad ? 'ctm-cr-cell-bad' : ''}" data-term="${termKey}" data-score-group="${field.group}" data-score-key="${field.key}" data-learner-id="${esc(learner.learnerId)}" inputmode="decimal" aria-label="${esc(hpsEnabled ? `${field.label} learner score` : `${field.label} learner score disabled because HPS is blank`)}" value="${esc(sv == null ? '' : sv)}" placeholder="${placeholder}"${disabledAttrs}></div>`;
+    return `<div class="ctm-cr-field ctm-cr-term-mini-field${disabledClass}"><label class="ctm-cr-label" for="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" title="${esc(titleText)}">${esc(labelText)}</label><input id="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" class="${bad ? 'ctm-cr-cell-bad' : ''}" data-term="${termKey}" data-score-group="${field.group}" data-score-key="${field.key}" data-learner-id="${esc(learner.learnerId)}" inputmode="decimal" aria-label="${esc(hpsEnabled ? `${field.label} learner score` : `${field.label} learner score disabled because HPS is blank`)}" value="${esc(sv == null ? '' : sv)}" placeholder="${placeholder}"${disabledAttrs}></div>`;
   }
 
   function descriptorSelect(termKey, learner, term) {
@@ -2436,7 +2688,7 @@ function termStats(termKey) {
     const current = text(learner.computed.letterGrade || learner.computed.descriptorCode).trim();
     return `<div class="ctm-cr-field ctm-cr-term-mini-field ctm-cr-descriptor-field">
   <label class="ctm-cr-label">Descriptor</label>
-  <select required data-term="${termKey}" data-descriptor="1" data-learner-id="${esc(learner.learnerId)}">
+  <select id="cr-${esc(termKey)}-descriptor-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-descriptor-${esc(slugify(learner.learnerId))}" required data-term="${termKey}" data-descriptor="1" data-learner-id="${esc(learner.learnerId)}">
     <option value="" ${!current ? 'selected' : ''}>Select Descriptor</option>
     ${profile.map(item => `
       <option value="${esc(item.code)}" ${item.code === current ? 'selected' : ''}>
@@ -2656,7 +2908,7 @@ function buildTermPanel(termKey) {
     ? `${hasNumeric ? `<div class="ctm-cr-pill-list" style="margin-bottom:.65rem;">${learnerStatusBadge(learner, term)}</div>` : ''}${learnerAchievementHtml}`
     : '';
   const notesHtml = learner
-    ? `<div class="ctm-cr-compact-header" style="margin-top:.75rem;"><div class="ctm-cr-field"><label class="ctm-cr-label">Teacher Remarks</label><textarea rows="2" data-term="${termKey}" data-teacher-notes="1" data-learner-id="${esc(learner.learnerId)}">${esc(learner.computed.teacherNotes || '')}</textarea></div><div class="ctm-cr-field"><label class="ctm-cr-label">Intervention Notes</label><textarea rows="2" data-term="${termKey}" data-intervention="1" data-learner-id="${esc(learner.learnerId)}">${esc(learner.computed.interventionNotes || '')}</textarea></div></div>`
+    ? `<div class="ctm-cr-compact-header" style="margin-top:.75rem;"><div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-${esc(termKey)}-teacher-notes-${esc(slugify(learner.learnerId))}">Teacher Remarks</label><textarea id="cr-${esc(termKey)}-teacher-notes-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-teacher-notes-${esc(slugify(learner.learnerId))}" rows="2" data-term="${termKey}" data-teacher-notes="1" data-learner-id="${esc(learner.learnerId)}">${esc(learner.computed.teacherNotes || '')}</textarea></div><div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-${esc(termKey)}-intervention-${esc(slugify(learner.learnerId))}">Intervention Notes</label><textarea id="cr-${esc(termKey)}-intervention-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-intervention-${esc(slugify(learner.learnerId))}" rows="2" data-term="${termKey}" data-intervention="1" data-learner-id="${esc(learner.learnerId)}">${esc(learner.computed.interventionNotes || '')}</textarea></div></div>`
     : '';
   const validationNote = legacyMode
     ? 'Quarter layout retained with DO No. 8, s. 2015 weights and QA1 compatibility.'
@@ -2721,7 +2973,7 @@ function buildTermPanel(termKey) {
       ${termSetupHtml}
       <div class="ctm-cr-section-card ctm-cr-term-editor ctm-cr-learner-card" style="background:#defcc7;" role="group" aria-label="Learner card. Swipe left or right to move to the next or previous learner.">
         
-        ${learner ? `<div class="ctm-cr-nav" style="margin-top:.65rem;"><button class="edit" type="button" data-nav="prev" data-term="${termKey}" ${navIdx <= 1 ? 'disabled' : ''}>◀</button><div class="ctm-cr-nav-center"><div class="ctm-cr-field ctm-cr-term-mini-field ctm-cr-learner-picker-inline" style="margin:0 0 .35rem 0;"><select class="ctm-cr-picker-emphasis" style="width:100%;text-align:center;text-align-last:center;font-size:1.02rem;font-weight:700;" data-term-picker="${termKey}" aria-label="${esc(term.termLabel)} learner picker">${learnerEntries.map(entry => { const r = entry.row; return `<option value="${esc(r.learnerId)}" ${learner && r.learnerId === learner.learnerId ? 'selected' : ''}>${entry.displayNo}. ${esc(r.name)} (${esc(r.sex)})</option>`; }).join('')}</select></div><div class="ctm-cr-small">Learner ${idx} of ${learnerCount} • ${esc(learner.sex)}${learner.lrn ? ` • ${esc(learner.lrn)}` : ''}</div></div><button class="edit" type="button" data-nav="next" data-term="${termKey}" ${navIdx >= learnerCount ? 'disabled' : ''}>▶</button></div>${learnerInfoHtml}${learnerAttendanceSummaryHtml(learner, termKey)}<div class="ctm-cr-form-grid ctm-cr-term-entry-grid" style="margin-top:.75rem;">${hasNumeric ? scoreHtml : descriptorHtml}</div>${notesHtml}<div class="ctm-cr-actions" style="margin-top:.85rem;"><button class="edit" type="button" data-term-action="clear-active" data-term-key="${termKey}" data-active-learner="${esc(learner.learnerId)}">Clear Active Learner</button><button class="danger" type="button" data-term-action="clear-all-scores" data-term-key="${termKey}">Clear All ${hasNumeric ? 'Scores' : 'Descriptors'}</button></div>` : '<div class="ctm-cr-disclaimer" style="margin-top:.75rem;">No learners available.</div>'}
+        ${learner ? `<div class="ctm-cr-nav" style="margin-top:.65rem;"><button class="edit" type="button" data-nav="prev" data-term="${termKey}" ${navIdx <= 1 ? 'disabled' : ''}>◀</button><div class="ctm-cr-nav-center"><div class="ctm-cr-field ctm-cr-term-mini-field ctm-cr-learner-picker-inline" style="margin:0 0 .35rem 0;"><select id="cr-${esc(termKey)}-learner-picker" name="cr-${esc(termKey)}-learner-picker" class="ctm-cr-picker-emphasis" style="width:100%;text-align:center;text-align-last:center;font-size:1.02rem;font-weight:700;" data-term-picker="${termKey}" aria-label="${esc(term.termLabel)} learner picker">${learnerEntries.map(entry => { const r = entry.row; return `<option value="${esc(r.learnerId)}" ${learner && r.learnerId === learner.learnerId ? 'selected' : ''}>${entry.displayNo}. ${esc(r.name)} (${esc(r.sex)})</option>`; }).join('')}</select></div><div class="ctm-cr-small">Learner ${idx} of ${learnerCount} • ${esc(learner.sex)}${learner.lrn ? ` • ${esc(learner.lrn)}` : ''}</div></div><button class="edit" type="button" data-nav="next" data-term="${termKey}" ${navIdx >= learnerCount ? 'disabled' : ''}>▶</button></div>${learnerInfoHtml}${learnerAttendanceSummaryHtml(learner, termKey)}<div class="ctm-cr-form-grid ctm-cr-term-entry-grid" style="margin-top:.75rem;">${hasNumeric ? scoreHtml : descriptorHtml}</div>${notesHtml}<div class="ctm-cr-actions" style="margin-top:.85rem;"><button class="edit" type="button" data-term-action="clear-active" data-term-key="${termKey}" data-active-learner="${esc(learner.learnerId)}">Clear Active Learner</button><button class="danger" type="button" data-term-action="clear-all-scores" data-term-key="${termKey}">Clear All ${hasNumeric ? 'Scores' : 'Descriptors'}</button></div>` : '<div class="ctm-cr-disclaimer" style="margin-top:.75rem;">No learners available.</div>'}
       </div>
     </div>`;
   bindTermPanel(termKey);
@@ -2873,13 +3125,18 @@ function renderFinal() {
   const hideFinalInstructionalResponseUnusedFields = shouldHideFinalKinderUnusedColumns();
   const showSummaryLetterColumn = shouldShowSummaryLetterColumn();
   const showSummaryFinalDescriptorColumn = shouldShowSummaryFinalDescriptorColumn();
-  const visibleTerms = legacy ? getVisibleTerms() : ['term1', 'term2', 'term3'];
-  const finalTitle = legacy ? `${getSemesterLabel() || 'Semester'} Final Grade Summary` : 'Summary';
+  const visibleTerms = getVisibleTerms();
+  const modified = isG12ModifiedThreeTermLayout();
+  const threeTerm = isG12ThreeTermLayout();
+  const hideDescResponseColumns = shouldHideSummaryDescResponseColumnsForG12ThreeTerm();
+  const finalTitle = legacy ? `${getSemesterLabel() || 'Semester'} Final Grade Summary` : (modified ? `${getSummaryTermColumnLabel(visibleTerms[0])} Final Grade` : 'Summary');
   const finalNote = legacy
     ? (getSemesterLabel() === 'Second Semester'
         ? 'Second Semester subject record based on Quarter 3 and Quarter 4. Final Grade = average of Quarter 3 and Quarter 4.'
         : 'First Semester subject record based on Quarter 1 and Quarter 2. Final Grade = average of Quarter 1 and Quarter 2.')
-    : 'Final Grade Summary based on Term 1, Term 2, and Term 3.';
+    : (modified
+        ? `Modified Three Term: Summary table uses the selected Subject (${getSummaryTermColumnLabel(visibleTerms[0])}) as the term column label. Final Grade = selected term grade; other terms are NA/excluded.`
+        : (threeTerm ? 'Three Term Summary based on Term 1, Term 2, and Term 3. Quarter 4 is preserved but NA/excluded.' : 'Final Grade Summary based on Term 1, Term 2, and Term 3.'));
   const selectedId = text(state.finalSelectedLearnerId).trim();
   const selectedEntry = learnerEntries.find(entry => text(entry && entry.row && (entry.row.learnerId || entry.row.name)).trim() === selectedId) || learnerEntries[0] || null;
   const selected = selectedEntry ? selectedEntry.row : null;
@@ -2893,11 +3150,12 @@ function renderFinal() {
     rowColspan = 10;
     tableHead = `<thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>${esc(getTermLabel(firstKey))}</th><th>${esc(getTermLabel(secondKey))}</th><th>${esc(getSemesterLabel() || 'Semester')} Final Grade</th><th>Descriptor</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th></tr></thead>`;
   } else if (isDescriptiveFinal) {
-    rowColspan = 12 - (hideSummaryRemarksForDescriptive ? 1 : 0) - (hideFinalInstructionalResponseUnusedFields ? 1 : 0);
-    tableHead = `<thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Descriptor</th>${hideSummaryRemarksForDescriptive ? '' : '<th>Remarks</th>'}<th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th>${hideFinalInstructionalResponseUnusedFields ? '' : '<th>Instructional Response</th>'}</tr></thead>`;
+    const showInstructionalResponseColumn = !hideFinalInstructionalResponseUnusedFields && !hideDescResponseColumns;
+    rowColspan = 8 + visibleTerms.length - (hideSummaryRemarksForDescriptive ? 1 : 0) - (showInstructionalResponseColumn ? 0 : 1) - (hideDescResponseColumns ? 1 : 0);
+    tableHead = `<thead><tr><th>#</th><th>Learner</th><th>Sex</th>${visibleTerms.map(k => `<th>${esc(getSummaryTermColumnLabel(k))}</th>`).join('')}<th>Descriptor</th>${hideSummaryRemarksForDescriptive ? '' : '<th>Remarks</th>'}<th>Teacher Remarks</th><th>Intervention Notes</th>${hideDescResponseColumns ? '' : '<th>General Description</th>'}${showInstructionalResponseColumn ? '<th>Instructional Response</th>' : ''}</tr></thead>`;
   } else {
-    rowColspan = 14 - (showSummaryLetterColumn ? 0 : 1);
-    tableHead = `<thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Final</th>${showSummaryLetterColumn ? '<th>Letter</th>' : ''}<th>Descriptor</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th><th>Instructional Response</th></tr></thead>`;
+    rowColspan = 11 + visibleTerms.length - (showSummaryLetterColumn ? 0 : 1) - (hideDescResponseColumns ? 2 : 0);
+    tableHead = `<thead><tr><th>#</th><th>Learner</th><th>Sex</th>${visibleTerms.map(k => `<th>${esc(getSummaryTermColumnLabel(k))}</th>`).join('')}<th>Final</th>${showSummaryLetterColumn ? '<th>Letter</th>' : ''}<th>Descriptor</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th>${hideDescResponseColumns ? '' : '<th>General Description</th><th>Instructional Response</th>'}</tr></thead>`;
   }
 
   const tableRows = learnerEntries.map(entry => {
@@ -2910,9 +3168,13 @@ function renderFinal() {
       return `<tr data-learner-id="${rowId}" data-sex-group="${esc(entry.sexGroup)}"><td>${rowNo}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td><td>${esc(fmt(summaryReportedNumeric(row.termResults[firstKey] && row.termResults[firstKey].termGrade, 60)))}</td><td>${esc(fmt(summaryReportedNumeric(row.termResults[secondKey] && row.termResults[secondKey].termGrade, 60)))}</td><td>${esc(fmt(summaryReportedNumeric(row.semesterGrade, 60)))}</td><td>${esc(summaryDescriptorText(row.finalResult))}</td><td>${esc(row.finalResult.remarks || '')}</td><td>${esc(row.finalResult.teacherNotes || '')}</td><td>${esc(row.finalResult.interventionNotes || '')}</td></tr>`;
     }
     if (isDescriptiveFinal) {
-      return `<tr data-learner-id="${rowId}" data-sex-group="${esc(entry.sexGroup)}"><td>${rowNo}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td><td>${esc(fmt(row.termResults.term1 && row.termResults.term1.termGrade))}</td><td>${esc(fmt(row.termResults.term2 && row.termResults.term2.termGrade))}</td><td>${esc(fmt(row.termResults.term3 && row.termResults.term3.termGrade))}</td><td>${esc(summaryDescriptorText(row.finalResult))}</td>${hideSummaryRemarksForDescriptive ? '' : `<td>${esc(row.finalResult.remarks || '')}</td>`}<td>${esc(row.finalResult.teacherNotes || '')}</td><td>${esc(row.finalResult.interventionNotes || '')}</td><td>${esc(row.finalResult.generalDescription || '')}</td>${hideFinalInstructionalResponseUnusedFields ? '' : `<td>${esc(row.finalResult.instructionalResponse || '')}</td>`}</tr>`;
+      const termCells = visibleTerms.map(termKey => `<td>${esc(fmt(row.termResults[termKey] && row.termResults[termKey].termGrade))}</td>`).join('');
+      const descriptionCells = hideDescResponseColumns ? '' : `<td>${esc(row.finalResult.generalDescription || '')}</td>${hideFinalInstructionalResponseUnusedFields ? '' : `<td>${esc(row.finalResult.instructionalResponse || '')}</td>`}`;
+      return `<tr data-learner-id="${rowId}" data-sex-group="${esc(entry.sexGroup)}"><td>${rowNo}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td>${termCells}<td>${esc(summaryDescriptorText(row.finalResult))}</td>${hideSummaryRemarksForDescriptive ? '' : `<td>${esc(row.finalResult.remarks || '')}</td>`}<td>${esc(row.finalResult.teacherNotes || '')}</td><td>${esc(row.finalResult.interventionNotes || '')}</td>${descriptionCells}</tr>`;
     }
-    return `<tr data-learner-id="${rowId}" data-sex-group="${esc(entry.sexGroup)}"><td>${rowNo}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td><td>${esc(fmt(summaryReportedNumeric(row.termResults.term1 && row.termResults.term1.termGrade, 60)))}</td><td>${esc(fmt(summaryReportedNumeric(row.termResults.term2 && row.termResults.term2.termGrade, 60)))}</td><td>${esc(fmt(summaryReportedNumeric(row.termResults.term3 && row.termResults.term3.termGrade, 60)))}</td><td>${esc(fmt(summaryReportedNumeric((row.finalResult.finalDisplayedNumeric != null ? row.finalResult.finalDisplayedNumeric : row.finalResult.termGrade), 60)))}</td>${showSummaryLetterColumn ? `<td>${esc(row.finalResult.letterGrade || '')}</td>` : ''}<td>${esc(summaryDescriptorText(row.finalResult))}</td><td>${esc(row.finalResult.remarks || '')}</td><td>${esc(row.finalResult.teacherNotes || '')}</td><td>${esc(row.finalResult.interventionNotes || '')}</td><td>${esc(row.finalResult.generalDescription || '')}</td><td>${esc(row.finalResult.instructionalResponse || '')}</td></tr>`;
+    const termCells = visibleTerms.map(termKey => `<td>${esc(fmt(summaryReportedNumeric(row.termResults[termKey] && row.termResults[termKey].termGrade, 60)))}</td>`).join('');
+    const descriptionCells = hideDescResponseColumns ? '' : `<td>${esc(row.finalResult.generalDescription || '')}</td><td>${esc(row.finalResult.instructionalResponse || '')}</td>`;
+    return `<tr data-learner-id="${rowId}" data-sex-group="${esc(entry.sexGroup)}"><td>${rowNo}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td>${termCells}<td>${esc(fmt(summaryReportedNumeric((row.finalResult.finalDisplayedNumeric != null ? row.finalResult.finalDisplayedNumeric : row.finalResult.termGrade), 60)))}</td>${showSummaryLetterColumn ? `<td>${esc(row.finalResult.letterGrade || '')}</td>` : ''}<td>${esc(summaryDescriptorText(row.finalResult))}</td><td>${esc(row.finalResult.remarks || '')}</td><td>${esc(row.finalResult.teacherNotes || '')}</td><td>${esc(row.finalResult.interventionNotes || '')}</td>${descriptionCells}</tr>`;
   }).join('') || `<tr><td colspan="${rowColspan}">${legacy ? 'No semester summary yet.' : 'No final summary yet.'}</td></tr>`;
   const finalRangeNote = '';
   const topCards = [
@@ -2943,8 +3205,8 @@ function renderFinal() {
 
     const attendanceSummaryCard = finalLearnerAttendanceSummaryHtml(selected, visibleTerms);
     const detailFields = [
-      `<div class="ctm-cr-field"><label class="ctm-cr-label">Teacher Remarks</label><textarea rows="2" readonly>${esc(selected.finalResult.teacherNotes || '')}</textarea></div>`,
-      `<div class="ctm-cr-field"><label class="ctm-cr-label">Intervention Notes</label><textarea rows="2" readonly>${esc(selected.finalResult.interventionNotes || '')}</textarea></div>`
+      `<div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-final-teacher-notes-readonly">Teacher Remarks</label><textarea id="cr-final-teacher-notes-readonly" name="cr-final-teacher-notes-readonly" rows="2" readonly>${esc(selected.finalResult.teacherNotes || '')}</textarea></div>`,
+      `<div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-final-intervention-notes-readonly">Intervention Notes</label><textarea id="cr-final-intervention-notes-readonly" name="cr-final-intervention-notes-readonly" rows="2" readonly>${esc(selected.finalResult.interventionNotes || '')}</textarea></div>`
     ];
 
     selectedSummaryHtml = `<div class="ctm-cr-summary-selected-row row-count-${row1Cards.length}">${row1Cards.join('')}</div>${selectedAchievementHtml}${attendanceSummaryCard ? `<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${attendanceSummaryCard}</div>` : ''}<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${detailFields.join('')}</div>`;
@@ -2980,9 +3242,21 @@ function renderFinal() {
   bindFinalLearnerCardSwipe();
 }
   function renderAttendance() { dom.attBody.innerHTML = state.attendance.rows.map((row, idx) => `<tr><td>${idx + 1}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td><td>${row.Present}</td><td>${row.Absent}</td><td>${row.Tardy}</td><td>${row.Cutting}</td><td>${row.Excuse}</td><td>${row.Pending}</td></tr>`).join('') || '<tr><td colspan="9">No attendance data found.</td></tr>'; }
-  function render() { cacheDom(); updateHeaderFields(); renderPolicy(); applyTermVisibility(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); renderFinal(); renderAttendance(); renderRecordPicker(); setStatus(state.recordHeader.recordId ? 'Saved school-year record ready.' : 'Draft / unsaved school-year record'); }
+  function render() { cacheDom(); updateHeaderFields(); renderPolicy(); applyTermVisibility(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); renderFinal(); renderAttendance(); renderRecordPicker(); updateSaveEditButton(); setStatus(state.recordHeader.recordId ? (shouldLockHeaderSettings() ? 'Saved school-year record ready. Header Fields locked.' : (state.headerDirty ? 'Saved record edited. Click Save to keep changes.' : 'Saved school-year record ready. Header Fields editable.')) : 'Draft / unsaved school-year record'); }
   function recompute() { state.recordHeader.keyStage = getKeyStage(state.recordHeader.gradeLevel); state.recordHeader.subjectGroup = coerceSubjectGroupForContext(state.recordHeader.subjectGroup, state.recordHeader.gradeLevel, state.recordHeader.schoolYear); if (dom.headerInputs && dom.headerInputs.subjectGroup && text(dom.headerInputs.subjectGroup.value).trim() !== text(state.recordHeader.subjectGroup).trim()) dom.headerInputs.subjectGroup.value = state.recordHeader.subjectGroup || ''; state.setupProfile = resolvePolicy(); hydrateTerms(); recomputeFinal(); buildAttendanceRows(); }
-  function resetDraft(keepContext) { const old = clone(state.recordHeader), oldRoster = clone(state.roster); initDefaults(); state.isTransientDraft = true; state.savedRoster = keepContext ? oldRoster : []; state.roster = clone(state.savedRoster); Object.assign(state.recordHeader, { classId: state.classId, className: state.className, section: keepContext ? (old.section || '') : '', schoolName: keepContext ? old.schoolName : '', schoolYear: keepContext ? old.schoolYear : '', gradeLevel: keepContext ? old.gradeLevel : '', teacherName: keepContext ? old.teacherName : '', subjectGroup: keepContext ? old.subjectGroup : '', subject: keepContext ? old.subject : '', schoolId: keepContext ? old.schoolId : '' }); loadFromHost(); recompute(); render(); }
+  function resetDraft(keepContext) { const old = clone(state.recordHeader), oldRoster = clone(state.roster); initDefaults(); state.isTransientDraft = true; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = keepContext ? oldRoster : []; state.roster = clone(state.savedRoster); Object.assign(state.recordHeader, { classId: state.classId, className: state.className, section: keepContext ? (old.section || '') : '', schoolName: keepContext ? old.schoolName : '', schoolYear: keepContext ? old.schoolYear : '', gradeLevel: keepContext ? old.gradeLevel : '', teacherName: keepContext ? old.teacherName : '', subjectGroup: keepContext ? old.subjectGroup : '', subject: keepContext ? old.subject : '', schoolId: keepContext ? old.schoolId : '' }); loadFromHost(); recompute(); render(); }
+
+  function resetDraftForNewRecord() { const shared = readSharedHeaderSnapshot(); initDefaults(); state.isTransientDraft = true; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = []; state.roster = []; loadFromHost(); applySharedHeaderData(shared, { forceEmptyOnly: false, rerender: false }); clearClassScopedHeaderFields(); recompute(); render(); }
+
+  function triggerNewRecordReset(options = {}) {
+    // Centralized local-only New behavior. This intentionally does not call CTMSharedHeader.set/setMany,
+    // so SF1/SF2/SF3/SF8 shared header values remain untouched while the Class Record draft is reset.
+    resetDraftForNewRecord();
+    switchTab('header');
+    if (options.showFlash) {
+      flash('New blank draft ready. Only School Year, Grade Level, Subject Group, and Subject were cleared for Class Record; shared SF header values were preserved.', 'success');
+    }
+  }
 
   function csvEscape(v) { v = text(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function exportCsv() {
@@ -3155,7 +3429,32 @@ function importCsvText(csvText) {
 }
   function promptImportCsv() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,text/csv'; input.addEventListener('change', () => { const file = input.files && input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { importCsvText(String(reader.result || '')); } catch (err) { flash(err && err.message ? err.message : 'Unable to import CSV.', 'error'); } }; reader.readAsText(file); }); input.click(); }
 
-  function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : el.value; if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'gradeLevel' || k === 'schoolYear') { applySubjectGroupFilter(); if (isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear) && !getSemesterLabel(state.recordHeader.semester)) state.recordHeader.semester = 'First Semester'; if (!isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)) state.recordHeader.semester = ''; } if (k === 'semester') state.recordHeader.semester = getSemesterLabel(el.value); recompute(); render(); }; el.addEventListener('input', handler); el.addEventListener('change', handler); }); dom.recordPicker.addEventListener('change', () => { if (!dom.recordPicker.value) { resetDraft(true); return; } try { applySnapshot(JSON.parse(localStorage.getItem(dom.recordPicker.value) || '{}')); loadFromHost(); recompute(); render(); flash('Saved school-year record loaded.', 'success'); } catch (_) { flash('Unable to load selected record.', 'error'); } }); $id('crBtnSave').addEventListener('click', () => persist(true, { force: true })); $id('crBtnNew').addEventListener('click', () => { clearClassScopedHeaderFields(); resetDraft(false); switchTab('header'); flash('New blank draft ready for the current class.', 'success'); }); $id('crBtnDuplicate').addEventListener('click', () => { state.recordHeader.recordId = ''; state.isTransientDraft = true; state.recordHeader.recordLabel = (state.recordHeader.recordLabel || state.recordHeader.subject || 'Class Record') + ' Copy'; render(); switchTab('header'); flash('Duplicated as a new draft school-year record.', 'success'); }); $id('crBtnDelete').addEventListener('click', () => { const key = state.recordHeader.recordId; if (!key) { resetDraft(true); return; } if (!window.confirm('Delete this saved school-year Class Record?')) return; localStorage.removeItem(key); localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), key))); resetDraft(true); flash('Saved school-year Class Record deleted.', 'success'); }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
+  function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; markHeaderSettingsDirty(); state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : (k === 'g12Sy2026System' ? normalizeG12Sy2026System(el.value) : (k === 'modifiedTerm' ? normalizeModifiedTerm(el.value) : el.value)); if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'gradeLevel' || k === 'schoolYear' || k === 'g12Sy2026System' || k === 'modifiedTerm') {
+      if (isLegacyGrade12Do8(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)) {
+        state.recordHeader.g12Sy2026System = normalizeG12Sy2026System(state.recordHeader.g12Sy2026System);
+        state.recordHeader.modifiedTerm = normalizeModifiedTerm(state.recordHeader.modifiedTerm);
+      }
+      applySubjectGroupFilter();
+      if (isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear) && !getSemesterLabel(state.recordHeader.semester)) state.recordHeader.semester = 'First Semester';
+      if (!isLegacyGrade12SemesterLayout(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)) state.recordHeader.semester = '';
+    } if (k === 'semester') state.recordHeader.semester = getSemesterLabel(el.value); recompute(); render(); }; el.addEventListener('input', handler); el.addEventListener('change', handler); }); dom.recordPicker.addEventListener('change', () => {
+    if (!dom.recordPicker.value) {
+      resetDraft(true);
+      return;
+    }
+    try {
+      applySnapshot(JSON.parse(localStorage.getItem(dom.recordPicker.value) || '{}'));
+      loadFromHost();
+      recompute();
+      // Programmatic saved-record selection does not fire input/change events on shared fields.
+      // Push the loaded Class Record header explicitly so SF1/SF2/SF3/SF8 modals repaint with the selected record.
+      pushRecordHeaderToSharedSchoolForms('saved-record-picker');
+      render();
+      flash('Saved school-year record loaded and shared fields synced to SF1/SF2/SF3/SF8.', 'success');
+    } catch (_) {
+      flash('Unable to load selected record.', 'error');
+    }
+  }); $id('crBtnSave').addEventListener('click', () => { if (hasSavedClassRecordLoaded() && !state.headerDirty) { enableSavedHeaderEditing(); return; } persist(true, { force: true }); }); $id('crBtnNew').addEventListener('click', () => triggerNewRecordReset({ showFlash: true })); $id('crBtnDelete').addEventListener('click', () => { const key = state.recordHeader.recordId; if (!key) { triggerNewRecordReset({ showFlash: false }); return; } if (!window.confirm('Delete this saved school-year Class Record?')) return; localStorage.removeItem(key); localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), key))); triggerNewRecordReset({ showFlash: false }); flash('Saved school-year Class Record deleted. A fresh blank draft is ready.', 'success'); }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
 
   function hasLoadedHostClass() {
     const loadedId = text(window.currentClassId || '').trim();
@@ -3177,9 +3476,9 @@ function importCsvText(csvText) {
       if (typeof window.alert === 'function') window.alert('Please load a class first.');
       return;
     }
-    recompute();
-    render();
-    switchTab(state.activeTab || 'header');
+    // Safety: opening Class Record now behaves like pressing New, but only inside this module.
+    // Shared SF1/SF2/SF3/SF8 header values are preserved by resetDraftForNewRecord().
+    triggerNewRecordReset({ showFlash: false });
     markModalShown(dom.modal);
     dom.modal.style.display = 'block';
     dom.modal.setAttribute('aria-hidden', 'false');

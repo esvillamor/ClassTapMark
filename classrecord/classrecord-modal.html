@@ -1,5 +1,8 @@
+<!-- ctm-a11y-v4-runtime-fix is provided by index.html; this modal remains data-compatible. -->
 <!-- CTM form accessibility semantics handled globally by index.html patch v1; this module markup remains compatible. -->
-<!-- Fixed build: achievement meter layout update (remarks/general description/instructional response integration) retained compatibility -->
+<!-- G12 summary table UI patch v18.13: General Description and Instructional Response columns are hidden by JS for Grade 12 SY 2026-2027 Three Term / Modified Three Term only; data compatibility retained. -->
+<!-- G12 shared-system sync patch v18.12: the Grade 12 SY 2026-2027 Grading System and Subject Term controls remain compatible with SF1/SF2/SF3/SF8 shared header sync. -->
+<!-- Fixed build: Class Record New button performs a local-only new-record reset; the same reset runs on module open and after saved-record deletion. Shared SF1/SF2/SF3/SF8 header values remain untouched. Achievement meter layout compatibility retained. Loaded saved Class Record Header Fields are locked until Edit is clicked. -->
 <div id="classRecordModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none; z-index:2001">
   <style id="ctm-cr-modal-fab-fix">
     /* Keep Class Record modal above the floating help FAB without changing JS hooks */
@@ -1920,6 +1923,29 @@
       background: #fffbeb;
       color: #92400e;
     }
+
+    /* Header Fields lock for loaded saved Class Records (UI-only; data/CSV compatibility unchanged) */
+    #classRecordModal #crPanelHeader.ctm-cr-header-locked .ctm-cr-header-field-locked,
+    #classRecordModal #crPanelHeader[data-header-locked="true"] input[readonly],
+    #classRecordModal #crPanelHeader[data-header-locked="true"] select:disabled {
+      background: #f8fafc !important;
+      color: #475569 !important;
+      border-color: #cbd5e1 !important;
+      cursor: not-allowed !important;
+      opacity: 1 !important;
+    }
+    #classRecordModal #crPanelHeader.ctm-cr-header-locked::before {
+      content: "Header Fields are locked for this saved Class Record. Click Edit to allow changes.";
+      display: block;
+      margin: 0 0 .75rem 0;
+      padding: .55rem .7rem;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      font-size: .84rem;
+      font-weight: 700;
+    }
 </style>
 
   <div class="modal-content ctm-cr-modal-content" style="position:relative">
@@ -1981,7 +2007,6 @@
    <div class="ctm-cr-topbar-actions ctm-cr-manager-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
 	  <div style="display: flex; gap: 8px; width: 100%;">
 		<button class="danger" id="crBtnDelete" style="flex: 1; white-space: nowrap;">Delete</button>
-		<button class="edit" id="crBtnDuplicate" style="flex: 1; white-space: nowrap;">Duplicate</button>
 		<button class="edit" id="crBtnNew" style="flex: 1; white-space: nowrap;">New</button>
 		<button class="primary" id="crBtnSave" style="flex: 1; white-space: nowrap;">Save</button>
 	  </div>
@@ -2008,8 +2033,13 @@
         <div class="ctm-cr-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crSubjectGroup">Subject Group</label>
           <select id="crSubjectGroup" title="Auto-filtered by School Year and Grade Level"><option value="">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>
         </div>
-        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crSubject">Subject</label><input id="crSubject" placeholder="Subject"></div>
-        <div class="ctm-cr-field"><label class="ctm-cr-label" for="crSemester">Semester</label><select id="crSemester"><option value="">Select Semester</option><option value="First Semester">First Semester</option><option value="Second Semester">Second Semester</option></select></div>
+        <div class="ctm-cr-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crSubject">Subject</label><input id="crSubject" placeholder="Subject"></div>
+        
+		<div class="ctm-cr-field ctm-cr-g12-system-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crG12Sy2026System">Grade 12 SY 2026-2027 Grading System</label><select id="crG12Sy2026System"><option value="quarterSemester">Quarter / Semester</option><option value="threeTerm">Three Term</option><option value="modifiedThreeTerm">Modified Three Term</option></select></div>
+		
+		<div class="ctm-cr-field"><label class="ctm-cr-label" for="crSemester">Semester</label><select id="crSemester"><option value="">Select Semester</option><option value="First Semester">First Semester</option><option value="Second Semester">Second Semester</option></select></div>
+        
+        <div class="ctm-cr-field ctm-cr-modified-term-field" style="display:none"><label class="ctm-cr-label" for="crModifiedTerm">Subject Term</label><select id="crModifiedTerm" title="Select the term where this subject belongs"><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select></div>
 		<div class="ctm-cr-field"><label class="ctm-cr-label" for="crKeyStage">Key Stage</label><input id="crKeyStage" placeholder="Auto" readonly></div>
         <div class="ctm-cr-field"><label class="ctm-cr-label" for="crTeacher">Teacher / Class Adviser</label><input id="crTeacher" placeholder="Teacher / Class Adviser"></div>
         <div class="ctm-cr-field"><label class="ctm-cr-label" for="crSchoolId">School ID</label><input id="crSchoolId" placeholder="School ID"></div>
