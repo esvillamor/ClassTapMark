@@ -1,3 +1,10 @@
+<!-- v18.31 UI-only: Grading Framework is surfaced before School Name so users see customization options first; IDs/data/CSV/shared-header compatibility retained. -->
+<!-- Official DepEd G12 SY 2026-2027 framework restore v18.30: Quarter/Semester, Three Term, and Modified Three Term tabs/summary now switch from the selected grading system; Custom Institutional mode unchanged. -->
+<!-- Official DepEd label patch v18.28: term/quarter tab labels and Summary term columns display period labels only, never encoded subject text. -->
+<!-- Official DepEd three-term patch v18.27: Term 4 is hidden/excluded in Official DepEd mode per DO No. 015, s. 2026. -->
+<!-- Subject Group helper visibility patch v18.26: Custom Institutional guidance note is hidden in Official DepEd mode. -->
+<!-- Official DepEd framework reset compatibility patch v18.25: HTML structure unchanged; JS resets custom-only state when returning to Official DepEd. -->
+<!-- Custom Institutional patch v18.24: Subject Group dropdown is Grade/KS-aware in Custom Institutional mode; recommended templates are grouped first while all custom-compatible groups remain selectable. -->
 <!-- ctm-a11y-v4-runtime-fix is provided by index.html; this modal remains data-compatible. -->
 <!-- CTM form accessibility semantics handled globally by index.html patch v1; this module markup remains compatible. -->
 <!-- G12 summary table UI patch v18.13: General Description and Instructional Response columns are hidden by JS for Grade 12 SY 2026-2027 Three Term / Modified Three Term only; data compatibility retained. -->
@@ -1973,7 +1980,372 @@
       font-size: .84rem;
       font-weight: 700;
     }
-</style>
+
+/* ===== Custom Institutional multi-select term UI ===== */
+#classRecordModal .ctm-cr-term-multiselect{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+#classRecordModal .ctm-cr-term-multiselect label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #dbe4f0;border-radius:999px;background:#f8fafc;font-size:.82rem;font-weight:700;color:#334155;}
+#classRecordModal .ctm-cr-term-multiselect input{width:auto;height:auto;margin:0;}
+#classRecordModal .ctm-cr-term-multiselect label:has(input:checked){background:#eef2ff;border-color:#818cf8;color:#3730a3;}
+
+    /* ===== Custom Institutional compact CSS patch v18.20 (UI-only; no logic/data changes) ===== */
+    #classRecordModal #crGradingFramework {
+      min-height: 30px;
+      height: 30px;
+    }
+    #classRecordModal #crCustomHeaderControls {
+      grid-column: 1 / -1 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    #classRecordModal #crCustomHeaderControls > .ctm-cr-form-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)) !important;
+      gap: 6px 8px !important;
+      align-items: end;
+      margin-top: 0 !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-field {
+      min-width: 0 !important;
+      margin: 0 !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-label,
+    #classRecordModal #crCustomHeaderControls label.ctm-cr-label,
+    #classRecordModal #crCustomPolicySetup .ctm-cr-label,
+    #classRecordModal #crCustomPolicySetup label.ctm-cr-label {
+      font-size: .66rem !important;
+      line-height: 1.08 !important;
+      margin-bottom: 2px !important;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #classRecordModal #crCustomHeaderControls input,
+    #classRecordModal #crCustomHeaderControls select,
+    #classRecordModal #crCustomPolicySetup input,
+    #classRecordModal #crCustomPolicySetup select {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 28px !important;
+      height: 28px !important;
+      padding: 3px 6px !important;
+      font-size: .78rem !important;
+      border-radius: 4px !important;
+      line-height: 1.1 !important;
+    }
+    #classRecordModal #crCustomSelectedTermsWrap {
+      grid-column: span 2 !important;
+      align-self: stretch;
+    }
+    #classRecordModal #crCustomSelectedTermsWrap > .ctm-cr-label {
+      margin-bottom: 3px !important;
+    }
+    #classRecordModal .ctm-cr-term-multiselect {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 5px;
+      align-items: center;
+      padding: 3px;
+      min-height: 28px;
+      border: 1px solid #dbe4f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      box-sizing: border-box;
+    }
+    #classRecordModal .ctm-cr-term-multiselect label {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin: 0;
+      padding: 2px 6px;
+      border: 1px solid #dbe4f0;
+      border-radius: 999px;
+      background: #fff;
+      color: #334155;
+      font-size: .68rem;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    #classRecordModal .ctm-cr-term-multiselect input[type="checkbox"] {
+      width: 12px !important;
+      min-width: 12px !important;
+      height: 12px !important;
+      min-height: 12px !important;
+      margin: 0;
+      padding: 0 !important;
+      accent-color: #667eea;
+    }
+    #classRecordModal .ctm-cr-term-multiselect label:has(input[type="checkbox"]:checked) {
+      border-color: #667eea;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+    #classRecordModal #crCustomSelectedTermsWrap .ctm-cr-small,
+    #classRecordModal .ctm-cr-term-multiselect .ctm-cr-term-multiselect-note {
+      margin: 0;
+      padding: 1px 4px;
+      flex: 1 1 240px;
+      min-width: 220px;
+      font-size: .66rem;
+      line-height: 1.18;
+      color: #334155;
+      font-weight: 500;
+    }
+    #classRecordModal #crCustomHeaderControls > .ctm-cr-disclaimer {
+      margin-top: 5px !important;
+      padding: 5px 7px !important;
+      font-size: .68rem !important;
+      line-height: 1.22 !important;
+      border-radius: 9px !important;
+    }
+    #classRecordModal #crCustomPolicySetup {
+      margin-top: .5rem !important;
+      padding: .55rem .65rem !important;
+      border-radius: 11px !important;
+      box-sizing: border-box;
+    }
+    #classRecordModal #crCustomPolicySetup > .ctm-cr-panel-title {
+      margin-bottom: .45rem !important;
+      font-size: .9rem !important;
+      line-height: 1.15;
+    }
+    #classRecordModal #crCustomPolicySetup > .ctm-cr-form-grid {
+      display: grid !important;
+      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+      gap: 6px 8px !important;
+      align-items: end;
+      width: 100%;
+    }
+    #classRecordModal #crCustomPolicySetup .ctm-cr-field,
+    #classRecordModal #crCustomPolicySetup .ctm-cr-card {
+      min-width: 0 !important;
+      margin: 0 !important;
+      box-sizing: border-box;
+    }
+    #classRecordModal #crCustomPolicySetup .ctm-cr-card {
+      padding: .42rem .52rem !important;
+      border-radius: 9px !important;
+    }
+    #classRecordModal #crCustomPolicySetup #crCustomFinalRule {
+      min-width: 0;
+    }
+    #classRecordModal #crCustomPolicySetup .ctm-cr-mini-label {
+      font-size: .62rem !important;
+      line-height: 1.05;
+      margin-bottom: 2px !important;
+    }
+    #classRecordModal #crCustomPolicySetup .ctm-cr-strong,
+    #classRecordModal #crCustomWeightTotal {
+      font-size: .86rem !important;
+      line-height: 1.15 !important;
+      overflow-wrap: anywhere;
+    }
+    #classRecordModal #crCustomValidationNotes {
+      margin-top: 5px !important;
+      padding: 5px 7px !important;
+      font-size: .68rem !important;
+      line-height: 1.22 !important;
+      border-radius: 9px !important;
+    }
+    @media (max-width: 780px) {
+      #classRecordModal #crCustomHeaderControls > .ctm-cr-form-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+      #classRecordModal #crCustomPolicySetup > .ctm-cr-form-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+      #classRecordModal #crCustomSelectedTermsWrap {
+        grid-column: 1 / -1 !important;
+      }
+    }
+    @media (max-width: 520px) {
+      #classRecordModal #crCustomHeaderControls > .ctm-cr-form-grid,
+      #classRecordModal #crCustomPolicySetup > .ctm-cr-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 5px 6px !important;
+      }
+      #classRecordModal #crCustomHeaderControls .ctm-cr-label,
+      #classRecordModal #crCustomPolicySetup .ctm-cr-label {
+        font-size: .60rem !important;
+      }
+      #classRecordModal #crCustomHeaderControls input,
+      #classRecordModal #crCustomHeaderControls select,
+      #classRecordModal #crCustomPolicySetup input,
+      #classRecordModal #crCustomPolicySetup select {
+        min-height: 26px !important;
+        height: 26px !important;
+        padding: 2px 4px !important;
+        font-size: .72rem !important;
+      }
+      #classRecordModal .ctm-cr-term-multiselect label {
+        font-size: .62rem;
+        padding: 2px 5px;
+      }
+      #classRecordModal #crCustomSelectedTermsWrap,
+      #classRecordModal #crCustomPolicySetup .ctm-cr-card {
+        grid-column: 1 / -1 !important;
+      }
+    }
+
+  
+    /* ===== Custom Institutional Header Fields layout fix v18.18 =====
+       Makes injected Custom Institutional controls follow the same compact flex layout as Class Record Settings
+       and force-restores visible Grading Framework dropdown option text. UI-only; no data/CSV/computation changes. */
+    #classRecordModal #crPanelHeader .ctm-cr-custom-framework-field {
+      flex: 1 1 180px !important;
+      min-width: 160px !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #classRecordModal #crGradingFramework,
+    #classRecordModal #crGradingFramework option {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    #classRecordModal #crGradingFramework {
+      width: 100% !important;
+      min-height: 30px !important;
+      height: 30px !important;
+      padding: 4px 8px !important;
+      font-size: .85rem !important;
+      line-height: 1.2 !important;
+      background-color: #fff !important;
+      border: 1px solid #ccc !important;
+      border-radius: 4px !important;
+      box-sizing: border-box !important;
+    }
+    #classRecordModal #crCustomHeaderControls.ctm-cr-custom-header-controls,
+    #classRecordModal #crCustomHeaderControls {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      min-width: 100% !important;
+      box-sizing: border-box !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+    }
+    #classRecordModal #crCustomHeaderControls > .ctm-cr-custom-header-grid,
+    #classRecordModal #crCustomHeaderControls > .ctm-cr-form-grid {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 10px 12px !important;
+      align-items: flex-start !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-field {
+      flex: 1 1 180px !important;
+      min-width: 160px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      margin: 0 !important;
+    }
+    #classRecordModal #crCustomHeaderControls #crCustomSelectedTermsWrap {
+      flex: 2 1 360px !important;
+      min-width: 260px !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-label {
+      font-size: .75rem !important;
+      font-weight: 600 !important;
+      color: #555 !important;
+      margin-bottom: 3px !important;
+      line-height: 1.15 !important;
+      letter-spacing: 0 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    #classRecordModal #crCustomHeaderControls input,
+    #classRecordModal #crCustomHeaderControls select {
+      width: 100% !important;
+      min-height: 30px !important;
+      height: 30px !important;
+      padding: 4px 8px !important;
+      font-size: .85rem !important;
+      line-height: 1.2 !important;
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+      background-color: #fff !important;
+      border: 1px solid #ccc !important;
+      border-radius: 4px !important;
+      box-sizing: border-box !important;
+      opacity: 1 !important;
+    }
+    #classRecordModal #crCustomHeaderControls select:disabled,
+    #classRecordModal #crCustomHeaderControls input:disabled,
+    #classRecordModal #crTransmutationTableKey:disabled {
+      color: #64748b !important;
+      -webkit-text-fill-color: #64748b !important;
+      background-color: #f8fafc !important;
+      border-color: #dbe4f0 !important;
+      opacity: 1 !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-term-multiselect {
+      min-height: 30px !important;
+      padding: 4px !important;
+      gap: 5px !important;
+      border: 1px solid #dbe4f0 !important;
+      border-radius: 9px !important;
+      background: #f8fafc !important;
+      box-sizing: border-box !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-term-multiselect label {
+      padding: 4px 8px !important;
+      font-size: .75rem !important;
+      line-height: 1.1 !important;
+    }
+    #classRecordModal #crCustomHeaderControls .ctm-cr-small {
+      margin-top: 4px !important;
+      font-size: .72rem !important;
+      line-height: 1.25 !important;
+      color: #64748b !important;
+    }
+    #classRecordModal #crPanelHeader .ctm-cr-custom-framework-field #crCustomInstitutionalNotice,
+    #classRecordModal #crCustomHeaderControls > .ctm-cr-custom-note,
+    #classRecordModal #crCustomHeaderControls > .ctm-cr-disclaimer {
+      margin-top: 8px !important;
+      padding: 6px 8px !important;
+      font-size: .75rem !important;
+      line-height: 1.25 !important;
+      border-radius: 10px !important;
+      box-sizing: border-box !important;
+    }
+    #classRecordModal #crPanelHeader .ctm-cr-custom-framework-field #crCustomInstitutionalNotice {
+      width: 100%;
+    }
+    @media (max-width: 560px) {
+      #classRecordModal #crPanelHeader .ctm-cr-custom-framework-field,
+      #classRecordModal #crCustomHeaderControls .ctm-cr-field,
+      #classRecordModal #crCustomHeaderControls #crCustomSelectedTermsWrap {
+        flex-basis: 100% !important;
+        min-width: 100% !important;
+      }
+    }
+
+
+    /* ===== Custom Institutional Grade/KS-aware Subject Group helper ===== */
+    #classRecordModal .ctm-cr-subject-group-context-note {
+      display: block;
+      margin-top: 4px !important;
+      padding: 4px 6px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569 !important;
+      font-size: .70rem !important;
+      line-height: 1.24 !important;
+    }
+    #classRecordModal #crSubjectGroup optgroup {
+      color: #334155;
+      font-weight: 800;
+    }
+  </style>
 
   <div class="modal-content ctm-cr-modal-content" style="position:relative">
   <div class="ctm-cr-sticky-shell">
@@ -2005,7 +2377,7 @@
               <button class="edit ctm-cr-tab" data-tab="term1" type="button" role="tab" aria-selected="false" data-active="false">Term 1</button>
               <button class="edit ctm-cr-tab" data-tab="term2" type="button" role="tab" aria-selected="false" data-active="false">Term 2</button>
               <button class="edit ctm-cr-tab" data-tab="term3" type="button" role="tab" aria-selected="false" data-active="false">Term 3</button>
-              <button class="edit ctm-cr-tab" data-tab="term4" type="button" role="tab" aria-selected="false" data-active="false">Term 4</button>
+              <button class="edit ctm-cr-tab" data-tab="term4" type="button" style="display:none" role="tab" aria-selected="false" data-active="false">Term 4</button>
               <button class="edit ctm-cr-tab" data-tab="final" type="button" role="tab" aria-selected="false" data-active="false">Summary</button>
               <!-- Summary tab Letter / Final Descriptor columns are hidden by default in classrecord-modal.js for DO No. 015, s. 2026 compliance.
                    To show them again for testing/legacy review, set window.CTM_CLASSRECORD_SHOW_SUMMARY_LETTER_COLUMN = true and/or
@@ -2057,8 +2429,8 @@
           <select id="crGradeLevel"><option value="">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
         </div>
         <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crSection">Section</label><input id="crSection" placeholder="Section" title="Set at Manage Class"></div>
-        <div class="ctm-cr-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crSubjectGroup">Subject Group</label>
-          <select id="crSubjectGroup" title="Auto-filtered by School Year and Grade Level"><option value="">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>
+        <div class="ctm-cr-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crSubjectGroup">Subject Group / Template</label>
+          <select id="crSubjectGroup" title="Official mode is filtered by School Year and Grade Level; Custom Institutional mode groups recommended Grade/KS templates first."><option value="">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>
         </div>
         <div class="ctm-cr-field" style="flex: 2 1 auto; min-width: 250px;"><label class="ctm-cr-label" for="crSubject">Subject</label><input id="crSubject" placeholder="Subject"></div>
         
