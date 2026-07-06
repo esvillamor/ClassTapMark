@@ -1,3 +1,6 @@
+<!-- v18.34 UI-only: Edit-mode record status caption refresh; data/CSV/shared-header compatibility retained. -->
+<!-- v18.33 UI-only: Post-save record status caption refresh + compact record manager controls. Data/CSV/shared-header compatibility retained. -->
+<!-- v18.32 UI-only: Saved Class Record Edit flow now shows Save + Cancel Edit, and saved-record picker width adjusts to option content. Data/CSV/shared-header compatibility retained. -->
 <!-- v18.31 UI-only: Grading Framework is surfaced before School Name so users see customization options first; IDs/data/CSV/shared-header compatibility retained. -->
 <!-- Official DepEd G12 SY 2026-2027 framework restore v18.30: Quarter/Semester, Three Term, and Modified Three Term tabs/summary now switch from the selected grading system; Custom Institutional mode unchanged. -->
 <!-- Official DepEd label patch v18.28: term/quarter tab labels and Summary term columns display period labels only, never encoded subject text. -->
@@ -1969,7 +1972,7 @@
       opacity: 1 !important;
     }
     #classRecordModal #crPanelHeader.ctm-cr-header-locked::before {
-      content: "Header Fields are locked for this saved Class Record. Click Edit to allow changes.";
+      content: "Header Fields are locked for this saved Class Record. Click Edit to allow changes; use Cancel Edit to discard edits.";
       display: block;
       margin: 0 0 .75rem 0;
       padding: .55rem .7rem;
@@ -1979,6 +1982,38 @@
       color: #1d4ed8;
       font-size: .84rem;
       font-weight: 700;
+    }
+
+
+    /* ===== Save / Cancel Edit and dynamic saved-record picker patch v18.32 ===== */
+    #classRecordModal .ctm-cr-record-picker-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    #classRecordModal #crRecordPicker.ctm-cr-record-picker {
+      width: min(var(--ctm-cr-picker-width, 44ch), calc(100vw - 32px));
+      min-width: min(280px, calc(100vw - 32px));
+      max-width: min(720px, calc(100vw - 32px));
+      box-sizing: border-box;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #classRecordModal #crRecordStatus.ctm-cr-record-status {
+      width: min(var(--ctm-cr-picker-width, 44ch), calc(100vw - 32px));
+      min-width: min(280px, calc(100vw - 32px));
+      max-width: min(720px, calc(100vw - 32px));
+      box-sizing: border-box;
+      text-align: center;
+    }
+    #classRecordModal #crBtnCancelEdit[hidden] {
+      display: none !important;
+    }
+    #classRecordModal #crBtnCancelEdit {
+      flex: 1;
+      white-space: nowrap;
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      color: #ffffff;
     }
 
 /* ===== Custom Institutional multi-select term UI ===== */
@@ -2345,7 +2380,92 @@
       color: #334155;
       font-weight: 800;
     }
-  </style>
+  
+
+    /* ===== Record manager compactness patch v18.33 (UI-only; logic/data/CSV compatibility unchanged) ===== */
+    #classRecordModal .ctm-cr-manager.section-lite {
+      padding: 6px 8px !important;
+      margin: 6px 8px 8px 8px !important;
+      border-radius: 12px !important;
+      box-sizing: border-box;
+    }
+    #classRecordModal #crHideOnAttendance > div:first-child > div { gap: 4px !important; }
+    #classRecordModal .ctm-cr-record-picker-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    #classRecordModal #crRecordPicker.ctm-cr-record-picker {
+      min-height: 30px !important;
+      height: 30px !important;
+      padding: 3px 30px 3px 10px !important;
+      font-size: .86rem !important;
+      line-height: 1.1 !important;
+      border-radius: 10px !important;
+    }
+    #classRecordModal #crRecordStatus.ctm-cr-record-status {
+      min-height: 28px !important;
+      padding: 5px 8px !important;
+      font-size: .82rem !important;
+      line-height: 1.15 !important;
+      border-radius: 10px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin: 0 !important;
+    }
+    #classRecordModal .ctm-cr-manager-actions,
+    #classRecordModal .ctm-cr-manager-actions[style] {
+      gap: 5px !important;
+      margin-top: 5px !important;
+      width: 100% !important;
+    }
+    #classRecordModal .ctm-cr-manager-actions > div,
+    #classRecordModal .ctm-cr-manager-actions > div[style] {
+      gap: 5px !important;
+      width: 100% !important;
+    }
+    #classRecordModal .ctm-cr-manager-actions button {
+      min-height: 32px !important;
+      height: 32px !important;
+      padding: 4px 8px !important;
+      border-radius: 10px !important;
+      font-size: .82rem !important;
+      line-height: 1.05 !important;
+      margin: 0 !important;
+    }
+    #classRecordModal #crPanelHeader.ctm-cr-header-locked::before {
+      margin: 0 0 .45rem 0 !important;
+      padding: .42rem .55rem !important;
+      border-radius: 9px !important;
+      font-size: .76rem !important;
+      line-height: 1.22 !important;
+    }
+    @media (max-width: 520px) {
+      #classRecordModal .ctm-cr-manager.section-lite {
+        padding: 5px 6px !important;
+        margin: 5px 6px 7px 6px !important;
+      }
+      #classRecordModal #crRecordPicker.ctm-cr-record-picker {
+        height: 28px !important;
+        min-height: 28px !important;
+        font-size: .78rem !important;
+      }
+      #classRecordModal #crRecordStatus.ctm-cr-record-status {
+        min-height: 26px !important;
+        padding: 4px 6px !important;
+        font-size: .74rem !important;
+      }
+      #classRecordModal .ctm-cr-manager-actions button {
+        min-height: 30px !important;
+        height: 30px !important;
+        padding: 3px 6px !important;
+        font-size: .76rem !important;
+      }
+    }
+</style>
 
   <div class="modal-content ctm-cr-modal-content" style="position:relative">
   <div class="ctm-cr-sticky-shell">
@@ -2398,8 +2518,8 @@
 <!-- Start of hide this at Attendance tab -->  
    <div>
 	<div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-	 <select id="crRecordPicker" style="width: 100%; max-width: 400px; box-sizing: border-box;"></select>
-	 <div id="crRecordStatus" class="ctm-cr-status-pill" style="width: 100%; max-width: 400px; box-sizing: border-box; text-align: center;">Draft / unsaved school-year record</div>
+	 <div class="ctm-cr-record-picker-wrap"><select id="crRecordPicker" class="ctm-cr-record-picker" style="box-sizing: border-box;"></select></div>
+	 <div id="crRecordStatus" class="ctm-cr-status-pill ctm-cr-record-status" style="box-sizing: border-box; text-align: center;">Draft / unsaved school-year record</div>
 	 <div id="crFlash" class="ctm-cr-flash" style="display: none;" aria-live="polite" aria-atomic="true" aria-hidden="true"></div>
 	</div>
    </div>
@@ -2408,18 +2528,18 @@
 		<button class="danger" id="crBtnDelete" style="flex: 1; white-space: nowrap;">Delete</button>
 		<button class="edit" id="crBtnNew" style="flex: 1; white-space: nowrap;">New</button>
 		<button class="primary" id="crBtnSave" style="flex: 1; white-space: nowrap;">Save</button>
+		<button class="edit" id="crBtnCancelEdit" style="flex: 1; white-space: nowrap;" hidden>Cancel Edit</button>
 	  </div>
 	  <div style="display: flex; gap: 8px; width: 100%;">
 		<button class="primary" id="crBtnImportCsv" style="flex: 1; white-space: nowrap;" disabled>Import CSV</button>
 		<button class="primary" id="crBtnExportCsv" style="flex: 1; white-space: nowrap;" disabled>Export CSV</button>
 	  </div>
-	<br />
    </div>
 <!-- End of hide this at Attendance tab -->
 </div>
 
 	<section id="crPanelHeader" class="ctm-cr-panel active">
-      <div class="ctm-cr-panel-title">Class Record Settings</div>
+      <div class="ctm-cr-panel-title"><br />Class Record Settings</div>
       <div class="ctm-cr-compact-header">
         <div class="ctm-cr-field" style="display:inline-block;"><label class="ctm-cr-label" for="crSchoolName">School Name</label><input id="crSchoolName" placeholder="School Name"></div>
         <div class="ctm-cr-field" style="display:inline-block;width:20px"><label class="ctm-cr-label" for="crSchoolYear">School Year</label>
