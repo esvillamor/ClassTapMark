@@ -1,3 +1,4 @@
+<!-- v18.36 UI-only: Topbar subtitle now flows as continuous wrapping text instead of flex-column-like segments; data/CSV/shared-header compatibility retained. -->
 <!-- v18.35 UI-only: Topbar subtitle now spans below action buttons so long subject titles can use the available header width; data/CSV/shared-header compatibility retained. -->
 <!-- v18.34 UI-only: Edit-mode record status caption refresh; data/CSV/shared-header compatibility retained. -->
 <!-- v18.33 UI-only: Post-save record status caption refresh + compact record manager controls. Data/CSV/shared-header compatibility retained. -->
@@ -2482,7 +2483,42 @@
         font-size: .76rem !important;
       }
     }
-</style>
+
+    /* ===== Topbar subtitle continuous text flow patch v18.36 (UI-only; logic/data/CSV/shared-header compatibility unchanged) ===== */
+    /* Treat Class • Subject • School Year as one normal text line that wraps naturally. */
+    #classRecordModal .ctm-cr-subtitle {
+      display: block !important;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      line-height: 1.4;
+      text-align: center;
+      color: #555;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+    #classRecordModal .ctm-cr-subtitle > span {
+      display: inline !important;
+      flex: none !important;
+      min-width: 0;
+      white-space: normal;
+      vertical-align: baseline;
+    }
+    #classRecordModal #crTopClassName,
+    #classRecordModal #crTopSchoolYear {
+      white-space: nowrap !important;
+    }
+    #classRecordModal #crTopSubject {
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+    #classRecordModal .ctm-cr-subtitle > span:not([id]) {
+      margin: 0 .45em;
+    }
+
+  </style>
 
   <div class="modal-content ctm-cr-modal-content" style="position:relative">
   <div class="ctm-cr-sticky-shell">
