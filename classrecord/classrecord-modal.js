@@ -1898,7 +1898,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     dom.flash.appendChild(inner);
     dom.flash.style.display = 'block';
     dom.flash.setAttribute('aria-hidden', 'false');
-    flash._t = setTimeout(() => { closeFlash(); }, 2200);
+    flash._t = setTimeout(() => { closeFlash(); }, 9000);
   }
   function getRecordStatusText() {
     if (!state.recordHeader || !state.recordHeader.recordId) return 'Draft / unsaved school-year record';
