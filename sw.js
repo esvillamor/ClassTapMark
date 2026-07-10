@@ -5,8 +5,8 @@
    - Uses network-first only for rental-switch.js, with an offline fallback
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v6-2026-07-08';
-const DYNAMIC_CACHE = 'ctm-dynamic-v6-2026-07-08';
+const CACHE_NAME = 'ClassTapMark-cache-v7-2026-07-10-gradesheet';
+const DYNAMIC_CACHE = 'ctm-dynamic-v7-2026-07-10-gradesheet';
 
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const CDN_PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
@@ -31,6 +31,10 @@ const OPTIONAL_PRECACHE = [
   ABS('./icon512x512.png'),
 
   // Same-origin pages/assets used by ClassTapMark
+
+  // Grade Sheet module shell (index.html loads gradesheet/gradesheet.js; it fetches gradesheet/gradesheet.html)
+  ABS('./gradesheet/gradesheet.js'),
+  ABS('./gradesheet/gradesheet.html'),
   ABS('./support.html'),
   ABS('./free-rental.html'),
   ABS('./SF1.js'),
@@ -150,6 +154,14 @@ self.addEventListener('fetch', (event) => {
 
   // CDN libraries: serve cached immediately, refresh when online.
   if (req.url === CDN_XLSX || req.url === CDN_PDFLIB || req.url === CDN_LZ) {
+    event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
+    return;
+  }
+
+
+  // Grade Sheet module: show cached version offline, refresh when online.
+  // This prevents stale Grade Sheet files after index.html changes while still supporting offline use.
+  if (url.pathname.endsWith('/gradesheet/gradesheet.js') || url.pathname.endsWith('/gradesheet/gradesheet.html')) {
     event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
     return;
   }
