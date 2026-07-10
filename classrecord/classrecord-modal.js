@@ -1,3 +1,5 @@
+/* v18.42 empty-roster authority fix: deleting all learners in Manage Class now clears Class Record roster instead of restoring saved learners. */
+/* v18.41 HPS unlock-after-save fix: newly saved Class Records immediately rebuild Term / Quarter panels so Shared HPS inputs unlock without double-loading the saved record. */
 /* v18.40 Grade 12 SY 2026-2027 descriptor source selector: Official DepEd G12 records can choose DO No. 8, s. 2015 or DO No. 015, s. 2026 descriptors after the G12 grading system dropdown; record/CSV/shared-header compatibility retained. */
 /* v18.39 Descriptor source live-refresh fix: Custom Institutional learner cards and Summary tab now recompute against the selected descriptor source immediately; data/CSV/shared-header compatibility retained. */
 /* v18.38 Descriptor source selector: users can choose DO No. 8, s. 2015 or DO No. 015, s. 2026 descriptors for Custom Institutional academic structures; data/CSV/shared-header compatibility retained. */
@@ -17,7 +19,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.40-g12-descriptor-source'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.42-empty-roster-authority'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -947,9 +949,13 @@ function resolvePolicy() {
   initDefaults();
 
   function normalizeRoster(list) { return Array.isArray(list) ? list.map((item, i) => ({ id: text(item && (item.id || item.studentId || item.learnerId || item.lrn || i + 1)), name: text(item && (item.name || item.student || item.learner || '')), sex: normalizeSex(item && item.sex), lrn: text(item && (item.lrn || '')) })).filter(r => r.name) : []; }
-  function mergeRosters(hostRoster, savedRoster) {
+  function mergeRosters(hostRoster, savedRoster, options = {}) {
     const host = normalizeRoster(hostRoster), saved = normalizeRoster(savedRoster);
-    if (!host.length) return saved;
+    const hostAuthoritative = !!(options && options.hostAuthoritative);
+    // When Manage Class has an actively loaded roster, even an empty array is authoritative.
+    // This prevents a saved Class Record roster from resurrecting learners after all learners
+    // are deleted from Manage Learners.
+    if (!host.length) return hostAuthoritative ? [] : saved;
     if (!saved.length) return host;
 
     // Manage Class is the authoritative roster.
@@ -1109,10 +1115,13 @@ function loadFromHost() {
   if (!state.classId) state.classId = text(state.recordHeader.classId || '').trim();
   if (!state.className) state.className = text(state.recordHeader.className || '').replace(/\[\[\]\]/g, '').trim();
 
-  const hostRoster = state.suppressHostRosterOnce ? [] : normalizeRoster(window.currentStudents || []);
+  const suppressHostRoster = !!state.suppressHostRosterOnce;
+  const rawHostRoster = suppressHostRoster ? null : window.currentStudents;
+  const hostRosterAuthoritative = !suppressHostRoster && Array.isArray(rawHostRoster) && !!text(host.classId || '').trim();
+  const hostRoster = hostRosterAuthoritative ? normalizeRoster(rawHostRoster) : [];
   state.suppressHostRosterOnce = false;
-  state.roster = mergeRosters(hostRoster, state.savedRoster || state.roster || []);
-  if (hostRoster.length) state.savedRoster = clone(state.roster);
+  state.roster = mergeRosters(hostRoster, state.savedRoster || state.roster || [], { hostAuthoritative: hostRosterAuthoritative });
+  if (hostRosterAuthoritative) state.savedRoster = clone(state.roster);
 
   Object.assign(state.recordHeader, {
     classId: state.classId,
@@ -1790,6 +1799,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
   function persist(showToast = true, options = {}) {
     const opts = Object.assign({ auto: false, force: false }, options || {});
     const oldKey = text(state.recordHeader && state.recordHeader.recordId).trim();
+    const wasUnsavedDraft = !oldKey;
     const transient = !!state.isTransientDraft && !oldKey;
     // Never allow auto-save/close/roster-sync to materialize a blank transient draft.
     if (transient && opts.auto && !opts.force) return false;
@@ -1820,6 +1830,17 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     // explicitly refresh the Save/Edit button and record-status caption after a
     // new/edited record becomes saved and Header Fields are locked.
     refreshRecordManagerState();
+    // v18.41 HPS unlock-after-save fix:
+    // HPS inputs are rendered disabled while recordId is blank. On the first manual
+    // Save, persist() assigns recordId after the Term / Quarter panels have already
+    // been built, so the current panel can keep stale disabled attributes until the
+    // saved record is loaded again. Rebuild the UI immediately only for manual saves
+    // that convert a draft/unsaved record into a saved record (or rename through the
+    // Save/Edit button). Auto-save is intentionally excluded to avoid interrupting
+    // typing in learner score/HPS fields.
+    if (!opts.auto && (wasUnsavedDraft || renamedExistingRecord || opts.force)) {
+      try { render(); } catch (_) {}
+    }
     if (showToast) flash(renamedExistingRecord ? 'Class Record renamed and saved. Header Fields locked.' : 'Class Record saved. Header Fields locked.', 'success');
     return true;
   }
@@ -3208,9 +3229,10 @@ function termStats(termKey) {
   function descriptorSelect(termKey, learner, term) {
     const profile = getDescriptorProfile(term.applicableTable);
     const current = text(learner.computed.letterGrade || learner.computed.descriptorCode).trim();
+    const selectId = `cr-${esc(termKey)}-descriptor-${esc(slugify(learner.learnerId))}`;
     return `<div class="ctm-cr-field ctm-cr-term-mini-field ctm-cr-descriptor-field">
-  <label class="ctm-cr-label">Descriptor</label>
-  <select id="cr-${esc(termKey)}-descriptor-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-descriptor-${esc(slugify(learner.learnerId))}" required data-term="${termKey}" data-descriptor="1" data-learner-id="${esc(learner.learnerId)}">
+  <label class="ctm-cr-label" for="${selectId}">Descriptor</label>
+  <select id="${selectId}" name="${selectId}" required data-term="${termKey}" data-descriptor="1" data-learner-id="${esc(learner.learnerId)}">
     <option value="" ${!current ? 'selected' : ''}>Select Descriptor</option>
     ${profile.map(item => `
       <option value="${esc(item.code)}" ${item.code === current ? 'selected' : ''}>
