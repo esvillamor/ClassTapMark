@@ -5,7 +5,7 @@
   const PASSING_GRADE = 75;
   const STORAGE_PREFIX = 'gradesheet:';
   const LEGACY_STORAGE_PREFIX = 'gradesheet::';
-  const VERSION = 'CTM-GRADESHEET-SAVE-FIX-8';
+  const VERSION = 'CTM-GRADESHEET-FREEZE-2COL-AUTOFIT-NO-2026-07-11';
   const Q_KEYS = ['q1','q2','q3','q4'];
   const T_TO_Q = {t1:'q1',t2:'q2',t3:'q3'};
   const state = {htmlInjected:false,classId:'',className:'',roster:[],activeTab:'overview',academicStructure:'quarter',showArchived:'active',subjects:[],grades:{},selectedLearnerId:'',selectedSubjectId:'',saveTimer:0};
@@ -94,7 +94,7 @@
 #gradeSheetModal #gsPanelLearner > .ctm-gs-card > .ctm-gs-grid{grid-template-columns:minmax(220px,520px)!important;max-width:560px!important}
 #gradeSheetModal .ctm-gs-learner-nav{grid-column:1/-1!important;display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:6px!important;margin-top:2px!important}
 #gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:0 0 76px!important;min-width:76px!important;max-width:76px!important}
-#gradeSheetModal .ctm-gs-table-scroll{overflow:hidden!important;display:grid!important;grid-template-columns:var(--gs-left-w,283px) minmax(0,1fr) var(--gs-scrollbar-w,17px)!important;grid-template-rows:var(--gs-head-h,108px) minmax(0,1fr) var(--gs-scrollbar-h,17px)!important;align-items:stretch!important;justify-items:stretch!important}
+#gradeSheetModal .ctm-gs-table-scroll{overflow:hidden!important;display:grid!important;grid-template-columns:var(--gs-left-w,225px) minmax(0,1fr) var(--gs-scrollbar-w,17px)!important;grid-template-rows:var(--gs-head-h,108px) minmax(0,1fr) var(--gs-scrollbar-h,17px)!important;align-items:stretch!important;justify-items:stretch!important}
 #gradeSheetModal .ctm-gs-table-scroll > #gsTable{position:absolute!important;left:-100000px!important;top:-100000px!important;visibility:hidden!important;pointer-events:none!important}
 #gradeSheetModal .ctm-gs-freeze-pane{min-width:0!important;min-height:0!important;background:#fff!important;box-sizing:border-box!important}
 #gradeSheetModal .ctm-gs-freeze-corner{grid-column:1;grid-row:1;overflow:hidden!important;z-index:8!important;background:#dbeafe!important;box-shadow:1px 0 0 #cbd5e1,0 1px 0 #cbd5e1}
@@ -108,7 +108,7 @@
 #gradeSheetModal .ctm-gs-freeze-hscroll-inner,#gradeSheetModal .ctm-gs-freeze-vscroll-inner{display:block!important;min-width:1px!important;min-height:1px!important}
 #gradeSheetModal .ctm-gs-freeze-pane table.ctm-gs-table{width:max-content!important;min-width:0!important;table-layout:fixed!important;margin:0!important;border-radius:0!important}
 #gradeSheetModal .ctm-gs-freeze-pane col{box-sizing:border-box!important}
-#gradeSheetModal .ctm-gs-freeze-corner table.ctm-gs-table,#gradeSheetModal .ctm-gs-freeze-left table.ctm-gs-table{width:var(--gs-left-w,283px)!important;min-width:var(--gs-left-w,283px)!important}
+#gradeSheetModal .ctm-gs-freeze-corner table.ctm-gs-table,#gradeSheetModal .ctm-gs-freeze-left table.ctm-gs-table{width:var(--gs-left-w,225px)!important;min-width:var(--gs-left-w,225px)!important}
 #gradeSheetModal .ctm-gs-freeze-pane .ctm-gs-table th,#gradeSheetModal .ctm-gs-freeze-pane .ctm-gs-table td{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;background-clip:padding-box!important}
 #gradeSheetModal .ctm-gs-freeze-corner th{height:var(--gs-head-h,108px)!important;background:#dbeafe!important;vertical-align:middle!important}
 #gradeSheetModal .ctm-gs-freeze-top thead th{background:#eef2ff!important}
@@ -130,8 +130,23 @@
     t.setAttribute('aria-hidden','true');
     return t;
   }
+  function autoFitNoColumnWidth(source){
+    const values=['#'];
+    try{
+      if(source&&source.tBodies&&source.tBodies[0]){
+        Array.from(source.tBodies[0].rows||[]).forEach(row=>{
+          const cell=row.cells&&row.cells[0];
+          if(cell) values.push(text(cell.textContent));
+        });
+      }
+    }catch(_){}
+    const maxLen=values.reduce((m,v)=>Math.max(m,String(v||'').trim().length),1);
+    const sample=String(Math.max(1,source&&source.tBodies&&source.tBodies[0]?source.tBodies[0].rows.length:1));
+    const len=Math.max(maxLen,sample.length,1);
+    return Math.max(28,Math.min(56,Math.ceil(len*8+18)));
+  }
   function measureGradeSheetColumns(source){
-    const fallback={no:40,name:185,sex:58,period:50,fg:52,remarks:72,summary:86};
+    const fallback={no:34,name:185,sex:58,period:50,fg:52,remarks:72,summary:86};
     const bodyRow=source.tBodies&&source.tBodies[0]&&source.tBodies[0].rows&&source.tBodies[0].rows[0];
     let cells=bodyRow?Array.from(bodyRow.cells):[];
     let widths=cells.map(c=>Math.ceil(c.getBoundingClientRect().width||c.offsetWidth||0));
@@ -152,7 +167,9 @@
         widths.push(w||fallback.period);
       }
     }
-    return widths.map((w,i)=>Math.max(24,Math.ceil(w||([fallback.no,fallback.name,fallback.sex][i]||fallback.period))));
+    widths=widths.map((w,i)=>Math.max(24,Math.ceil(w||([fallback.no,fallback.name,fallback.sex][i]||fallback.period))));
+    widths[0]=autoFitNoColumnWidth(source);
+    return widths;
   }
   function applyGradeSheetColGroup(table,widths){
     if(!table||!Array.isArray(widths)||!widths.length)return 0;
@@ -176,7 +193,7 @@
     const top=cloneTableShell();
     const thead=source.tHead&&source.tHead.cloneNode(true);
     if(thead&&thead.rows[0]){
-      for(let i=0;i<3;i++){ if(thead.rows[0].cells[0]) thead.rows[0].deleteCell(0); }
+      for(let i=0;i<2;i++){ if(thead.rows[0].cells[0]) thead.rows[0].deleteCell(0); }
       top.appendChild(thead);
     }
     return top;
@@ -186,7 +203,7 @@
     const thead=document.createElement('thead');
     const tr=document.createElement('tr');
     if(source.tHead&&source.tHead.rows[0]){
-      Array.from(source.tHead.rows[0].cells).slice(0,3).forEach(th=>{
+      Array.from(source.tHead.rows[0].cells).slice(0,2).forEach(th=>{
         const c=th.cloneNode(true);
         c.removeAttribute('rowspan');
         c.removeAttribute('colspan');
@@ -204,7 +221,7 @@
         const tr=row.cloneNode(true);
         const cells=Array.from(tr.cells);
         cells.forEach((cell,i)=>{
-          const keep=keepFrozen ? i<3 : i>=3;
+          const keep=keepFrozen ? i<2 : i>=2;
           if(!keep) cell.remove();
         });
         tb.appendChild(tr);
@@ -239,13 +256,14 @@
     table.style.top='-100000px';
 
     const colW=measureGradeSheetColumns(table);
-    const frozenW=colW.slice(0,3);
-    const scrollW=colW.slice(3);
-    const leftW=frozenW.reduce((a,b)=>a+b,0)||283;
+    const frozenW=colW.slice(0,2);
+    const scrollW=colW.slice(2);
+    const leftW=frozenW.reduce((a,b)=>a+b,0)||225;
     const scrollTableW=scrollW.reduce((a,b)=>a+b,0)||1;
     const headH=Math.max(96,Math.ceil((table.tHead&&table.tHead.getBoundingClientRect().height)||108));
     const sb=getNativeScrollbarSize();
     wrap.style.setProperty('--gs-left-w',leftW+'px');
+    wrap.style.setProperty('--gs-no-w',(frozenW[0]||34)+'px');
     wrap.style.setProperty('--gs-head-h',headH+'px');
     wrap.style.setProperty('--gs-scrollbar-w',sb.w+'px');
     wrap.style.setProperty('--gs-scrollbar-h',sb.h+'px');
