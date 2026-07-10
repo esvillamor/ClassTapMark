@@ -310,6 +310,28 @@
     },{passive:false});
     left.addEventListener('wheel',e=>{ if(e.deltaY){ vscroll.scrollTop+=e.deltaY; e.preventDefault(); sync(); } },{passive:false});
     top.addEventListener('wheel',e=>{ if(e.deltaX||e.shiftKey){ hscroll.scrollLeft+=e.deltaX||e.deltaY; e.preventDefault(); sync(); } },{passive:false});
+    /* CTM TOUCH FIX 2026-07-11 */
+    let gsTouch=null;
+    const bindTouchScroll=(el,mode)=>{
+      if(!el) return;
+      el.style.touchAction='none';
+      el.addEventListener('pointerdown',ev=>{
+        if(ev.pointerType!=='touch') return;
+        gsTouch={x:ev.clientX,y:ev.clientY,sx:hscroll.scrollLeft,sy:vscroll.scrollTop,mode};
+      },{passive:true});
+      el.addEventListener('pointermove',ev=>{
+        if(!gsTouch||ev.pointerType!=='touch') return;
+        const dx=ev.clientX-gsTouch.x, dy=ev.clientY-gsTouch.y;
+        if(gsTouch.mode!=='v') hscroll.scrollLeft=gsTouch.sx-dx;
+        if(gsTouch.mode!=='h') vscroll.scrollTop=gsTouch.sy-dy;
+        sync();
+        ev.preventDefault();
+      },{passive:false});
+    };
+    bindTouchScroll(body,'both');
+    bindTouchScroll(left,'v');
+    bindTouchScroll(top,'h');
+    ['pointerup','pointercancel','lostpointercapture'].forEach(evt=>document.addEventListener(evt,()=>{gsTouch=null;},{passive:true}));
     sync();
   }
   function adjustGradeSheetSticky(){ buildGradeSheetFreezePanes(); }
