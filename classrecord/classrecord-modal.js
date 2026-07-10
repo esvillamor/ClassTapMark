@@ -1,3 +1,4 @@
+/* v18.44 EX share normalization fix: ST/TE percentage now normalizes to encoded positive-HPS fields, so full scores with ST2 blank can return 100. */
 /* v18.42 empty-roster authority fix: deleting all learners in Manage Class now clears Class Record roster instead of restoring saved learners. */
 /* v18.41 HPS unlock-after-save fix: newly saved Class Records immediately rebuild Term / Quarter panels so Shared HPS inputs unlock without double-loading the saved record. */
 /* v18.40 Grade 12 SY 2026-2027 descriptor source selector: Official DepEd G12 records can choose DO No. 8, s. 2015 or DO No. 015, s. 2026 descriptors after the G12 grading system dropdown; record/CSV/shared-header compatibility retained. */
@@ -19,7 +20,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.42-empty-roster-authority'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.44-ex-share-normalization'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -1176,7 +1177,23 @@ function hydrateTerms() {
 
 function scoreAsZeroWhenBlank(scores, key) { const sv = num(scores && scores[key]); return sv == null ? 0 : sv; }
 function categoryPercent(scores, hps) { let e = 0, t = 0; Object.keys(hps || {}).forEach(k => { const hv = num(hps[k]); if (hv != null && hv > 0) { e += scoreAsZeroWhenBlank(scores, k); t += hv; } }); return t > 0 ? (e / t) * 100 : null; }
-function examPercent(scores, hps) { const qaHps = num(hps && hps.qa1); if (qaHps != null && qaHps > 0) return (scoreAsZeroWhenBlank(scores, 'qa1') / qaHps) * 100; const shares = { st1: 0.3, st2: 0.3, te: 0.4 }; let total = 0, seen = 0; Object.keys(shares).forEach(k => { const hv = num(hps && hps[k]); if (hv != null && hv > 0) { total += (scoreAsZeroWhenBlank(scores, k) / hv) * 100 * shares[k]; seen += 1; } }); return seen ? total : null; }
+function examPercent(scores, hps) {
+  const qaHps = num(hps && hps.qa1);
+  if (qaHps != null && qaHps > 0) return (scoreAsZeroWhenBlank(scores, 'qa1') / qaHps) * 100;
+  // v18.44: Normalize the EX/ST-TE shares against only the encoded positive-HPS
+  // fields. If ST2 has no HPS, ST1 + TE should still be able to produce 100%.
+  const shares = { st1: 0.3, st2: 0.3, te: 0.4 };
+  let weightedTotal = 0;
+  let activeShareTotal = 0;
+  Object.keys(shares).forEach(k => {
+    const hv = num(hps && hps[k]);
+    if (hv != null && hv > 0) {
+      weightedTotal += (scoreAsZeroWhenBlank(scores, k) / hv) * 100 * shares[k];
+      activeShareTotal += shares[k];
+    }
+  });
+  return activeShareTotal > 0 ? weightedTotal / activeShareTotal : null;
+}
 
 function computeCustomLearnerTerm(row, term) { const prev=clone(row.computed||defaultComputed()); row.computed=Object.assign(defaultComputed(), prev, { teacherNotes:prev.teacherNotes||'', interventionNotes:prev.interventionNotes||'' }); const setup=state.setupProfile||defaultSetupProfile(), c=normalizeCustomComponents(setup.customComponents), map={ww:['ww1','ww2','ww3','ww4','ww5'],pt:['pt1','pt2','pt3','pt4','pt5'],st:['st1','st2'],te:['te1','te2'],qe:['qe1','qe2']}; let ig=0; Object.keys(c).forEach(k=>{ const cfg=c[k]; if(Number(cfg.weight)<=0||Number(cfg.count)<=0) return; let e=0,t=0; map[k].slice(0,cfg.count).forEach(fieldKey=>{ const g=(k==='ww'||k==='pt')?k:'ex'; const hv=num(term&&term.hps&&term.hps[g]&&term.hps[g][fieldKey]); if(hv!=null&&hv>0){t+=hv; e+=scoreAsZeroWhenBlank(row.scores&&row.scores[g],fieldKey);} }); ig += (t>0 ? (e/t)*100 : 0) * Number(cfg.weight)/100; }); ig=round2(ig); const method=normalizeGradeConversionMethod(setup.gradeConversionMethod||state.recordHeader.gradeConversionMethod), key=normalizeTransmutationTableKey(setup.transmutationTableKey||state.recordHeader.transmutationTableKey,method), descriptorTable=getCustomDescriptorTable((setup&&setup.customDescriptorSource)||(state.recordHeader&&state.recordHeader.customDescriptorSource)), tg=method==='transmutation'?transmuteWithRegistry(ig,key):ig, d=customNumericDescriptor(tg, descriptorTable); Object.assign(row.computed,{ tableUsed:descriptorTable, gradeConversionTableUsed:method==='transmutation'?getTransmutationRegistryEntry(key).label:'Zero Based Direct Computation', initialGrade:ig, transmutedGrade:method==='transmutation'?tg:null, termGrade:tg, finalDisplayedNumeric:tg, letterGrade:d?d.descriptorCode:'', descriptorCode:d?d.descriptorCode:'', descriptorLabel:d?(d.descriptorLabel||d.descriptorCode):'', generalDescription:d?(d.generalDescription||''):'', instructionalResponse:d?(d.instructionalResponse||''):'', remarks:Number(tg)>=PASSING_GRADE?'Passed':'Failed', interventionFlag:Number(tg)<PASSING_GRADE }); return row.computed; }
 function computeLearnerTerm(row, term) {
