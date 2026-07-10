@@ -41,7 +41,34 @@
     #gradeSheetModal .ctm-gs-check input{width:15px;height:15px;min-width:15px;padding:0}
     @media(max-width:700px){#gradeSheetModal .ctm-gs-tabs{padding:4px 8px 7px;gap:5px}.ctm-gs-tab{font-size:.7rem!important;padding:5px 6px!important;min-height:28px!important}#gradeSheetModal .ctm-gs-body{padding:7px 6px 10px}.ctm-gs-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px}.ctm-gs-card{padding:7px!important}.ctm-gs-table-scroll{height:clamp(240px,50vh,520px)!important}.ctm-gs-table th,.ctm-gs-table td{font-size:.62rem!important;padding:2px 4px!important;height:25px!important}#gradeSheetModal .ctm-gs-table thead tr:nth-child(2) th{top:25px!important}#gradeSheetModal .ctm-gs-table thead tr:nth-child(3) th{top:50px!important}#gradeSheetModal .ctm-gs-table thead tr:nth-child(4) th{top:75px!important}.ctm-gs-table .gs-col-name{width:150px;min-width:150px;max-width:150px;left:36px!important}.ctm-gs-table .gs-col-no{width:36px;min-width:36px;max-width:36px}.ctm-gs-table .gs-col-sex{width:46px;min-width:46px;max-width:46px;left:186px!important}.ctm-gs-period{width:44px!important;min-width:44px!important}.ctm-gs-summary{width:72px!important;min-width:72px!important}}
     @media(max-width:420px){#gradeSheetModal .ctm-gs-title{font-size:.92rem}.ctm-gs-subtitle{font-size:.68rem!important}.ctm-gs-grid{grid-template-columns:1fr!important}.ctm-gs-actions .ctm-gs-btn{flex:1 1 45%}.ctm-gs-close-btn{width:38px!important;min-width:38px!important;height:30px!important}}
-  </style>
+
+    /* CTM FIX 2026-07-10D: Frozen panes with aligned colgroups and reserved scrollbar lanes */
+    #gradeSheetModal #gsPanelLearner > .ctm-gs-card > .ctm-gs-grid{grid-template-columns:minmax(220px,520px)!important;max-width:560px!important}
+    #gradeSheetModal .ctm-gs-learner-nav{grid-column:1/-1!important;display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:6px!important;margin-top:2px!important}
+    #gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:0 0 76px!important;min-width:76px!important;max-width:76px!important}
+    #gradeSheetModal .ctm-gs-table-scroll{overflow:hidden!important;display:grid!important;grid-template-columns:var(--gs-left-w,283px) minmax(0,1fr) var(--gs-scrollbar-w,17px)!important;grid-template-rows:var(--gs-head-h,108px) minmax(0,1fr) var(--gs-scrollbar-h,17px)!important;align-items:stretch!important;justify-items:stretch!important}
+    #gradeSheetModal .ctm-gs-table-scroll > #gsTable{position:absolute!important;left:-100000px!important;top:-100000px!important;visibility:hidden!important;pointer-events:none!important}
+    #gradeSheetModal .ctm-gs-freeze-pane{min-width:0!important;min-height:0!important;background:#fff!important;box-sizing:border-box!important}
+    #gradeSheetModal .ctm-gs-freeze-corner{grid-column:1;grid-row:1;overflow:hidden!important;z-index:8!important;background:#dbeafe!important;box-shadow:1px 0 0 #cbd5e1,0 1px 0 #cbd5e1}
+    #gradeSheetModal .ctm-gs-freeze-top{grid-column:2;grid-row:1;overflow:hidden!important;z-index:7!important;background:#eef2ff!important;box-shadow:0 1px 0 #cbd5e1}
+    #gradeSheetModal .ctm-gs-freeze-left{grid-column:1;grid-row:2;overflow:hidden!important;z-index:6!important;background:#fff!important;box-shadow:1px 0 0 #cbd5e1}
+    #gradeSheetModal .ctm-gs-freeze-body{grid-column:2;grid-row:2;overflow:hidden!important;z-index:5!important;background:#fff!important;overscroll-behavior:contain!important;position:relative!important}
+    #gradeSheetModal .ctm-gs-freeze-hscroll{grid-column:2;grid-row:3;overflow-x:auto!important;overflow-y:hidden!important;z-index:9!important;background:#f1f5f9!important;border-top:1px solid #cbd5e1!important;box-sizing:border-box!important}
+    #gradeSheetModal .ctm-gs-freeze-vscroll{grid-column:3;grid-row:2;overflow-y:auto!important;overflow-x:hidden!important;z-index:9!important;background:#f1f5f9!important;border-left:1px solid #cbd5e1!important;box-sizing:border-box!important}
+    #gradeSheetModal .ctm-gs-freeze-scroll-corner{grid-column:3;grid-row:3;z-index:10!important;background:#e2e8f0!important;border-left:1px solid #cbd5e1!important;border-top:1px solid #cbd5e1!important;box-sizing:border-box!important}
+    #gradeSheetModal .ctm-gs-freeze-mover{width:max-content!important;height:max-content!important;will-change:transform!important;transform:translate3d(0,0,0)}
+    #gradeSheetModal .ctm-gs-freeze-hscroll-inner,#gradeSheetModal .ctm-gs-freeze-vscroll-inner{display:block!important;min-width:1px!important;min-height:1px!important}
+    #gradeSheetModal .ctm-gs-freeze-pane table.ctm-gs-table{width:max-content!important;min-width:0!important;table-layout:fixed!important;margin:0!important;border-radius:0!important}
+    #gradeSheetModal .ctm-gs-freeze-pane col{box-sizing:border-box!important}
+    #gradeSheetModal .ctm-gs-freeze-corner table.ctm-gs-table,#gradeSheetModal .ctm-gs-freeze-left table.ctm-gs-table{width:var(--gs-left-w,283px)!important;min-width:var(--gs-left-w,283px)!important}
+    #gradeSheetModal .ctm-gs-freeze-pane .ctm-gs-table th,#gradeSheetModal .ctm-gs-freeze-pane .ctm-gs-table td{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;background-clip:padding-box!important}
+    #gradeSheetModal .ctm-gs-freeze-corner th{height:var(--gs-head-h,108px)!important;background:#dbeafe!important;vertical-align:middle!important}
+    #gradeSheetModal .ctm-gs-freeze-top thead th{background:#eef2ff!important}
+    #gradeSheetModal .ctm-gs-freeze-left td{background:#fff!important}
+    #gradeSheetModal .ctm-gs-freeze-left tr.is-selected td,#gradeSheetModal .ctm-gs-freeze-body tr.is-selected td{background:#dbeafe!important}
+    #gradeSheetModal .ctm-gs-table .gs-ga{font-weight:900!important;color:#0f172a!important}
+    @media(max-width:700px){#gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:0 0 58px!important;min-width:58px!important;max-width:58px!important}}
+</style>
   <div class="ctm-gs-modal-content">
     <div class="ctm-gs-topbar">
       <div class="ctm-gs-topbar-grid">
