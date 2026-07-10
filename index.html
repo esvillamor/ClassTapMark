@@ -1273,6 +1273,112 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
   color:#1d4ed8;
 }
 
+
+
+/* =========================================================
+   TEMP: Free License button attention animation
+   Remove this whole block later to restore normal button look.
+   Target button: #btnBuyLicense
+   ========================================================= */
+
+body.locked #btnBuyLicense.ctm-free-license-attention {
+  position: relative;
+  overflow: visible;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  font-weight: 800;
+  letter-spacing: .2px;
+  box-shadow:
+    0 0 0 0 rgba(16, 185, 129, .55),
+    0 12px 26px rgba(16, 185, 129, .35);
+  animation: ctmFreeLicensePulse 1.65s ease-in-out infinite;
+}
+
+/* Soft glowing pulse */
+@keyframes ctmFreeLicensePulse {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(16, 185, 129, .55),
+      0 12px 26px rgba(16, 185, 129, .35);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.035);
+    box-shadow:
+      0 0 0 9px rgba(16, 185, 129, .12),
+      0 16px 34px rgba(16, 185, 129, .48);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(16, 185, 129, 0),
+      0 12px 26px rgba(16, 185, 129, .35);
+  }
+}
+
+/* Small FREE badge */
+body.locked #btnBuyLicense.ctm-free-license-attention::after {
+  content: "FREE";
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.4;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, .38);
+  animation: ctmFreeBadgePop 1.65s ease-in-out infinite;
+}
+
+@keyframes ctmFreeBadgePop {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Moving highlight/shimmer */
+body.locked #btnBuyLicense.ctm-free-license-attention::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255,255,255,.12) 35%,
+    rgba(255,255,255,.45) 50%,
+    rgba(255,255,255,.12) 65%,
+    transparent 100%
+  );
+  transform: translateX(-120%);
+  animation: ctmFreeLicenseShimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ctmFreeLicenseShimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  45%, 100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Respect users/devices that reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  body.locked #btnBuyLicense.ctm-free-license-attention,
+  body.locked #btnBuyLicense.ctm-free-license-attention::before,
+  body.locked #btnBuyLicense.ctm-free-license-attention::after {
+    animation: none !important;
+  }
+}
+
 </style>
 
 <script>
@@ -1355,6 +1461,94 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
 })();
 </script>
 
+
+<script>
+/* ===================== CTM Form Label Association Guard v1 =====================
+   Purpose: safely resolves DevTools issue "No label associated with a form field"
+   for static and dynamically-rendered controls.
+   Non-destructive: keeps existing IDs, names, values, event listeners, storage keys,
+   CSV/PDF formats, and visual layout unchanged. It only adds missing IDs/for links
+   where a label already wraps or is near a form control.
+*/
+(function(){
+  'use strict';
+  if (window.CTMFormLabelGuard && window.CTMFormLabelGuard.__installed) return;
+  var FORM_SELECTOR = 'input:not([type="hidden"]), select, textarea';
+  var seq = 0;
+  function safeIdPart(v){
+    return String(v || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48);
+  }
+  function ensureId(control, prefix){
+    if (!control || control.id) return control && control.id;
+    var base = safeIdPart(prefix || control.getAttribute('name') || control.getAttribute('placeholder') || control.getAttribute('aria-label') || control.tagName || 'field') || 'field';
+    var id;
+    do { id = 'ctm-' + base + '-' + (++seq); } while (document.getElementById(id));
+    control.id = id;
+    return id;
+  }
+  function hasAssociatedLabel(control){
+    if (!control) return true;
+    if (control.id && document.querySelector('label[for="' + CSS.escape(control.id) + '"]')) return true;
+    var p = control.parentElement;
+    while (p && p !== document.body) {
+      if (p.tagName && p.tagName.toLowerCase() === 'label') return true;
+      p = p.parentElement;
+    }
+    return false;
+  }
+  function labelText(label){
+    return String(label && label.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+  function associateLabels(root){
+    root = root && root.nodeType === 1 ? root : document;
+    var labels = root.querySelectorAll ? root.querySelectorAll('label') : [];
+    labels.forEach(function(label){
+      var forId = label.getAttribute('for');
+      if (forId && document.getElementById(forId)) return;
+      var wrapped = label.querySelector(FORM_SELECTOR);
+      if (wrapped) {
+        var id = ensureId(wrapped, forId || labelText(label));
+        if (id && label.getAttribute('for') !== id) label.setAttribute('for', id);
+        return;
+      }
+      if (forId && !document.getElementById(forId)) {
+        var field = label.closest('.ctm-gs-field,.sf2-setup-grid,.sf8-setup-grid,.sf8-fields,.student-form,.date-picker-row,.ctm-learner-slot,.sf3-module');
+        var nearby = field && field.querySelector(FORM_SELECTOR);
+        if (nearby) {
+          var nid = ensureId(nearby, forId || labelText(label));
+          if (nid) label.setAttribute('for', nid);
+        }
+      }
+    });
+    var controls = root.querySelectorAll ? root.querySelectorAll(FORM_SELECTOR) : [];
+    controls.forEach(function(control){
+      if (hasAssociatedLabel(control)) return;
+      if (control.getAttribute('aria-label') || control.getAttribute('aria-labelledby')) return;
+      var txt = control.getAttribute('placeholder') || control.getAttribute('title') || control.getAttribute('name') || control.id;
+      if (txt) control.setAttribute('aria-label', String(txt).trim());
+    });
+  }
+  function run(){ associateLabels(document); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once:true }); else run();
+  try {
+    var mo = new MutationObserver(function(muts){
+      var scheduled = false;
+      muts.forEach(function(m){
+        if (scheduled) return;
+        if (m.type === 'childList' && m.addedNodes && m.addedNodes.length) scheduled = true;
+      });
+      if (scheduled) requestAnimationFrame(run);
+    });
+    mo.observe(document.documentElement, { childList:true, subtree:true });
+  } catch (_) {}
+  window.CTMFormLabelGuard = { __installed:true, associateLabels: associateLabels };
+})();
+</script>
 </head>
 <body class="locked">
     <h1>ClassTapMark</h1>
@@ -1397,6 +1591,8 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
           <b>Empowering Teachers.</b> Offline-first classroom workflow EdTech built to simplify attendance, learner management, class records, and school-form preparation.
 		  <br /><br />
 		  <b>Organizing Records.</b> By reducing repetitive paperwork, improving data consistency, and supporting DepEd-related reporting workflows, ClassTapMark aims to give teachers more time for instruction, learner support, and meaningful classroom engagement.
+		  <br /><br />
+		  <b>Open for Research Case Studies.</b> <a href="https://drive.google.com/file/d/1K-ovZNKy74a_UJMItaEOxpKxSWfd6A82/view?usp=sharing" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">ClassTapMark welcomes teachers, school teams, researchers, and education partners who wish to document practical classroom use through responsible case studies and structured feedback. Interested participants may explore how ClassTapMark supports offline-first classroom workflows, reduces repetitive documentation tasks, and strengthens practical learner-record management.</a>
 		  <br /><br />
 		  <b>Independent Tool.</b> ClassTapMark is an independent teacher-developed tool designed to support DepEd-related classroom workflows. It is not an official DepEd system and does not claim DepEd endorsement, validation, or recognition. Its long-term vision is to become a trusted digital companion for classroom teachers.
         </p>
@@ -1441,8 +1637,8 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
         </div>
         <div style="display:flex; justify-content:center; flex-direction:column; align-items:center; gap:1rem; padding:1rem;">
           <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:.35rem"><input type="radio" name="studentSex" value="Male" id="sexMale" checked> Male</label>
-            <label style="display:flex;align-items:center;gap:.35rem"><input type="radio" name="studentSex" value="Female" id="sexFemale"> Female</label>
+            <label for="sexMale" style="display:flex;align-items:center;gap:.35rem"><input type="radio" name="studentSex" value="Male" id="sexMale" checked> Male</label>
+            <label for="sexFemale" style="display:flex;align-items:center;gap:.35rem"><input type="radio" name="studentSex" value="Female" id="sexFemale"> Female</label>
           </div>
           <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; width:100%; align-items:center;">
             <button class="primary" style="flex:1;" onclick="importCSV()" title="Select a class from the dropdown to enable importing">Import</button>
@@ -1576,8 +1772,10 @@ body.ctm-inapp-browser .ctm-inapp-banner{ display:block; }
 	 <br />
 	 
 	 <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:space-between; width:100%; margin:0; padding:0;">
-		<button class="primary" style="flex:1;" disabled>SF 5A</button>
-		<button class="primary" style="flex:1;" disabled>SF 5B</button>
+		<button class="primary" id="btnOpenGradeSheet" style="flex:1;" title="List of all Final Grades, General Average, Promotion, Rank and Academic Awards">Grade Sheet</button>
+		<button class="primary" style="flex:1;" disabled>SF 5</button>
+		<button class="primary" style="flex:1;" disabled>SF 9</button>
+		<button class="primary" style="flex:1;" disabled>SF 10</button>
 		<button class="primary"
         style="flex:1;"
         onclick="alert(this.getAttribute('title') || 'Coming soon…')"
@@ -1587,8 +1785,6 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
 		By GOD's grace 🙏
 			These can all be done💪
 				Welcomes Collaborators... 😎">Other<br />SF</button>
-		<button class="primary" style="flex:1;" disabled>SF 9</button>
-		<button class="primary" style="flex:1;" disabled>SF 10</button>
 	  </div>
 
 <!-- Storage Meter (below Task Logs; visible only when Unlocked) -->
@@ -3659,6 +3855,8 @@ function populateClassDropdown(){
 	  if (k === `sf3-data::${id}`) localStorage.removeItem(k);
 	  // defensive: if you ever change SF3 key patterns later
 	  if (k.startsWith('sf3-data::') && k.includes(id)) localStorage.removeItem(k);
+	  // ✅ GradeSheet data cleanup
+	  if (k === `gradesheet:${id}` || k.startsWith(`gradesheet:${id}:`) || k.startsWith(`gradesheet:${id}::`)) localStorage.removeItem(k);
 
 	  // Existing meta cleanup
 	  if (k === `ctmSfMeta::${id}`) localStorage.removeItem(k);
@@ -3699,6 +3897,8 @@ function populateClassDropdown(){
 	purgeOrphanedCtmSfMeta();
 	purgeOrphanedSf1Meta();
 	purgeOrphanedClassRecordKeys();
+	purgeOrphanedGradeSheetKeys();
+	purgeGlobalClassRecordGradeSheetKeysIfNoClasses();
 
 	if (currentClassId === id){
 	  currentClassId = null;
@@ -3771,6 +3971,55 @@ function purgeOrphanedClassRecordKeys() {
     }
   }
 
+  return removed;
+}
+
+
+function purgeOrphanedGradeSheetKeys() {
+  const validIds = new Set((getAllClasses() || []).map(c => c && c.id).filter(Boolean));
+  let removed = 0;
+
+  for (const k of Object.keys(localStorage)) {
+    if (!k.startsWith('gradesheet:')) continue;
+
+    // Key format: gradesheet:<classId> or gradesheet:<classId>:...
+    const rest = k.slice('gradesheet:'.length);
+    const classId = rest.split(':')[0];
+
+    if (!classId || !validIds.has(classId)) {
+      localStorage.removeItem(k);
+      removed++;
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`purgeOrphanedGradeSheetKeys: removed ${removed} orphan key(s).`);
+  }
+  return removed;
+}
+
+function purgeGlobalClassRecordGradeSheetKeysIfNoClasses() {
+  const classes = getAllClasses() || [];
+  if (classes.length > 0) return 0;
+
+  // Global UI-preference keys are safe to remove only after all classes are gone.
+  const globalKeys = [
+    'ctm-classrecord-tabs-collapsed-v1',
+    'ctm-gradesheet-tabs-collapsed-v1',
+    'gradesheet-tabs-collapsed-v1'
+  ];
+
+  let removed = 0;
+  for (const k of globalKeys) {
+    if (localStorage.getItem(k) !== null) {
+      localStorage.removeItem(k);
+      removed++;
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`purgeGlobalClassRecordGradeSheetKeysIfNoClasses: removed ${removed} global key(s).`);
+  }
   return removed;
 }
 
@@ -4850,15 +5099,17 @@ content.innerHTML =
       const mk = monthKeyFromDate(d);
       const label = formatMonthLabel(d);
       const days = daysInMonth(d.getFullYear(), d.getMonth());
-      html += `<label title="${mk}"><input type="checkbox" name="exportMonth" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
+      const inputId = `exportMonth-future-${mk}`;
+      html += `<label for="${inputId}" title="${mk}"><input id="${inputId}" type="checkbox" name="exportMonth" value="${mk}" onchange="toggleMonth('${mk}')" aria-label="Export ${label}"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
     }
     html += '</div>';
 
     // PRESENT MONTH (center) – default checked
     const currentDays = daysInMonth(month0.getFullYear(), month0.getMonth());
     const currentLabel = formatMonthLabel(month0);
-    html += `<label class="current-date-center" title="${currentMonthKey}">
-      <input type="checkbox" name="exportMonth" value="${currentMonthKey}" onchange="toggleMonth('${currentMonthKey}')" checked> Present Month ${currentLabel} (${currentDays} days)
+    const currentInputId = `exportMonth-current-${currentMonthKey}`;
+    html += `<label class="current-date-center" for="${currentInputId}" title="${currentMonthKey}">
+      <input id="${currentInputId}" type="checkbox" name="exportMonth" value="${currentMonthKey}" onchange="toggleMonth('${currentMonthKey}')" aria-label="Export present month ${currentLabel}" checked> Present Month ${currentLabel} (${currentDays} days)
     </label>`;
 
     // PAST MONTHS (bottom): 18 months before the current month
@@ -4869,7 +5120,8 @@ content.innerHTML =
       const mk = monthKeyFromDate(d);
       const label = formatMonthLabel(d);
       const days = daysInMonth(d.getFullYear(), d.getMonth());
-      html += `<label title="${mk}"><input type="checkbox" name="exportMonth" value="${mk}" onchange="toggleMonth('${mk}')"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
+      const inputId = `exportMonth-past-${mk}`;
+      html += `<label for="${inputId}" title="${mk}"><input id="${inputId}" type="checkbox" name="exportMonth" value="${mk}" onchange="toggleMonth('${mk}')" aria-label="Export ${label}"> ${label} <small style="color:#667;">(${days} days)</small></label>`;
     }
     html += '</div>';
 
@@ -5544,6 +5796,9 @@ if (rentalAttempt && !freeRentalAllowed()){
 
     purgeOrphanedCtmSfMeta();
 	purgeOrphanedSf1Meta();
+	purgeOrphanedClassRecordKeys();
+	purgeOrphanedGradeSheetKeys();
+	purgeGlobalClassRecordGradeSheetKeysIfNoClasses();
 	populateClassDropdown();
     document.getElementById('sexMale').checked = true;
     setTodayDate();
@@ -6272,6 +6527,7 @@ document.addEventListener('click', function (e) {
   <script src="SF3pdf.js"></script>  
   <script src="SF8pdf.js"></script>
   <script src="classrecord/classrecord-modal.js"></script>
+  <script src="gradesheet/gradesheet.js"></script>
   <div id="classRecordHost"></div>
 
   <script>
@@ -7138,6 +7394,48 @@ document.addEventListener('click', function (e) {
   var mo=new MutationObserver(function(){clearTimeout(timer);timer=setTimeout(function(){refresh(document);},50);});
   function observe(){mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-hidden','hidden','style','class','id','name']});}
   if(document.documentElement)observe();
+})();
+</script>
+
+
+
+<script>
+/* =========================================================
+   TEMP: Apply Free License attention class
+   Remove this whole script later together with the CSS block.
+   It only activates when #btnBuyLicense text contains "Free".
+   ========================================================= */
+(function () {
+  'use strict';
+
+  function applyFreeLicenseAttention() {
+    var btn = document.getElementById('btnBuyLicense');
+    if (!btn) return;
+
+    var text = (btn.textContent || '').trim().toLowerCase();
+
+    if (text.includes('free')) {
+      btn.classList.add('ctm-free-license-attention');
+      btn.setAttribute('title', 'Get your Free License');
+      btn.setAttribute('aria-label', 'Get your Free License');
+    } else {
+      btn.classList.remove('ctm-free-license-attention');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    applyFreeLicenseAttention();
+
+    // Because your license buttons are dynamically created, watch for changes.
+    var target = document.getElementById('licenseActionButtons') || document.body;
+    var observer = new MutationObserver(applyFreeLicenseAttention);
+
+    observer.observe(target, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  });
 })();
 </script>
 
