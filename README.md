@@ -5,6 +5,8 @@
 
 **Organizing Records.** By reducing repetitive paperwork, improving data consistency, and supporting DepEd-related reporting workflows, ClassTapMark aims to give teachers more time for instruction, learner support, and meaningful classroom engagement.
 
+**Open for Research Case Studies.** ClassTapMark welcomes teachers, school teams, researchers, and education partners who wish to document practical classroom use through responsible case studies and structured feedback. Interested participants may explore how ClassTapMark supports offline-first classroom workflows, reduces repetitive documentation tasks, and strengthens practical learner-record management.
+
 **Independent Tool.** ClassTapMark is an independent teacher-developed tool designed to support DepEd-related classroom workflows. It is not an official DepEd system and does not claim DepEd endorsement, validation, or recognition. Its long-term vision is to become a trusted digital companion for classroom teachers.
 
 End‑User License Agreement (EULA)
