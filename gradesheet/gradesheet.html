@@ -41,11 +41,15 @@
     #gradeSheetModal .ctm-gs-check input{width:15px;height:15px;min-width:15px;padding:0}
     @media(max-width:700px){#gradeSheetModal .ctm-gs-tabs{padding:4px 8px 7px;gap:5px}.ctm-gs-tab{font-size:.7rem!important;padding:5px 6px!important;min-height:28px!important}#gradeSheetModal .ctm-gs-body{padding:7px 6px 10px}.ctm-gs-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px}.ctm-gs-card{padding:7px!important}.ctm-gs-table-scroll{height:clamp(240px,50vh,520px)!important}.ctm-gs-table th,.ctm-gs-table td{font-size:.62rem!important;padding:2px 4px!important;height:25px!important}#gradeSheetModal .ctm-gs-table thead tr:nth-child(2) th{top:25px!important}#gradeSheetModal .ctm-gs-table thead tr:nth-child(3) th{top:50px!important}#gradeSheetModal .ctm-gs-table thead tr:nth-child(4) th{top:75px!important}.ctm-gs-table .gs-col-name{width:150px;min-width:150px;max-width:150px;left:var(--gs-no-w,36px)!important}.ctm-gs-table .gs-col-no{width:auto;min-width:26px;max-width:52px}.ctm-gs-table .gs-col-sex{width:46px;min-width:46px;max-width:46px}.ctm-gs-period{width:44px!important;min-width:44px!important}.ctm-gs-summary{width:72px!important;min-width:72px!important}}
     @media(max-width:420px){#gradeSheetModal .ctm-gs-title{font-size:.92rem}.ctm-gs-subtitle{font-size:.68rem!important}.ctm-gs-grid{grid-template-columns:1fr!important}.ctm-gs-actions .ctm-gs-btn{flex:1 1 45%}.ctm-gs-close-btn{width:38px!important;min-width:38px!important;height:30px!important}}
+    /* CTM FIX 2026-07-11A: Subject Setup Panel uses one-column fields on 600px and lower screens */
+    @media(max-width:400px){#gradeSheetModal #gsPanelSubjects > .ctm-gs-card > .ctm-gs-grid{grid-template-columns:1fr!important}}
 
     /* CTM FIX 2026-07-10D: Frozen panes with aligned colgroups and reserved scrollbar lanes */
     #gradeSheetModal #gsPanelLearner > .ctm-gs-card > .ctm-gs-grid{grid-template-columns:minmax(220px,520px)!important;max-width:560px!important}
-    #gradeSheetModal .ctm-gs-learner-nav{grid-column:1/-1!important;display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:6px!important;margin-top:2px!important}
-    #gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:0 0 76px!important;min-width:76px!important;max-width:76px!important}
+    #gradeSheetModal .ctm-gs-learner-nav{grid-column:1/-1!important;display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;align-items:center!important;gap:6px!important;margin-top:2px!important;width:100%!important;min-width:0!important}
+    #gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:1 1 0!important;min-width:0!important;max-width:none!important;white-space:nowrap!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;padding-left:4px!important;padding-right:4px!important;overflow:hidden!important}
+    #gradeSheetModal .ctm-gs-learner-nav .ctm-gs-nav-text{display:inline!important;overflow:hidden!important;text-overflow:ellipsis!important}
+    #gradeSheetModal .ctm-gs-learner-nav .ctm-gs-nav-icon{display:inline-flex!important;line-height:1!important;flex:0 0 auto!important}
     #gradeSheetModal .ctm-gs-table-scroll{overflow:hidden!important;display:grid!important;grid-template-columns:var(--gs-left-w,225px) minmax(0,1fr) var(--gs-scrollbar-w,17px)!important;grid-template-rows:var(--gs-head-h,108px) minmax(0,1fr) var(--gs-scrollbar-h,17px)!important;align-items:stretch!important;justify-items:stretch!important}
     #gradeSheetModal .ctm-gs-table-scroll > #gsTable{position:absolute!important;left:-100000px!important;top:-100000px!important;visibility:hidden!important;pointer-events:none!important}
     #gradeSheetModal .ctm-gs-freeze-pane{min-width:0!important;min-height:0!important;background:#fff!important;box-sizing:border-box!important}
@@ -67,7 +71,61 @@
     #gradeSheetModal .ctm-gs-freeze-left td{background:#fff!important}
     #gradeSheetModal .ctm-gs-freeze-left tr.is-selected td,#gradeSheetModal .ctm-gs-freeze-body tr.is-selected td{background:#dbeafe!important}
     #gradeSheetModal .ctm-gs-table .gs-ga{font-weight:900!important;color:#0f172a!important}
-    @media(max-width:700px){#gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:0 0 58px!important;min-width:58px!important;max-width:58px!important}}
+    @media(max-width:700px){#gradeSheetModal .ctm-gs-learner-nav{flex-wrap:nowrap!important;gap:4px!important}#gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{flex:1 1 0!important;min-width:0!important;max-width:none!important;font-size:.7rem!important}}
+    @media(max-width:340px){#gradeSheetModal .ctm-gs-learner-nav{gap:3px!important}#gradeSheetModal .ctm-gs-learner-nav .ctm-gs-btn{padding-left:2px!important;padding-right:2px!important}#gradeSheetModal .ctm-gs-learner-nav .ctm-gs-nav-text{display:none!important}}
+    #gradeSheetModal #gsPanelLearner > .ctm-gs-card{touch-action:pan-y!important;overscroll-behavior:contain!important}
+    #gradeSheetModal #gsPanelLearner .ctm-gs-card-title .ctm-gs-mini::after{content:" • Swipe left/right to change learner";font-weight:700;color:#2563eb}
+
+    /* CTM FIX 2026-07-11B: Subject Setup buttons split into centered first row and centered Move row */
+    #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions{
+      display:flex!important;
+      flex-direction:column!important;
+      align-items:center!important;
+      justify-content:center!important;
+      gap:6px!important;
+      width:100%!important;
+      margin-top:7px!important;
+    }
+    #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row{
+      display:flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      gap:5px!important;
+      width:100%!important;
+      min-width:0!important;
+    }
+    #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row-main{
+      flex-wrap:nowrap!important;
+    }
+    #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row-move{
+      flex-wrap:nowrap!important;
+      max-width:720px!important;
+    }
+    #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row .ctm-gs-btn{
+      flex:0 0 auto!important;
+      width:auto!important;
+      max-width:none!important;
+      white-space:nowrap!important;
+    }
+    #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row-move .ctm-gs-btn{
+      flex:1 1 0!important;
+      min-width:160px!important;
+      max-width:360px!important;
+    }
+    @media(max-width:520px){
+      #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row{
+        gap:4px!important;
+      }
+      #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row-main .ctm-gs-btn{
+        padding-left:6px!important;
+        padding-right:6px!important;
+        font-size:.68rem!important;
+      }
+      #gradeSheetModal #gsPanelSubjects .ctm-gs-subject-actions-row-move .ctm-gs-btn{
+        min-width:0!important;
+      }
+    }
+
 </style>
   <div class="ctm-gs-modal-content">
     <div class="ctm-gs-topbar">
@@ -91,9 +149,44 @@
           <div class="ctm-gs-actions"><button type="button" class="ctm-gs-btn edit" id="gsBtnRefreshRoster">Refresh Roster</button><button type="button" class="ctm-gs-btn danger" id="gsBtnClearGrades">Clear Grades</button></div>
         </div>
       </section>
-      <section id="gsPanelOverview" class="ctm-gs-panel active"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span>Dynamic Grade Sheet</span><span class="ctm-gs-mini">Frozen: top 4 header rows + # / Learner only</span></div><div class="ctm-gs-table-scroll"><table id="gsTable" class="ctm-gs-table" aria-label="Grade Sheet table"></table></div></div></section>
-      <section id="gsPanelLearner" class="ctm-gs-panel"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span id="gsLearnerTitle">Learner Grade Encoding</span><span class="ctm-gs-mini">Whole-number grades only</span></div><div class="ctm-gs-grid"><div class="ctm-gs-field"><label for="gsLearnerPicker">Learner</label><select id="gsLearnerPicker"></select></div><div class="ctm-gs-actions ctm-gs-learner-nav" aria-label="Learner navigation"><button type="button" class="ctm-gs-btn edit" id="gsBtnFirstLearner" title="First learner" aria-label="First learner">⏮️</button><button type="button" class="ctm-gs-btn edit" id="gsBtnPrevLearner" title="Previous learner" aria-label="Previous learner">◀️</button><button type="button" class="ctm-gs-btn edit" id="gsBtnNextLearner" title="Next learner" aria-label="Next learner">▶️</button><button type="button" class="ctm-gs-btn edit" id="gsBtnLastLearner" title="Last learner" aria-label="Last learner">⏭️</button></div></div><div id="gsLearnerGradeGrid" class="ctm-gs-grade-grid" style="margin-top:7px"></div><div id="gsLearnerSummary" class="ctm-gs-summary-grid" style="margin-top:7px"></div></div></section>
-      <section id="gsPanelSubjects" class="ctm-gs-panel"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span>Subject Setup Panel</span><span class="ctm-gs-mini">Manage subjects/teachers/source/order/archive/delete</span></div><div class="ctm-gs-grid"><div class="ctm-gs-field"><label for="gsSubjectPicker">Select Subject</label><select id="gsSubjectPicker"></select></div><div class="ctm-gs-field"><label for="gsSubjectName">Subject Name</label><input id="gsSubjectName" placeholder="e.g., Mathematics"></div><div class="ctm-gs-field"><label for="gsTeacherName">Teacher Name</label><input id="gsTeacherName" placeholder="Teacher"></div><div class="ctm-gs-field"><label for="gsSourceType">Source Type</label><select id="gsSourceType"><option value="manual">Manual</option><option value="linked">Linked to Class Record</option></select></div><div class="ctm-gs-field"><label for="gsLinkedRecord">Linked Class Record Ref.</label><input id="gsLinkedRecord" placeholder="Optional record id/label"><div class="ctm-gs-mini">Optional. Enter the Class Record ID, label, or subject name to link this subject to an existing Class Record.</div></div><div class="ctm-gs-field"><label for="gsLinkedColumn">Linked Source Column/Period</label><input id="gsLinkedColumn" placeholder="Optional period/column"><div class="ctm-gs-mini">Optional. Enter Q1, Q2, Q3, Q4, Term 1, Final, or General Average. Leave blank for automatic period matching.</div></div><div class="ctm-gs-field"><label for="gsSubjectStatus">Status</label><select id="gsSubjectStatus"><option value="active">Active</option><option value="archived">Archived</option></select><div class="ctm-gs-mini">Active subjects appear in the Grade Sheet. Archived subjects are hidden unless “Show archived too” is selected.</div></div><div class="ctm-gs-field"><label for="gsSubjectOrder">Order</label><input id="gsSubjectOrder" type="number" min="1" step="1"></div><div class="ctm-gs-field" style="grid-column:1/-1"><div class="ctm-gs-field-title">Show subject in visible period/term</div><div id="gsTermVisibility" class="ctm-gs-termvis"></div></div></div><div class="ctm-gs-actions" style="margin-top:7px"><button type="button" class="ctm-gs-btn primary" id="gsBtnAddSubject" title="Add Subject" aria-label="Add Subject">➕ Add Subject</button><button type="button" class="ctm-gs-btn primary" id="gsBtnSaveSubject">Save Subject</button><button type="button" class="ctm-gs-btn danger" id="gsBtnArchiveSubject" title="Archive Subject" aria-label="Archive Subject">📦 Archive Subject</button><button type="button" class="ctm-gs-btn danger" id="gsBtnDeleteSubject" title="Delete Permanently" aria-label="Delete Permanently">🗑️ Delete Permanently</button><button type="button" class="ctm-gs-btn edit" id="gsBtnMoveLeft" title="Move Subject Left" aria-label="Move Subject Left">⬅️ Move Left</button><button type="button" class="ctm-gs-btn edit" id="gsBtnMoveRight" title="Move Subject Right" aria-label="Move Subject Right">Move Right ➡️</button></div><div id="gsSubjectList" class="ctm-gs-subject-list" style="margin-top:8px"></div></div></section>
+      <section id="gsPanelOverview" class="ctm-gs-panel active"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span>Dynamic Grade Sheet</span><!--<span class="ctm-gs-mini">Frozen: top 4 header rows + # / Learner only</span>--></div><div class="ctm-gs-table-scroll"><table id="gsTable" class="ctm-gs-table" aria-label="Grade Sheet table"></table></div></div></section>
+      <section id="gsPanelLearner" class="ctm-gs-panel"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span id="gsLearnerTitle">Learner Grade Encoding</span><span class="ctm-gs-mini">Whole-number grades only</span></div><div class="ctm-gs-grid"><div class="ctm-gs-field"><label for="gsLearnerPicker">Learner</label><select id="gsLearnerPicker"></select></div><div class="ctm-gs-actions ctm-gs-learner-nav" aria-label="Learner navigation"><button type="button" class="ctm-gs-btn edit" id="gsBtnFirstLearner" title="First learner" aria-label="First learner"><span class="ctm-gs-nav-icon" aria-hidden="true">⏮️</span><span class="ctm-gs-nav-text">First</span></button><button type="button" class="ctm-gs-btn edit" id="gsBtnPrevLearner" title="Previous learner" aria-label="Previous learner"><span class="ctm-gs-nav-icon" aria-hidden="true">◀️</span><span class="ctm-gs-nav-text">Previous</span></button><button type="button" class="ctm-gs-btn edit" id="gsBtnNextLearner" title="Next learner" aria-label="Next learner"><span class="ctm-gs-nav-text">Next</span><span class="ctm-gs-nav-icon" aria-hidden="true">▶️</span></button><button type="button" class="ctm-gs-btn edit" id="gsBtnLastLearner" title="Last learner" aria-label="Last learner"><span class="ctm-gs-nav-text">Last</span><span class="ctm-gs-nav-icon" aria-hidden="true">⏭️</span></button></div></div><div id="gsLearnerGradeGrid" class="ctm-gs-grade-grid" style="margin-top:7px"></div><div id="gsLearnerSummary" class="ctm-gs-summary-grid" style="margin-top:7px"></div></div></section>
+      <section id="gsPanelSubjects" class="ctm-gs-panel"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span>Subject Setup Panel</span>
+	  
+	  <!--<span class="ctm-gs-mini">Manage subjects/teachers/source/order/archive/delete</span>-->
+	  
+	  </div><div class="ctm-gs-grid"><div class="ctm-gs-field ctm-gs-subject-field-select"><label for="gsSubjectPicker">Select Subject</label><select id="gsSubjectPicker"></select></div>
+	  
+	  <div class="ctm-gs-field ctm-gs-subject-field-name"><label for="gsSubjectName">Subject Name</label><input id="gsSubjectName" placeholder="e.g., Mathematics"></div>
+	  
+	  <div class="ctm-gs-field ctm-gs-subject-field-order">
+	  <label for="gsSubjectOrder">Order</label><input id="gsSubjectOrder" type="number" min="1" step="1"></div>
+	  
+	  <div class="ctm-gs-field ctm-gs-subject-field-teacher"><label for="gsTeacherName">Teacher Name</label><input id="gsTeacherName" placeholder="Teacher"></div><div class="ctm-gs-field ctm-gs-subject-field-source"><label for="gsSourceType">Source Type</label><select id="gsSourceType"><option value="manual">Manual</option><option value="linked">Linked to Class Record</option></select></div><div class="ctm-gs-field ctm-gs-subject-field-linked-record"><label for="gsLinkedRecord">Linked Class Record</label>
+	  
+	  <input id="gsLinkedRecord" placeholder="Class Record Subject Name">
+	  
+	  </div><div class="ctm-gs-field ctm-gs-subject-field-linked-column"><label for="gsLinkedColumn">Linked Source Term</label><input id="gsLinkedColumn" placeholder="Optional. Q1., Term 1., Final, General Average">
+	  
+	  <!--<div class="ctm-gs-mini">Optional. Enter Q1 - Q4, Term 1, Final, or General Average. Leave blank for automatic period matching.</div>-->
+	  
+	  </div><div class="ctm-gs-field ctm-gs-subject-field-status"><label for="gsSubjectStatus">Status</label><select id="gsSubjectStatus"><option value="active">Active</option><option value="archived">Archived</option></select>
+	  
+	  <!--<div class="ctm-gs-mini">Active subjects appear in the Grade Sheet. Archived subjects are hidden unless “Show archived too” is selected.</div>-->
+	  </div>
+	  
+	  <div class="ctm-gs-field" style="grid-column:1/-1"><div class="ctm-gs-field-title">Show subject in visible period/term</div><div id="gsTermVisibility" class="ctm-gs-termvis"></div></div></div>
+	  
+	  <div class="ctm-gs-actions ctm-gs-subject-actions" style="margin-top:7px">
+        <div class="ctm-gs-subject-actions-row ctm-gs-subject-actions-row-main">
+          <button type="button" class="ctm-gs-btn primary" id="gsBtnAddSubject" title="Add Subject" aria-label="Add Subject">➕ Add Subject</button><button type="button" class="ctm-gs-btn primary" id="gsBtnSaveSubject">Save Subject</button><button type="button" class="ctm-gs-btn danger" id="gsBtnArchiveSubject" title="Archive Subject" aria-label="Archive Subject">📦 Archive Subject</button><button type="button" class="ctm-gs-btn danger" id="gsBtnDeleteSubject" title="Delete Permanently" aria-label="Delete Permanently">🗑️ Delete Permanently</button>
+        </div>
+        <div class="ctm-gs-subject-actions-row ctm-gs-subject-actions-row-move">
+          <button type="button" class="ctm-gs-btn edit" id="gsBtnMoveLeft" title="Move Subject Left" aria-label="Move Subject Left">⬅️ Move Left</button><button type="button" class="ctm-gs-btn edit" id="gsBtnMoveRight" title="Move Subject Right" aria-label="Move Subject Right">Move Right ➡️</button>
+        </div>
+      </div>
+	  
+	  <div id="gsSubjectList" class="ctm-gs-subject-list" style="margin-top:8px"></div></div></section>
     </div>
   </div>
 </div>
