@@ -163,10 +163,15 @@ self.addEventListener('fetch', (event) => {
 
   // Grade Sheet module: show cached version offline, refresh when online.
   // This prevents stale Grade Sheet files after index.html changes while still supporting offline use.
-  if (url.pathname.endsWith('/gradesheet/gradesheet.js') || url.pathname.endsWith('/gradesheet/gradesheet.html')) {
-    event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
-    return;
-  }
+if (
+  url.pathname.endsWith('/gradesheet/gradesheet.js') ||
+  url.pathname.endsWith('/gradesheet/gradesheet.html') ||
+  url.pathname.endsWith('/classrecord/classrecord-modal.js') ||
+  url.pathname.endsWith('/classrecord/classrecord-modal.html')
+) {
+  event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
+  return;
+}
 
   // Special handling for support.html (NO index.html fallback!)
 if (url.pathname.endsWith('/support.html')) {
