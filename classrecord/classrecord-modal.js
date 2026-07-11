@@ -1,3 +1,6 @@
+/* v18.47 mobile-safe HPS encoding: Shared HPS inputs now use whole-number encoding and recompute/save without full panel render to avoid mobile keyboard jumps. */
+/* v18.46 mobile-safe score blur/change: learner-card score edits sanitize/recompute/save without full render to avoid mobile keyboard focus flicker. */
+/* v18.45 learner-card score encoding: Grade Sheet-style whole-number score entry, HPS clamping, arrow/Enter movement, and live state updates. */
 /* v18.44 EX share normalization fix: ST/TE percentage now normalizes to encoded positive-HPS fields, so full scores with ST2 blank can return 100. */
 /* v18.42 empty-roster authority fix: deleting all learners in Manage Class now clears Class Record roster instead of restoring saved learners. */
 /* v18.41 HPS unlock-after-save fix: newly saved Class Records immediately rebuild Term / Quarter panels so Shared HPS inputs unlock without double-loading the saved record. */
@@ -20,7 +23,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.44-ex-share-normalization'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.47-mobile-safe-hps-encoding'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -3222,7 +3225,7 @@ function termStats(termKey) {
     const lockedAttrs = hpsLocked
       ? ' disabled aria-disabled="true" data-hps-draft-locked="true" title="Save or select a school-year record before editing HPS."'
       : '';
-    return `<div class="ctm-cr-field ctm-cr-term-mini-field${hpsLocked ? ' ctm-cr-hps-draft-locked' : ''}"><label class="ctm-cr-label" for="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" title="${esc(field.label)} Highest Possible Score">${field.label} HPS</label><input id="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" name="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" data-term="${termKey}" data-hps-group="${field.group}" data-hps-key="${field.key}" inputmode="decimal" aria-label="${esc(field.label)} highest possible score" value="${esc(value)}" placeholder="HPS"${lockedAttrs}></div>`;
+    return `<div class="ctm-cr-field ctm-cr-term-mini-field${hpsLocked ? ' ctm-cr-hps-draft-locked' : ''}"><label class="ctm-cr-label" for="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" title="${esc(field.label)} Highest Possible Score">${field.label} HPS</label><input id="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" name="cr-${esc(termKey)}-hps-${esc(field.group)}-${esc(field.key)}" data-term="${termKey}" data-hps-group="${field.group}" data-hps-key="${field.key}" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="${esc(field.label)} highest possible score" value="${esc(value)}" placeholder="HPS"${lockedAttrs}></div>`;
   }
 
   function isScoreFieldEnabledByHps(term, field) {
@@ -3240,7 +3243,7 @@ function termStats(termKey) {
     const disabledAttrs = hpsEnabled ? '' : ' disabled aria-disabled="true"';
     const disabledClass = hpsEnabled ? '' : ' ctm-cr-score-disabled';
     const placeholder = hpsEnabled ? 'Score' : 'No HPS';
-    return `<div class="ctm-cr-field ctm-cr-term-mini-field${disabledClass}"><label class="ctm-cr-label" for="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" title="${esc(titleText)}">${esc(labelText)}</label><input id="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" class="${bad ? 'ctm-cr-cell-bad' : ''}" data-term="${termKey}" data-score-group="${field.group}" data-score-key="${field.key}" data-learner-id="${esc(learner.learnerId)}" inputmode="decimal" aria-label="${esc(hpsEnabled ? `${field.label} learner score` : `${field.label} learner score disabled because HPS is blank`)}" value="${esc(sv == null ? '' : sv)}" placeholder="${placeholder}"${disabledAttrs}></div>`;
+    return `<div class="ctm-cr-field ctm-cr-term-mini-field${disabledClass}"><label class="ctm-cr-label" for="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" title="${esc(titleText)}">${esc(labelText)}</label><input id="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-score-${esc(field.group)}-${esc(field.key)}-${esc(slugify(learner.learnerId))}" class="${bad ? 'ctm-cr-cell-bad' : ''}" data-term="${termKey}" data-score-group="${field.group}" data-score-key="${field.key}" data-learner-id="${esc(learner.learnerId)}" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="${esc(hpsEnabled ? `${field.label} learner score` : `${field.label} learner score disabled because HPS is blank`)}" value="${esc(sv == null ? '' : sv)}" placeholder="${placeholder}"${disabledAttrs}></div>`;
   }
 
   function descriptorSelect(termKey, learner, term) {
@@ -3540,7 +3543,178 @@ function buildTermPanel(termKey) {
     </div>`;
   bindTermPanel(termKey);
 }
-  function sanitizeScoreInput(term, row, group, key, rawValue) { const hv = num(term.hps[group][key]); if (!(hv != null && hv > 0)) { row.scores[group][key] = null; return; } let sv = num(rawValue); if (sv == null) { row.scores[group][key] = null; return; } if (sv < 0) sv = 0; if (sv > hv) { flash(`${key.toUpperCase()} score exceeds HPS for ${row.name}.`, 'error'); sv = hv; } row.scores[group][key] = sv; }
+  function normalizeScoreEntryValue(term, row, group, key, rawValue, opts = {}) {
+    const hv = num(term && term.hps && term.hps[group] && term.hps[group][key]);
+    const result = { value: null, display: '', changed: false, clamped: false, max: hv };
+    if (!(hv != null && hv > 0)) {
+      if (row && row.scores && row.scores[group] && row.scores[group][key] != null) result.changed = true;
+      if (row && row.scores && row.scores[group]) row.scores[group][key] = null;
+      return result;
+    }
+    const raw = text(rawValue);
+    const clean = raw.replace(/\D/g, '').slice(0, 4);
+    if (!clean) {
+      if (row && row.scores && row.scores[group] && row.scores[group][key] != null) result.changed = true;
+      if (row && row.scores && row.scores[group]) row.scores[group][key] = null;
+      return result;
+    }
+    let sv = Number(clean);
+    if (!Number.isFinite(sv)) sv = null;
+    if (sv == null) {
+      if (row && row.scores && row.scores[group] && row.scores[group][key] != null) result.changed = true;
+      if (row && row.scores && row.scores[group]) row.scores[group][key] = null;
+      return result;
+    }
+    if (sv < 0) sv = 0;
+    if (sv > hv) {
+      sv = hv;
+      result.clamped = true;
+      if (!opts.silentClamp) flash(`${key.toUpperCase()} score was limited to HPS ${hv} for ${row.name}.`, 'warning');
+    }
+    if (Number.isInteger(hv)) sv = Math.round(sv);
+    const old = num(row && row.scores && row.scores[group] && row.scores[group][key]);
+    result.changed = old !== sv;
+    result.value = sv;
+    result.display = String(sv);
+    if (row && row.scores && row.scores[group]) row.scores[group][key] = sv;
+    return result;
+  }
+
+  function sanitizeScoreInput(term, row, group, key, rawValue, opts = {}) {
+    return normalizeScoreEntryValue(term, row, group, key, rawValue, opts);
+  }
+
+  function normalizeHpsEntryValue(term, group, key, rawValue, opts = {}) {
+    const target = term && term.hps && term.hps[group] ? term.hps[group] : null;
+    const old = num(target && target[key]);
+    const result = { value: null, display: '', changed: false, clamped: false, max: 9999 };
+    const raw = text(rawValue);
+    const clean = raw.replace(/\D/g, '').slice(0, 4);
+    if (!clean) {
+      result.changed = old != null;
+      if (target) target[key] = null;
+      return result;
+    }
+    let hv = Number(clean);
+    if (!Number.isFinite(hv)) hv = null;
+    if (hv == null) {
+      result.changed = old != null;
+      if (target) target[key] = null;
+      return result;
+    }
+    if (hv < 0) hv = 0;
+    if (hv > result.max) {
+      hv = result.max;
+      result.clamped = true;
+      if (!opts.silentClamp) flash(`${key.toUpperCase()} HPS was limited to ${result.max}.`, 'warning');
+    }
+    hv = Math.round(hv);
+    result.value = hv;
+    result.display = String(hv);
+    result.changed = old !== hv;
+    if (target) target[key] = hv;
+    return result;
+  }
+
+  function sanitizeHpsInput(term, group, key, rawValue, opts = {}) {
+    return normalizeHpsEntryValue(term, group, key, rawValue, opts);
+  }
+
+  function hpsInputsForPanel(panel) {
+    return Array.from((panel || document).querySelectorAll('[data-hps-key]:not(:disabled)'));
+  }
+
+  function focusRelativeHpsInput(panel, current, delta) {
+    const inputs = hpsInputsForPanel(panel);
+    if (!inputs.length || !current) return;
+    const i = inputs.indexOf(current);
+    const next = inputs[Math.max(0, Math.min(inputs.length - 1, (i < 0 ? 0 : i) + delta))];
+    if (next && next !== current) {
+      next.focus();
+      try { next.select(); } catch (_) {}
+    }
+  }
+
+  function refreshActiveLearnerScoreFieldsForHps(termKey, term) {
+    const panel = dom.panels[termKey];
+    if (!panel || !term || !isNumericTable(term.applicableTable)) return;
+    visibleScoreFields(term).forEach(field => {
+      const hv = num(term.hps[field.group][field.key]);
+      const enabled = hv != null && hv > 0;
+      const input = panel.querySelector(`[data-score-group="${CSS.escape(field.group)}"][data-score-key="${CSS.escape(field.key)}"]`);
+      if (!input) return;
+      const wrap = input.closest('.ctm-cr-field');
+      const label = wrap ? wrap.querySelector('label') : null;
+      const titleText = enabled ? `${field.label} / ${hv}` : `${field.label} disabled because HPS is blank`;
+      if (wrap) wrap.classList.toggle('ctm-cr-score-disabled', !enabled);
+      if (label) {
+        label.textContent = `${field.label}${enabled ? `/${hv}` : ''}`;
+        label.title = titleText;
+      }
+      input.disabled = !enabled;
+      if (enabled) input.removeAttribute('aria-disabled');
+      else input.setAttribute('aria-disabled', 'true');
+      input.placeholder = enabled ? 'Score' : 'No HPS';
+      input.setAttribute('aria-label', enabled ? `${field.label} learner score` : `${field.label} learner score disabled because HPS is blank`);
+    });
+  }
+
+  function applyHpsChangeWithoutFullRender(termKey, fieldEl, opts = {}) {
+    if (isDraftNewSchoolYearRecord()) {
+      flash('HPS fields are disabled while this is a Draft / New school-year record. Save or select a saved school-year record first.', 'warning');
+      return null;
+    }
+    const term = state[termKey];
+    if (!term || !isNumericTable(term.applicableTable) || !fieldEl) return null;
+    const result = sanitizeHpsInput(term, fieldEl.dataset.hpsGroup, fieldEl.dataset.hpsKey, fieldEl.value, opts);
+    if (fieldEl.value !== result.display) {
+      fieldEl.value = result.display;
+      try { fieldEl.setSelectionRange(fieldEl.value.length, fieldEl.value.length); } catch (_) {}
+    }
+    recompute();
+    const row = learnerRow(termKey, state.activeLearnerId) || syncActiveLearner(termKey);
+    refreshActiveLearnerScoreFieldsForHps(termKey, term);
+    if (row) refreshActiveLearnerCardComputed(termKey, row, term);
+    return result;
+  }
+
+  function scoreInputsForPanel(panel) {
+    return Array.from((panel || document).querySelectorAll('[data-score-key]:not(:disabled)'));
+  }
+
+  function refreshActiveLearnerCardComputed(termKey, row, term) {
+    const panel = dom.panels[termKey];
+    if (!panel || !row || !term) return;
+    const hideInstructionalResponse = shouldHideTermInstructionalResponse(termKey);
+    const achievementSource = Object.assign({}, row.computed || {}, (hideInstructionalResponse ? { instructionalResponse: '' } : {}));
+    const title = getSubjectAchievementMeterTitle('Subject');
+    const statusWrap = panel.querySelector('.ctm-cr-learner-card .ctm-cr-pill-list');
+    if (statusWrap) statusWrap.innerHTML = learnerStatusBadge(row, term);
+    const achievementWrap = panel.querySelector('.ctm-cr-learner-card .ctm-cr-achievement-wrap');
+    if (achievementWrap) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = renderAchievementMeter(achievementSource, {
+        tableKey: term.applicableTable,
+        title,
+        ariaLabel: `${row.name} ${title} achievement meter`
+      });
+      const next = wrapper.firstElementChild;
+      if (next) achievementWrap.replaceWith(next);
+    }
+    const activeMini = panel.querySelector(`[data-pick-learner="${CSS.escape(row.learnerId)}"] .ctm-cr-chip b`);
+    if (activeMini) activeMini.textContent = fmt(row.computed && row.computed.termGrade);
+  }
+
+  function focusRelativeScoreInput(panel, current, delta) {
+    const inputs = scoreInputsForPanel(panel);
+    if (!inputs.length || !current) return;
+    const i = inputs.indexOf(current);
+    const next = inputs[Math.max(0, Math.min(inputs.length - 1, (i < 0 ? 0 : i) + delta))];
+    if (next && next !== current) {
+      next.focus();
+      try { next.select(); } catch (_) {}
+    }
+  }
 
   function copyPreviousTermHps(termKey) {
     if (isDraftNewSchoolYearRecord()) {
@@ -3566,8 +3740,95 @@ function buildTermPanel(termKey) {
 
 function bindTermPanel(termKey) {
   const panel = dom.panels[termKey];
-  panel.querySelectorAll('[data-hps-key]').forEach(el => el.addEventListener('change', () => { if (isDraftNewSchoolYearRecord()) { flash('HPS fields are disabled while this is a Draft / New school-year record. Save or select a saved school-year record first.', 'warning'); render(); switchTab(termKey); return; } const term = state[termKey]; const value = num(el.value); term.hps[el.dataset.hpsGroup][el.dataset.hpsKey] = value != null && value < 0 ? 0 : value; recompute(); render(); switchTab(termKey); persist(false); }));
-  panel.querySelectorAll('[data-score-key]').forEach(el => el.addEventListener('change', () => { const row = learnerRow(termKey, el.dataset.learnerId), term = state[termKey]; if (!row || !term) return; sanitizeScoreInput(term, row, el.dataset.scoreGroup, el.dataset.scoreKey, el.value); computeLearnerTerm(row, term); recomputeFinal(); render(); switchTab(termKey); persist(false); }));
+  panel.querySelectorAll('[data-hps-key]').forEach(el => {
+    let lastValue = el.value;
+    const applyHps = (options = {}) => {
+      if (el.disabled || el.readOnly) return null;
+      const result = applyHpsChangeWithoutFullRender(termKey, el, options);
+      if (!result) return null;
+      lastValue = el.value;
+      return result;
+    };
+    el.addEventListener('input', () => {
+      const result = applyHps({ silentClamp: true });
+      if (!result) return;
+      scheduleAutoPersist();
+    });
+    el.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === 'ArrowRight') {
+        ev.preventDefault();
+        applyHps({ silentClamp: true });
+        focusRelativeHpsInput(panel, el, 1);
+      } else if (ev.key === 'ArrowLeft') {
+        const atStart = (el.selectionStart == null) || el.selectionStart <= 0;
+        if (atStart) {
+          ev.preventDefault();
+          applyHps({ silentClamp: true });
+          focusRelativeHpsInput(panel, el, -1);
+        }
+      }
+    });
+    el.addEventListener('focus', () => { try { el.select(); } catch (_) {} });
+    el.addEventListener('change', () => {
+      const result = applyHps({ silentClamp: false });
+      if (!result) return;
+      flushAutoPersist();
+    });
+    el.addEventListener('blur', () => {
+      if (el.value === lastValue) return;
+      const result = applyHps({ silentClamp: false });
+      if (!result) return;
+      flushAutoPersist();
+    });
+  });
+  panel.querySelectorAll('[data-score-key]').forEach(el => {
+    let lastValue = el.value;
+    const applyScore = (options = {}) => {
+      const row = learnerRow(termKey, el.dataset.learnerId), term = state[termKey];
+      if (!row || !term || el.disabled || el.readOnly) return null;
+      const result = sanitizeScoreInput(term, row, el.dataset.scoreGroup, el.dataset.scoreKey, el.value, options);
+      if (el.value !== result.display) {
+        el.value = result.display;
+        try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) {}
+      }
+      computeLearnerTerm(row, term);
+      recomputeFinal();
+      refreshActiveLearnerCardComputed(termKey, row, term);
+      lastValue = el.value;
+      return result;
+    };
+    el.addEventListener('input', () => {
+      const result = applyScore({ silentClamp: true });
+      if (!result) return;
+      scheduleAutoPersist();
+    });
+    el.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === 'ArrowRight') {
+        ev.preventDefault();
+        applyScore({ silentClamp: true });
+        focusRelativeScoreInput(panel, el, 1);
+      } else if (ev.key === 'ArrowLeft') {
+        const atStart = (el.selectionStart == null) || el.selectionStart <= 0;
+        if (atStart) {
+          ev.preventDefault();
+          applyScore({ silentClamp: true });
+          focusRelativeScoreInput(panel, el, -1);
+        }
+      }
+    });
+    el.addEventListener('focus', () => { try { el.select(); } catch (_) {} });
+    el.addEventListener('change', () => {
+      const result = applyScore({ silentClamp: false });
+      if (!result) return;
+      flushAutoPersist();
+    });
+    el.addEventListener('blur', () => {
+      if (el.value === lastValue) return;
+      const result = applyScore({ silentClamp: false });
+      if (!result) return;
+      flushAutoPersist();
+    });
+  });
   panel.querySelectorAll('[data-descriptor]').forEach(el => el.addEventListener('change', () => { const row = learnerRow(termKey, el.dataset.learnerId); if (!row) return; row.computed.letterGrade = el.value; row.computed.descriptorCode = el.value; computeLearnerTerm(row, state[termKey]); recomputeFinal(); render(); switchTab(termKey); persist(false); }));
   panel.querySelectorAll('[data-remarks]').forEach(el => {
     el.addEventListener('input', () => {
