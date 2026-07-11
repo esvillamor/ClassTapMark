@@ -45,6 +45,8 @@ const OPTIONAL_PRECACHE = [
   ABS('./SF3pdf.js'),
   ABS('./SF8pdf.js'),
   ABS('./classrecord/classrecord-modal.js'),
+  ABS('./classrecord/classrecord-modal.html'),
+
 
   // Support QR images
   ABS('./image/wise-qr.png'),
