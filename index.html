@@ -1614,8 +1614,26 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
     <div class="section">
       <h3>📚 Manage Classes</h3>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-        <input id="className" placeholder="Enter Class Name eg.Gr7-A" style="flex:2;min-width:220px">
-        <button class="primary" onclick="addClass()">Create Class</button>
+        <input id="className" placeholder="Enter Class Name eg.Gr7-A" style="flex:2;min-width:220px" required aria-required="true">
+        <select id="classGradeLevel" style="flex:1;min-width:170px" aria-label="Class Grade Level" required aria-required="true">
+          <option value="">Select Grade Level</option>
+          <option>Kindergarten</option>
+          <option>Grade 1</option>
+          <option>Grade 2</option>
+          <option>Grade 3</option>
+          <option>Grade 4</option>
+          <option>Grade 5</option>
+          <option>Grade 6</option>
+          <option>Grade 7</option>
+          <option>Grade 8</option>
+          <option>Grade 9</option>
+          <option>Grade 10</option>
+          <option>Grade 11</option>
+          <option>Grade 12</option>
+        </select>
+        <input id="classSchoolYear" placeholder="yyyy-yyyy" inputmode="numeric" autocomplete="off" maxlength="9" pattern="[0-9]{4}-[0-9]{4}" title="Enter School Year in yyyy-yyyy format, e.g. 2026-2027" style="flex:1;min-width:190px" required aria-required="true">
+        <input id="classSection" placeholder="Section (optional)" style="flex:1;min-width:150px">
+        <button class="primary" id="btnCreateClass" onclick="addClass()" title="Create a new class">Create Class</button>
       </div>
       <div style="margin:.6rem 0">
         <select id="classDropdown" style="width:100%"><option value="">Select Class</option></select>
@@ -3271,6 +3289,7 @@ window.addEventListener('DOMContentLoaded', function () {
   let currentStudents = [];
   let currentAttendance = {};
   let currentStudentIndex = 0;
+  let editingClassId = null;
 
   // Edit state for Students
   let editingStudentIndex = -1;
@@ -3761,16 +3780,357 @@ function hookLocalStorageForMeter(){
   /* =========================================================================
      SECTION 1. Classes
   ========================================================================= */
-  function getAllClasses(){
-    try{ const a = JSON.parse(localStorage.getItem('attendanceclasses')) || []; return Array.isArray(a) ? a : []; }catch{ return []; }
+  function slugifyClassId(name){
+    const base = String(name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48);
+    return base ? ('cls-' + base) : generateId();
   }
-  function saveAllClasses(arr){ localStorage.setItem('attendanceclasses', JSON.stringify(arr)); }
+
+  function normalizeClassObject(cls) {
+    if (typeof cls === 'string') {
+      const name = cls.trim();
+      const id = slugifyClassId(name);
+      return {
+        id,
+        name,
+        gradeLevel: '',
+        schoolYear: '',
+        section: '',
+        teacherName: '',
+        schoolName: '',
+        schoolId: '',
+        district: '',
+        division: '',
+        region: '',
+        createdAt: '',
+        updatedAt: ''
+      };
+    }
+
+    cls = cls || {};
+    const name = String(cls.name || cls.className || '').trim();
+    const id = String(cls.id || cls.classId || slugifyClassId(name)).trim();
+    return {
+      id,
+      name,
+      gradeLevel: String(cls.gradeLevel || cls.grade || '').trim(),
+      schoolYear: String(cls.schoolYear || cls.sy || '').trim(),
+      section: String(cls.section || '').trim(),
+      teacherName: String(cls.teacherName || cls.teacher || cls.adviser || '').trim(),
+      schoolName: String(cls.schoolName || '').trim(),
+      schoolId: String(cls.schoolId || cls.schoolID || '').trim(),
+      district: String(cls.district || '').trim(),
+      division: String(cls.division || '').trim(),
+      region: String(cls.region || '').trim(),
+      createdAt: cls.createdAt || cls.created || '',
+      updatedAt: cls.updatedAt || cls.updated || ''
+    };
+  }
+
+  function loadClassesNormalized() {
+    let raw = [];
+    try {
+      raw = JSON.parse(localStorage.getItem('attendanceclasses') || '[]');
+    } catch (_) {
+      raw = [];
+    }
+    return (Array.isArray(raw) ? raw : [])
+      .map(normalizeClassObject)
+      .filter(c => c.id && c.name);
+  }
+
+  function saveClassesNormalized(classes) {
+    const normalized = (Array.isArray(classes) ? classes : [])
+      .map(normalizeClassObject)
+      .filter(c => c.id && c.name);
+    localStorage.setItem('attendanceclasses', JSON.stringify(normalized));
+  }
+
+  function saveClassMeta(cls) {
+    cls = normalizeClassObject(cls);
+    if (!cls.id) return;
+    const meta = {
+      classId: cls.id,
+      className: cls.name || '',
+      gradeLevel: cls.gradeLevel || '',
+      schoolYear: cls.schoolYear || '',
+      section: cls.section || '',
+      teacherName: cls.teacherName || '',
+      schoolName: cls.schoolName || '',
+      schoolId: cls.schoolId || '',
+      district: cls.district || '',
+      division: cls.division || '',
+      region: cls.region || '',
+      updatedAt: new Date().toISOString()
+    };
+    try { localStorage.setItem('classmeta:' + cls.id, JSON.stringify(meta)); } catch (_) {}
+  }
+
+  function getClassMeta(classId) {
+    const id = String(classId || '').trim();
+    if (!id) return null;
+    const classes = loadClassesNormalized();
+    const fromList = classes.find(c => String(c.id) === id);
+    if (fromList) return normalizeClassObject(fromList);
+    try {
+      const raw = localStorage.getItem('classmeta:' + id);
+      if (raw) {
+        const meta = JSON.parse(raw);
+        return normalizeClassObject({
+          id: meta.classId || id,
+          name: meta.className || '',
+          gradeLevel: meta.gradeLevel || '',
+          schoolYear: meta.schoolYear || '',
+          section: meta.section || '',
+          teacherName: meta.teacherName || '',
+          schoolName: meta.schoolName || '',
+          schoolId: meta.schoolId || '',
+          district: meta.district || '',
+          division: meta.division || '',
+          region: meta.region || ''
+        });
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function migrateClassMetadataIfNeeded() {
+    const classes = loadClassesNormalized();
+    saveClassesNormalized(classes);
+    classes.forEach(saveClassMeta);
+  }
+
+  function getAllClasses(){ return loadClassesNormalized(); }
+  function saveAllClasses(arr){ saveClassesNormalized(arr); }
+
   function getStudentCount(classId){
     try{ const s = JSON.parse(localStorage.getItem(`students-${classId}`) || '[]'); return Array.isArray(s) ? s.length : 0; }catch{return 0;}
   }
-function populateClassDropdown(){
-  const sel = document.getElementById('classDropdown');
 
+  function classMetaPayload(cls){
+    cls = normalizeClassObject(cls);
+    return {
+      classId: cls.id,
+      className: cls.name || '',
+      gradeLevel: cls.gradeLevel || '',
+      schoolYear: cls.schoolYear || '',
+      section: cls.section || '',
+      teacherName: cls.teacherName || '',
+      schoolName: cls.schoolName || '',
+      schoolId: cls.schoolId || '',
+      district: cls.district || '',
+      division: cls.division || '',
+      region: cls.region || '',
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function dispatchInputChange(el){
+    if (!el) return;
+    try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+    try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+  }
+
+  function applyClassMetaToSharedHeader(cls) {
+    cls = normalizeClassObject(cls);
+    if (!cls || !cls.id) return;
+    const payload = {
+      gradeLevel: cls.gradeLevel || '',
+      schoolYear: cls.schoolYear || '',
+      section: cls.section || '',
+      teacherName: cls.teacherName || '',
+      schoolName: cls.schoolName || '',
+      schoolId: cls.schoolId || '',
+      district: cls.district || '',
+      division: cls.division || '',
+      region: cls.region || ''
+    };
+
+    try {
+      if (window.CTMSharedHeader && typeof window.CTMSharedHeader.setMany === 'function') {
+        window.CTMSharedHeader.setMany(payload, 'manage-class-load');
+      }
+    } catch (_) {}
+
+    const map = {
+      gradeLevel: ['sf1GradeLevel', 'sf2GradeLevel', 'sf3GradeLevel', 'sf8Grade'],
+      schoolYear: ['sf1SchoolYear', 'sf2SchoolYear', 'sf3SchoolYear', 'sf8SchoolYear'],
+      section: ['sf1Section', 'sf2Section', 'sf3Section', 'sf8Section'],
+      teacherName: ['sf1Teacher', 'sf2Teacher', 'sf3Teacher'],
+      schoolName: ['sf1SchoolName', 'sf2SchoolName', 'sf3SchoolName', 'sf8SchoolName'],
+      schoolId: ['sf1SchoolId', 'sf2SchoolId', 'sf3SchoolId', 'sf8SchoolId'],
+      district: ['sf1District', 'sf3District', 'sf8District'],
+      division: ['sf1Division', 'sf3Division', 'sf8Division'],
+      region: ['sf1Region', 'sf3Region', 'sf8Region']
+    };
+
+    Object.keys(map).forEach(key => {
+      const value = String(payload[key] || '').trim();
+      if (!value) return;
+      map[key].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (String(el.value || '').trim() !== value) {
+          el.value = value;
+          dispatchInputChange(el);
+        }
+      });
+    });
+  }
+
+  function exposeLoadedClassContext(cls){
+    cls = normalizeClassObject(cls);
+    const ctx = classMetaPayload(cls);
+    window.currentClassId = cls.id;
+    window.currentClassName = cls.name || '';
+    window.CTMLoadedClassContext = ctx;
+    try { saveClassMeta(cls); } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent('ctm:loaded-class-context', { detail: Object.assign({}, ctx) }));
+    } catch (_) {}
+    return ctx;
+  }
+
+  window.normalizeClassObject = normalizeClassObject;
+  window.loadClassesNormalized = loadClassesNormalized;
+  window.saveClassesNormalized = saveClassesNormalized;
+  window.saveClassMeta = saveClassMeta;
+  window.getClassMeta = getClassMeta;
+  window.applyClassMetaToSharedHeader = applyClassMetaToSharedHeader;
+
+  function getClassFormMeta(){
+    return {
+      gradeLevel: document.getElementById('classGradeLevel')?.value.trim() || '',
+      schoolYear: document.getElementById('classSchoolYear')?.value.trim() || '',
+      section: document.getElementById('classSection')?.value.trim() || ''
+    };
+  }
+
+  function normalizeSchoolYearInput(value){
+    // Keep digits only, max 8 digits, then auto-insert dash after the first 4 digits.
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 4) return digits;
+    return digits.slice(0, 4) + '-' + digits.slice(4);
+  }
+
+  function isValidSchoolYear(value){
+    const sy = String(value || '').trim();
+    if (!/^\d{4}-\d{4}$/.test(sy)) return false;
+    const parts = sy.split('-').map(Number);
+    const startYear = parts[0];
+    const endYear = parts[1];
+    return Number.isInteger(startYear) && Number.isInteger(endYear) && endYear === startYear + 1;
+  }
+
+  function initClassSchoolYearRestriction(){
+    const syEl = document.getElementById('classSchoolYear');
+    if (!syEl || syEl._ctmSyRestrictionInit) return;
+    syEl.setAttribute('inputmode', 'numeric');
+    syEl.setAttribute('autocomplete', 'off');
+    syEl.setAttribute('maxlength', '9');
+    syEl.setAttribute('pattern', '[0-9]{4}-[0-9]{4}');
+    syEl.setAttribute('title', 'Enter School Year in yyyy-yyyy format, e.g. 2026-2027');
+    syEl.addEventListener('input', function(){
+      const formatted = normalizeSchoolYearInput(syEl.value);
+      if (syEl.value !== formatted) syEl.value = formatted;
+      // Do not trap the teacher while typing; final blocking validation happens on Create/Load/Save.
+      try { syEl.setCustomValidity(''); } catch (_) {}
+    });
+    syEl.addEventListener('blur', function(){
+      syEl.value = normalizeSchoolYearInput(syEl.value);
+      // Quietly mark validity on blur only. No alert/focus here to avoid an alert loop.
+      try {
+        syEl.setCustomValidity(
+          syEl.value && !isValidSchoolYear(syEl.value)
+            ? 'School Year must be in yyyy-yyyy format and sequential, e.g. 2026-2027.'
+            : ''
+        );
+      } catch (_) {}
+    });
+    syEl._ctmSyRestrictionInit = true;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initClassSchoolYearRestriction, { once: true });
+  } else {
+    initClassSchoolYearRestriction();
+  }
+
+  function validateClassRequiredFields(mode){
+    const nameEl = document.getElementById('className');
+    const gradeEl = document.getElementById('classGradeLevel');
+    const syEl = document.getElementById('classSchoolYear');
+    if (syEl) syEl.value = normalizeSchoolYearInput(syEl.value);
+    const missing = [];
+    if (!String(nameEl?.value || '').trim()) missing.push({ label: 'Class Name', el: nameEl });
+    if (!String(gradeEl?.value || '').trim()) missing.push({ label: 'Grade Level', el: gradeEl });
+    if (!String(syEl?.value || '').trim()) missing.push({ label: 'School Year', el: syEl });
+    if (missing.length) {
+      const action = mode === 'edit' ? 'save this class' : 'create/load this class';
+      alert(`Please complete the required fields before you ${action}: ${missing.map(x => x.label).join(', ')}.\nSection is optional.`);
+      const first = missing[0].el;
+      if (first && typeof first.focus === 'function') {
+        try { first.focus(); } catch (_) {}
+      }
+      return false;
+    }
+    if (!isValidSchoolYear(syEl?.value || '')) {
+      try { syEl.setCustomValidity('School Year must be in yyyy-yyyy format and sequential, e.g. 2026-2027.'); } catch (_) {}
+      alert('School Year must be in yyyy-yyyy format and sequential, e.g. 2026-2027.');
+      try { syEl.focus(); } catch (_) {}
+      return false;
+    }
+    try { syEl.setCustomValidity(''); } catch (_) {}
+    return true;
+  }
+  function clearClassForm(){
+    const nameEl = document.getElementById('className');
+    const gradeEl = document.getElementById('classGradeLevel');
+    const syEl = document.getElementById('classSchoolYear');
+    const sectionEl = document.getElementById('classSection');
+    if (nameEl) nameEl.value = '';
+    if (gradeEl) gradeEl.value = '';
+    if (syEl) syEl.value = '';
+    if (sectionEl) sectionEl.value = '';
+  }
+
+  function setCreateClassButtonState(disabled, title){
+    const createBtn = document.getElementById('btnCreateClass');
+    if (!createBtn) return;
+    createBtn.disabled = !!disabled;
+    createBtn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    createBtn.textContent = 'Create Class';
+    createBtn.title = title || (disabled ? 'Disabled while editing an existing class' : 'Create a new class');
+  }
+
+  function resetClassEditUI(){
+    editingClassId = null;
+    const btn = document.getElementById('btnEditClass');
+    if (btn) btn.textContent = 'Edit Class';
+    setCreateClassButtonState(false, 'Create a new class');
+  }
+
+  function populateClassForm(cls){
+    cls = normalizeClassObject(cls);
+    const nameEl = document.getElementById('className');
+    const gradeEl = document.getElementById('classGradeLevel');
+    const syEl = document.getElementById('classSchoolYear');
+    const sectionEl = document.getElementById('classSection');
+    if (nameEl) nameEl.value = cls.name || '';
+    if (gradeEl) gradeEl.value = cls.gradeLevel || '';
+    if (syEl) syEl.value = cls.schoolYear || '';
+    if (sectionEl) sectionEl.value = cls.section || '';
+  }
+
+function populateClassDropdown(){
+  migrateClassMetadataIfNeeded();
+  const sel = document.getElementById('classDropdown');
+  if (!sel) return;
+  const selected = sel.value;
   const classes = getAllClasses()
     .slice()
     .sort((a, b) =>
@@ -3779,16 +4139,22 @@ function populateClassDropdown(){
         sensitivity: 'base'
       })
     );
-
   sel.innerHTML = '<option value="">Select Class</option>';
-
   classes.forEach(c => {
+    const cls = normalizeClassObject(c);
     const o = document.createElement('option');
-    o.value = c.id;
-    o.textContent = `${c.name} (${getStudentCount(c.id)})`;
+    const studentCount = getStudentCount(cls.id);
+    const metaBits = [cls.gradeLevel, cls.section || cls.name, cls.schoolYear].filter(Boolean);
+    o.value = cls.id;
+    o.textContent = metaBits.length ? `${metaBits.join(' • ')} (${studentCount})` : `${cls.name} (${studentCount})`;
+    o.dataset.classId = cls.id;
+    o.dataset.className = cls.name || '';
+    o.dataset.gradeLevel = cls.gradeLevel || '';
+    o.dataset.schoolYear = cls.schoolYear || '';
+    o.dataset.section = cls.section || '';
     sel.appendChild(o);
   });
-
+  if (selected && classes.some(c => c.id === selected)) sel.value = selected;
   updateClassButtons();
 }
   function updateClassButtons(){
@@ -3799,16 +4165,37 @@ function populateClassDropdown(){
     if (imp) imp.disabled = !id;
   }
   function addClass(){
+    if (editingClassId) { alert('Finish saving the class edit first.'); return; }
     const name = document.getElementById('className').value.trim();
+    if(!validateClassRequiredFields('create')) return;
+    const meta = getClassFormMeta();
     if(!name){ alert('Enter class name!'); return; }
     const classes = getAllClasses();
-    const existing = classes.find(c=>c.name.toLowerCase()===name.toLowerCase());
+    const existing = classes.find(c=>String(c.name || '').toLowerCase()===name.toLowerCase());
     if (existing){ alert('Class already exists.'); return; }
     const id = generateId();
-    classes.push({ id, name, created:new Date().toISOString().slice(0,10) });
+    const now = new Date().toISOString();
+    const cls = {
+      id,
+      name,
+      gradeLevel: meta.gradeLevel,
+      schoolYear: meta.schoolYear,
+      section: meta.section,
+      teacherName: '',
+      schoolName: '',
+      schoolId: '',
+      district: '',
+      division: '',
+      region: '',
+      createdAt: now,
+      updatedAt: now
+    };
+    classes.push(cls);
     saveAllClasses(classes);
+    saveClassMeta(cls);
     try { refreshProgressMeterAfterImport(); } catch(_) {}
-    document.getElementById('className').value = '';
+    clearClassForm();
+    resetClassEditUI();
     populateClassDropdown();
     document.getElementById('classDropdown').value = id;
     selectClass(id);
@@ -3817,19 +4204,46 @@ function populateClassDropdown(){
   function editClass(){
     const id = document.getElementById('classDropdown').value;
     if(!id){ alert('Select class to edit'); return; }
-    const cls = getAllClasses().find(x=>x.id===id);
+    const classes = getAllClasses();
+    const cls = classes.find(x=>x.id===id);
     if(!cls) return;
-    const newName = prompt('Edit class name:', cls.name);
-    if (newName && newName.trim()){
-      const classes = getAllClasses();
-      const i = classes.findIndex(c=>c.id===id);
-      classes[i].name = newName.trim();
-      saveAllClasses(classes);
-    try { refreshProgressMeterAfterImport(); } catch(_) {}
-      populateClassDropdown();
-      document.getElementById('classDropdown').value = id;
-      selectClass(id);
+    const btn = document.getElementById('btnEditClass');
+    if (editingClassId !== id) {
+      editingClassId = id;
+      populateClassForm(cls);
+      if (btn) btn.textContent = 'Save Class';
+      setCreateClassButtonState(true, 'Disabled while editing an existing class');
+      const nameEl = document.getElementById('className');
+      if (nameEl) nameEl.focus();
+      return;
     }
+    const newName = document.getElementById('className').value.trim();
+    if (!validateClassRequiredFields('edit')) return;
+    const meta = getClassFormMeta();
+    if (!newName) { alert('Class name is required.'); return; }
+    const duplicate = classes.find(c => c.id !== id && String(c.name || '').toLowerCase() === newName.toLowerCase());
+    if (duplicate) { alert('Class already exists.'); return; }
+    const i = classes.findIndex(c=>c.id===id);
+    const updated = Object.assign({}, normalizeClassObject(classes[i]), {
+      name: newName,
+      gradeLevel: meta.gradeLevel,
+      schoolYear: meta.schoolYear,
+      section: meta.section,
+      updatedAt: new Date().toISOString()
+    });
+    classes[i] = updated;
+    saveAllClasses(classes);
+    saveClassMeta(updated);
+    try { refreshProgressMeterAfterImport(); } catch(_) {}
+    resetClassEditUI();
+    clearClassForm();
+    populateClassDropdown();
+    document.getElementById('classDropdown').value = id;
+    if (currentClassId === id) {
+      exposeLoadedClassContext(updated);
+      applyClassMetaToSharedHeader(updated);
+    }
+    selectClass(id);
   }
   
   function deleteSelectedClass(){
@@ -3842,6 +4256,7 @@ function populateClassDropdown(){
 	  if (k === `students-${id}`) localStorage.removeItem(k);
 	  if (k.startsWith('attendance-') && k.endsWith(`-${id}`)) localStorage.removeItem(k);
 	  if (k === `rosterOrder-${id}`) localStorage.removeItem(k); // ✅ bitmap v2 roster order
+	  if (k === `classmeta:${id}`) localStorage.removeItem(k);
 
 	  if (k.startsWith('nsd-') && k.endsWith(`-${id}`)) localStorage.removeItem(k);
 	  if (k.startsWith('cdn-') && k.endsWith(`-${id}`)) localStorage.removeItem(k);
@@ -3857,6 +4272,8 @@ function populateClassDropdown(){
 	  if (k.startsWith('sf3-data::') && k.includes(id)) localStorage.removeItem(k);
 	  // ✅ GradeSheet data cleanup
 	  if (k === `gradesheet:${id}` || k.startsWith(`gradesheet:${id}:`) || k.startsWith(`gradesheet:${id}::`)) localStorage.removeItem(k);
+	  // ✅ KS1 Descriptive GradeSheet data cleanup
+	  if (k === `kgradesheet:${id}` || k.startsWith(`kgradesheet:${id}:`) || k.startsWith(`kgradesheet:${id}::`)) localStorage.removeItem(k);
 
 	  // Existing meta cleanup
 	  if (k === `ctmSfMeta::${id}`) localStorage.removeItem(k);
@@ -3902,7 +4319,9 @@ function populateClassDropdown(){
 
 	if (currentClassId === id){
 	  currentClassId = null;
-	 window.currentClassId = null;// Disable panels + clear tables
+	 window.currentClassId = null;
+      window.currentClassName = '';
+      window.CTMLoadedClassContext = null;// Disable panels + clear tables
 	  document.getElementById('classContent').classList.add('disabled');
 	  document.querySelector('#studentTable tbody').innerHTML = '';
 	  document.querySelector('#attendanceTable tbody').innerHTML = '';
@@ -3915,6 +4334,9 @@ function populateClassDropdown(){
 	  const ach = document.getElementById('attendanceClassHeader');
 	  if (ach) ach.textContent = '[Class Name]';
 
+      const sfh = document.getElementById('schoolFormClassHeader');
+      if (sfh) sfh.textContent = '[Class Name]';
+
 	  const dateInline = document.getElementById('attendanceDateInline');
 	  if (dateInline) dateInline.textContent = '';
 
@@ -3926,6 +4348,8 @@ function populateClassDropdown(){
 		document.getElementById('currentStudent').textContent = 'Select a Class to begin...';
 	  }
 	}
+    resetClassEditUI();
+    clearClassForm();
     populateClassDropdown();
     updateClassButtons();
     cancelEdit();
@@ -4076,7 +4500,7 @@ function purgeOrphanedCtmSfMeta() {
     // Key format: ctmSfMeta::<classId>
     const classId = k.split("::")[1];
 
-    // If classId missing OR not found in class list → remove
+    // If classId missing OR not found in class list -> remove
     if (!classId || !validIds.has(classId)) {
       localStorage.removeItem(k);
       removed++;
@@ -4093,14 +4517,21 @@ function purgeOrphanedCtmSfMeta() {
     let id = document.getElementById('classDropdown').value;
     if(!id){
       const name = document.getElementById('className').value.trim();
+      if(!validateClassRequiredFields('create')) return;
+      const meta = getClassFormMeta();
       if(!name){ alert('Enter class name first, then select or create!'); return; }
       id = generateId();
       const classes = getAllClasses();
-      classes.push({id,name,created:new Date().toISOString().slice(0,10)});
+      const now = new Date().toISOString();
+      const cls = {id,name,gradeLevel:meta.gradeLevel,schoolYear:meta.schoolYear,section:meta.section,teacherName:'',schoolName:'',schoolId:'',district:'',division:'',region:'',createdAt:now,updatedAt:now};
+      classes.push(cls);
       saveAllClasses(classes);
+      saveClassMeta(cls);
     try { refreshProgressMeterAfterImport(); } catch(_) {}
       populateClassDropdown();
       document.getElementById('classDropdown').value = id;
+      clearClassForm();
+      resetClassEditUI();
     }
     selectClass(id);
   }
@@ -4109,12 +4540,15 @@ function purgeOrphanedCtmSfMeta() {
     if(!id) return;
     currentClassId = id;
  window.currentClassId = id;
-    const cls = getAllClasses().find(c=>c.id===id);
+    const cls = getClassMeta(id) || getAllClasses().find(c=>c.id===id);
     if(!cls){ currentClassId = null;
- window.currentClassId = null;document.getElementById('classContent').classList.add('disabled'); renderCurrentStudentPicker(); updateCurrentStudent(); return; }
-    document.getElementById('classHeader').textContent = cls.name;
-    document.getElementById('attendanceClassHeader').textContent = cls.name;
-	document.getElementById('schoolFormClassHeader').textContent = cls.name;
+ window.currentClassId = null; window.currentClassName = ''; window.CTMLoadedClassContext = null; document.getElementById('classContent').classList.add('disabled'); renderCurrentStudentPicker(); updateCurrentStudent(); return; }
+    const normalizedCls = normalizeClassObject(cls);
+    exposeLoadedClassContext(normalizedCls);
+    applyClassMetaToSharedHeader(normalizedCls);
+    document.getElementById('classHeader').textContent = normalizedCls.name;
+    document.getElementById('attendanceClassHeader').textContent = normalizedCls.name;
+	document.getElementById('schoolFormClassHeader').textContent = normalizedCls.name;
  updateAttendanceHeaderDate();
     document.getElementById('classContent').classList.remove('disabled');
     loadClassStudents();
@@ -4123,6 +4557,8 @@ function purgeOrphanedCtmSfMeta() {
     document.getElementById('datePicker').dispatchEvent(new Event('change',{bubbles:true}));
     updateCurrentStudent();
     populateClassDropdown();
+    const dd = document.getElementById('classDropdown');
+    if (dd) dd.value = id;
     updateStatusSummary();
     updateClassButtons();
     cancelEdit();
@@ -5799,11 +6235,12 @@ if (rentalAttempt && !freeRentalAllowed()){
 	purgeOrphanedClassRecordKeys();
 	purgeOrphanedGradeSheetKeys();
 	purgeGlobalClassRecordGradeSheetKeysIfNoClasses();
+	migrateClassMetadataIfNeeded();
 	populateClassDropdown();
     document.getElementById('sexMale').checked = true;
     setTodayDate();
     setTimeout(()=>document.getElementById('datePicker').dispatchEvent(new Event('change',{bubbles:true})), 50);
-    document.getElementById('classDropdown').addEventListener('change', updateClassButtons);
+    document.getElementById('classDropdown').addEventListener('change', () => { resetClassEditUI(); clearClassForm(); updateClassButtons(); });
     document.getElementById('datePicker').addEventListener('change', () => { if(currentClassId) { invalidateMonthAggCache(); updateAttendanceHeaderDate(); loadAttendance(); } });
     initRowSelectionHandlers();
   initCurrentStudentPicker();
@@ -6007,6 +6444,7 @@ function ensureStickyOverlayToggle(tableId, wrapperId){
     }
   }, true);
 
+  migrateClassMetadataIfNeeded();
   populateClassDropdown();
   document.getElementById('sexMale').checked = true;
   setTodayDate();
@@ -6528,6 +6966,8 @@ document.addEventListener('click', function (e) {
   <script src="SF8pdf.js"></script>
   <script src="classrecord/classrecord-modal.js"></script>
   <script src="gradesheet/gradesheet.js"></script>
+  <script src="kgradesheet/kGradeSheet.js"></script>
+  <div id="kGradeSheetHost"></div>
   <div id="classRecordHost"></div>
 
   <script>
