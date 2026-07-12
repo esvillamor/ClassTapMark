@@ -1379,6 +1379,28 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
   }
 }
 
+
+/* ===================== Manage Classes: 2x2 equal grid ===================== */
+.ctm-manage-class-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:.6rem;
+  width:100%;
+  align-items:stretch;
+}
+.ctm-manage-class-grid input,
+.ctm-manage-class-grid select,
+.ctm-manage-class-grid button{
+  width:100%;
+  min-width:0 !important;
+  box-sizing:border-box;
+}
+@media (max-width: 420px){
+  .ctm-manage-class-grid{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 
 <script>
@@ -1613,9 +1635,9 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
     <!-- Manage Classes -->
     <div class="section">
       <h3>📚 Manage Classes</h3>
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-        <input id="className" placeholder="Enter Class Name eg.Gr7-A" style="flex:2;min-width:220px" required aria-required="true">
-        <select id="classGradeLevel" style="flex:1;min-width:170px" aria-label="Class Grade Level" required aria-required="true">
+      <div class="ctm-manage-class-grid">
+        
+        <select id="classGradeLevel" aria-label="Class Grade Level" required aria-required="true">
           <option value="">Select Grade Level</option>
           <option>Kindergarten</option>
           <option>Grade 1</option>
@@ -1631,8 +1653,8 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
           <option>Grade 11</option>
           <option>Grade 12</option>
         </select>
-        <input id="classSchoolYear" placeholder="yyyy-yyyy" inputmode="numeric" autocomplete="off" maxlength="9" pattern="[0-9]{4}-[0-9]{4}" title="Enter School Year in yyyy-yyyy format, e.g. 2026-2027" style="flex:1;min-width:190px" required aria-required="true">
-        <input id="classSection" placeholder="Section (optional)" style="flex:1;min-width:150px">
+		<input id="className" placeholder="Class Name or Section" required aria-required="true">
+        <input id="classSchoolYear" placeholder="SY eg. 2026-2027" inputmode="numeric" autocomplete="off" maxlength="9" pattern="[0-9]{4}-[0-9]{4}" title="Enter School Year in yyyy-yyyy format, e.g. 2026-2027" required aria-required="true">
         <button class="primary" id="btnCreateClass" onclick="addClass()" title="Create a new class">Create Class</button>
       </div>
       <div style="margin:.6rem 0">
@@ -1641,6 +1663,7 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
         <button class="danger" id="btnDeleteClass" style="flex:1;" disabled onclick="deleteSelectedClass()">Delete Class</button>
         <button class="primary" id="btnSelectClass" style="flex:1;" onclick="selectClassFromDropdownWithCreate()">Load Class</button>
+        <button class="edit" id="btnCancelClassEdit" style="flex:1;" disabled onclick="cancelClassEdit()" title="Restore the original class details without saving">Cancel Edit</button>
         <button class="edit" id="btnEditClass" style="flex:1;" disabled onclick="editClass()">Edit Class</button>
       </div>
     </div>
@@ -3290,6 +3313,7 @@ window.addEventListener('DOMContentLoaded', function () {
   let currentAttendance = {};
   let currentStudentIndex = 0;
   let editingClassId = null;
+  let classEditSnapshot = null; // safe, temporary Manage Classes edit backup; never persisted
 
   // Edit state for Students
   let editingStudentIndex = -1;
@@ -3790,6 +3814,12 @@ function hookLocalStorageForMeter(){
     return base ? ('cls-' + base) : generateId();
   }
 
+  function deriveSectionFromClassName(name){
+    // Option A: Section remains in internal metadata for SF compatibility,
+    // but the Manage Classes UI now derives it from Class Name.
+    return String(name || '').trim();
+  }
+
   function normalizeClassObject(cls) {
     if (typeof cls === 'string') {
       const name = cls.trim();
@@ -3799,7 +3829,7 @@ function hookLocalStorageForMeter(){
         name,
         gradeLevel: '',
         schoolYear: '',
-        section: '',
+        section: deriveSectionFromClassName(name),
         teacherName: '',
         schoolName: '',
         schoolId: '',
@@ -3819,7 +3849,7 @@ function hookLocalStorageForMeter(){
       name,
       gradeLevel: String(cls.gradeLevel || cls.grade || '').trim(),
       schoolYear: String(cls.schoolYear || cls.sy || '').trim(),
-      section: String(cls.section || '').trim(),
+      section: String(cls.section || deriveSectionFromClassName(name)).trim(),
       teacherName: String(cls.teacherName || cls.teacher || cls.adviser || '').trim(),
       schoolName: String(cls.schoolName || '').trim(),
       schoolId: String(cls.schoolId || cls.schoolID || '').trim(),
@@ -4003,10 +4033,11 @@ function hookLocalStorageForMeter(){
   window.applyClassMetaToSharedHeader = applyClassMetaToSharedHeader;
 
   function getClassFormMeta(){
+    const className = document.getElementById('className')?.value.trim() || '';
     return {
       gradeLevel: document.getElementById('classGradeLevel')?.value.trim() || '',
       schoolYear: document.getElementById('classSchoolYear')?.value.trim() || '',
-      section: document.getElementById('classSection')?.value.trim() || ''
+      section: deriveSectionFromClassName(className)
     };
   }
 
@@ -4071,7 +4102,7 @@ function hookLocalStorageForMeter(){
     if (!String(syEl?.value || '').trim()) missing.push({ label: 'School Year', el: syEl });
     if (missing.length) {
       const action = mode === 'edit' ? 'save this class' : 'create/load this class';
-      alert(`Please complete the required fields before you ${action}: ${missing.map(x => x.label).join(', ')}.\nSection is optional.`);
+      alert(`Please complete the required fields before you ${action}: ${missing.map(x => x.label).join(', ')}.`);
       const first = missing[0].el;
       if (first && typeof first.focus === 'function') {
         try { first.focus(); } catch (_) {}
@@ -4091,11 +4122,27 @@ function hookLocalStorageForMeter(){
     const nameEl = document.getElementById('className');
     const gradeEl = document.getElementById('classGradeLevel');
     const syEl = document.getElementById('classSchoolYear');
-    const sectionEl = document.getElementById('classSection');
     if (nameEl) nameEl.value = '';
     if (gradeEl) gradeEl.value = '';
     if (syEl) syEl.value = '';
-    if (sectionEl) sectionEl.value = '';
+  }
+
+  function getClassDisplayName(cls, options){
+    cls = normalizeClassObject(cls || {});
+    const opts = options || {};
+    const bits = [cls.gradeLevel, cls.section || cls.name, cls.schoolYear].filter(Boolean);
+    const base = bits.length ? bits.join(' • ') : (cls.name || '');
+    if (!base) return opts.placeholder || '[Class Name]';
+    if (opts.includeCount && cls.id) return `${base} (${getStudentCount(cls.id)})`;
+    return base;
+  }
+
+  function updateLoadedClassHeaders(cls){
+    const label = cls ? getClassDisplayName(cls, { includeCount: true }) : '[Class Name]';
+    ['classHeader', 'attendanceClassHeader', 'schoolFormClassHeader'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = label;
+    });
   }
 
   function setCreateClassButtonState(disabled, title){
@@ -4107,11 +4154,33 @@ function hookLocalStorageForMeter(){
     createBtn.title = title || (disabled ? 'Disabled while editing an existing class' : 'Create a new class');
   }
 
+  function setClassEditButtonState(isEditing){
+    const cancelBtn = document.getElementById('btnCancelClassEdit');
+    const editBtn = document.getElementById('btnEditClass');
+    const loadBtn = document.getElementById('btnSelectClass');
+    const deleteBtn = document.getElementById('btnDeleteClass');
+    if (cancelBtn) cancelBtn.disabled = !isEditing;
+    if (editBtn) {
+      editBtn.textContent = isEditing ? 'Save Class' : 'Edit Class';
+      editBtn.title = isEditing ? 'Save changes to this class' : 'Edit selected class';
+    }
+    if (loadBtn) {
+      loadBtn.disabled = !!isEditing;
+      loadBtn.setAttribute('aria-disabled', isEditing ? 'true' : 'false');
+      loadBtn.title = isEditing ? 'Finish or cancel class edit first' : 'Load selected class';
+    }
+    if (deleteBtn) {
+      const hasSelection = !!document.getElementById('classDropdown')?.value;
+      deleteBtn.disabled = !!isEditing || !hasSelection;
+      deleteBtn.title = isEditing ? 'Cancel edit before deleting a class' : 'Delete selected class';
+    }
+    setCreateClassButtonState(!!isEditing, isEditing ? 'Disabled while editing an existing class' : 'Create a new class');
+  }
+
   function resetClassEditUI(){
     editingClassId = null;
-    const btn = document.getElementById('btnEditClass');
-    if (btn) btn.textContent = 'Edit Class';
-    setCreateClassButtonState(false, 'Create a new class');
+    classEditSnapshot = null;
+    setClassEditButtonState(false);
   }
 
   function populateClassForm(cls){
@@ -4119,11 +4188,20 @@ function hookLocalStorageForMeter(){
     const nameEl = document.getElementById('className');
     const gradeEl = document.getElementById('classGradeLevel');
     const syEl = document.getElementById('classSchoolYear');
-    const sectionEl = document.getElementById('classSection');
     if (nameEl) nameEl.value = cls.name || '';
     if (gradeEl) gradeEl.value = cls.gradeLevel || '';
     if (syEl) syEl.value = cls.schoolYear || '';
-    if (sectionEl) sectionEl.value = cls.section || '';
+  }
+
+  function cancelClassEdit(){
+    if (!editingClassId) return;
+    const restoreId = editingClassId;
+    const snapshot = classEditSnapshot ? normalizeClassObject(classEditSnapshot) : (getClassMeta(restoreId) || getAllClasses().find(c => c.id === restoreId));
+    if (snapshot) populateClassForm(snapshot);
+    const dd = document.getElementById('classDropdown');
+    if (dd) dd.value = restoreId;
+    resetClassEditUI();
+    updateClassButtons();
   }
 
 function populateClassDropdown(){
@@ -4143,10 +4221,8 @@ function populateClassDropdown(){
   classes.forEach(c => {
     const cls = normalizeClassObject(c);
     const o = document.createElement('option');
-    const studentCount = getStudentCount(cls.id);
-    const metaBits = [cls.gradeLevel, cls.section || cls.name, cls.schoolYear].filter(Boolean);
     o.value = cls.id;
-    o.textContent = metaBits.length ? `${metaBits.join(' • ')} (${studentCount})` : `${cls.name} (${studentCount})`;
+    o.textContent = getClassDisplayName(cls, { includeCount: true });
     o.dataset.classId = cls.id;
     o.dataset.className = cls.name || '';
     o.dataset.gradeLevel = cls.gradeLevel || '';
@@ -4159,13 +4235,21 @@ function populateClassDropdown(){
 }
   function updateClassButtons(){
     const id = document.getElementById('classDropdown').value;
-    document.getElementById('btnEditClass').disabled = !id;
-    document.getElementById('btnDeleteClass').disabled = !id;
+    const isEditing = !!editingClassId;
+    const editBtn = document.getElementById('btnEditClass');
+    const delBtn = document.getElementById('btnDeleteClass');
+    const cancelBtn = document.getElementById('btnCancelClassEdit');
+    const loadBtn = document.getElementById('btnSelectClass');
+    if (editBtn) editBtn.disabled = !id;
+    if (delBtn) delBtn.disabled = !id || isEditing;
+    if (cancelBtn) cancelBtn.disabled = !isEditing;
+    if (loadBtn) loadBtn.disabled = isEditing;
     const imp = document.querySelector('button[onclick="importCSV()"]');
     if (imp) imp.disabled = !id;
+    setClassEditButtonState(isEditing);
   }
   function addClass(){
-    if (editingClassId) { alert('Finish saving the class edit first.'); return; }
+    if (editingClassId) { alert('Finish saving or cancel the class edit first.'); return; }
     const name = document.getElementById('className').value.trim();
     if(!validateClassRequiredFields('create')) return;
     const meta = getClassFormMeta();
@@ -4180,7 +4264,7 @@ function populateClassDropdown(){
       name,
       gradeLevel: meta.gradeLevel,
       schoolYear: meta.schoolYear,
-      section: meta.section,
+      section: deriveSectionFromClassName(name),
       teacherName: '',
       schoolName: '',
       schoolId: '',
@@ -4207,12 +4291,14 @@ function populateClassDropdown(){
     const classes = getAllClasses();
     const cls = classes.find(x=>x.id===id);
     if(!cls) return;
-    const btn = document.getElementById('btnEditClass');
+    if (editingClassId && editingClassId !== id) {
+      cancelClassEdit();
+    }
     if (editingClassId !== id) {
       editingClassId = id;
-      populateClassForm(cls);
-      if (btn) btn.textContent = 'Save Class';
-      setCreateClassButtonState(true, 'Disabled while editing an existing class');
+      classEditSnapshot = JSON.parse(JSON.stringify(normalizeClassObject(cls)));
+      populateClassForm(classEditSnapshot);
+      setClassEditButtonState(true);
       const nameEl = document.getElementById('className');
       if (nameEl) nameEl.focus();
       return;
@@ -4228,7 +4314,7 @@ function populateClassDropdown(){
       name: newName,
       gradeLevel: meta.gradeLevel,
       schoolYear: meta.schoolYear,
-      section: meta.section,
+      section: deriveSectionFromClassName(newName),
       updatedAt: new Date().toISOString()
     });
     classes[i] = updated;
@@ -4326,16 +4412,8 @@ function populateClassDropdown(){
 	  document.querySelector('#studentTable tbody').innerHTML = '';
 	  document.querySelector('#attendanceTable tbody').innerHTML = '';
 	  document.getElementById('statusTableBody').innerHTML = '';
-
 	  // ✅ Reset labels back to placeholder
-	  const ch = document.getElementById('classHeader');
-	  if (ch) ch.textContent = '[Class Name]';
-
-	  const ach = document.getElementById('attendanceClassHeader');
-	  if (ach) ach.textContent = '[Class Name]';
-
-      const sfh = document.getElementById('schoolFormClassHeader');
-      if (sfh) sfh.textContent = '[Class Name]';
+	  updateLoadedClassHeaders(null);
 
 	  const dateInline = document.getElementById('attendanceDateInline');
 	  if (dateInline) dateInline.textContent = '';
@@ -4523,7 +4601,7 @@ function purgeOrphanedCtmSfMeta() {
       id = generateId();
       const classes = getAllClasses();
       const now = new Date().toISOString();
-      const cls = {id,name,gradeLevel:meta.gradeLevel,schoolYear:meta.schoolYear,section:meta.section,teacherName:'',schoolName:'',schoolId:'',district:'',division:'',region:'',createdAt:now,updatedAt:now};
+      const cls = {id,name,gradeLevel:meta.gradeLevel,schoolYear:meta.schoolYear,section:deriveSectionFromClassName(name),teacherName:'',schoolName:'',schoolId:'',district:'',division:'',region:'',createdAt:now,updatedAt:now};
       classes.push(cls);
       saveAllClasses(classes);
       saveClassMeta(cls);
@@ -4546,9 +4624,7 @@ function purgeOrphanedCtmSfMeta() {
     const normalizedCls = normalizeClassObject(cls);
     exposeLoadedClassContext(normalizedCls);
     applyClassMetaToSharedHeader(normalizedCls);
-    document.getElementById('classHeader').textContent = normalizedCls.name;
-    document.getElementById('attendanceClassHeader').textContent = normalizedCls.name;
-	document.getElementById('schoolFormClassHeader').textContent = normalizedCls.name;
+    updateLoadedClassHeaders(normalizedCls);
  updateAttendanceHeaderDate();
     document.getElementById('classContent').classList.remove('disabled');
     loadClassStudents();
@@ -6240,7 +6316,7 @@ if (rentalAttempt && !freeRentalAllowed()){
     document.getElementById('sexMale').checked = true;
     setTodayDate();
     setTimeout(()=>document.getElementById('datePicker').dispatchEvent(new Event('change',{bubbles:true})), 50);
-    document.getElementById('classDropdown').addEventListener('change', () => { resetClassEditUI(); clearClassForm(); updateClassButtons(); });
+    document.getElementById('classDropdown').addEventListener('change', () => { cancelClassEdit(); clearClassForm(); updateClassButtons(); });
     document.getElementById('datePicker').addEventListener('change', () => { if(currentClassId) { invalidateMonthAggCache(); updateAttendanceHeaderDate(); loadAttendance(); } });
     initRowSelectionHandlers();
   initCurrentStudentPicker();
