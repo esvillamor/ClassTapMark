@@ -5,8 +5,8 @@
    - Uses network-first only for rental-switch.js, with an offline fallback
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v7-2026-07-13';
-const DYNAMIC_CACHE = 'ctm-dynamic-v7-2026-07-13';
+const CACHE_NAME = 'ClassTapMark-cache-v7-2026-07-14';
+const DYNAMIC_CACHE = 'ctm-dynamic-v7-2026-07-14';
 
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const CDN_PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
