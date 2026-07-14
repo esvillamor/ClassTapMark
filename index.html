@@ -47,9 +47,9 @@
     .container{max-width:1200px;margin:0 auto}
     h1{color:#fff;text-align:center;margin:0 0 1.25rem}
     .section{background:var(--panel);border-radius:var(--radius);padding:1.25rem;margin:1rem 0;box-shadow:var(--shadow)}
-    label,input,select,button{font-family:inherit}
-    input,select{padding:.8rem 1rem;border:2px solid #e1e5e9;border-radius:12px;background:#fafbff;transition:.2s}
-    input:focus,select:focus{outline:none;border-color:var(--bg1);box-shadow:0 0 0 3px rgba(102,126,234,.12)}
+    label,input,select,textarea,button{font-family:inherit}
+    input,select,textarea{padding:.8rem 1rem;border:2px solid #e1e5e9;border-radius:12px;background:#fafbff;transition:.2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--bg1);box-shadow:0 0 0 3px rgba(102,126,234,.12)}
     button{padding:.8rem 1.1rem;border:none;border-radius:12px;font-weight:500;cursor:pointer;transition:.2s}
     button.primary{background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff}
     button.edit{background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;}
@@ -1380,6 +1380,18 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
 }
 
 
+/* ===================== Manage Learners: multiline learner paste field ===================== */
+#studentName{
+  width:100%;
+  min-height:3.1rem;
+  line-height:1.35;
+  resize:vertical;
+  white-space:pre-wrap;
+  overflow:auto;
+}
+#studentName::placeholder{
+  opacity:.72;
+}
 /* ===================== Manage Classes: 2x2 equal grid ===================== */
 .ctm-manage-class-grid{
   display:grid;
@@ -1674,7 +1686,7 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
       <span id="classHeader" style="font-weight:700;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">[Class Name]</span>
       <div class="student-form">
         <div style="display:flex;justify-content:center;gap:1rem;align-items:end;flex-wrap:wrap;margin:.6rem 0">
-          <input id="studentName" placeholder="Last Name, First Name Middle Name" style="flex:2;min-width:240px;max-width:600px">
+          <textarea id="studentName" placeholder="One learner per line:&#10;Last Name, First Name Middle Name&#10;Last Name, First Name Middle Name" rows="3" autocomplete="off" style="flex:2;min-width:240px;max-width:600px"></textarea>
         </div>
         <div style="display:flex; justify-content:center; flex-direction:column; align-items:center; gap:1rem; padding:1rem;">
           <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
@@ -4808,28 +4820,108 @@ function parseStoredJsonSafe(key, fallbackJson) {
     picker._ctmPickerInit = true;
   }
  
+  function normalizeLearnerNameForEntry(value){
+    return String(value || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/[\t ]+/g, ' ')
+      .replace(/\s*,\s*/g, ', ')
+      .trim();
+  }
+  function learnerNameKey(value){
+    return normalizeLearnerNameForEntry(value).toLowerCase();
+  }
+  function getLearnerNameLines(value){
+    return String(value || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .split('\n')
+      .map(normalizeLearnerNameForEntry)
+      .filter(Boolean);
+  }
+
   function addStudent(){
     if(!currentClassId){ alert('Select and Load Class first!'); return; }
     const nameEl = document.getElementById('studentName');
-    const name = (nameEl.value || '').trim();
+    const rawName = nameEl ? (nameEl.value || '') : '';
+    const names = getLearnerNameLines(rawName);
     const sex = getSelectedSex();
-    if(!name || !sex){ alert('Name and sex required!'); return; }
-    const dup = currentStudents.some((s,i)=> s.name.toLowerCase()===name.toLowerCase() && s.sex===sex && i!==editingStudentIndex);
-    if (dup){ alert(`Duplicate name "${name}" (${sex}) already exists!`); return; }
+    if(!names.length || !sex){ alert('Name and sex required!'); return; }
+
+    // Edit mode must remain strictly one learner only. This prevents accidental
+    // replacement of a single edited learner with a pasted bulk list.
+    if (editingStudentIndex > -1 && names.length > 1){
+      alert('You are editing one learner. Please keep only one name, or click Cancel before bulk adding many learners.');
+      return;
+    }
+
     let students = currentStudents.slice();
+
+    // Existing single-learner edit path, kept compatible with the original behavior.
     if (editingStudentIndex > -1 && currentStudents[editingStudentIndex]){
+      const name = names[0];
+      const dup = currentStudents.some((s,i)=> learnerNameKey(s.name)===learnerNameKey(name) && s.sex===sex && i!==editingStudentIndex);
+      if (dup){ alert(`Duplicate name "${name}" (${sex}) already exists!`); return; }
       const original = currentStudents[editingStudentIndex];
       students[editingStudentIndex] = { id: original.id, name, sex, added: original.added };
-    }else{
-      students.push({ id: generateId(), name, sex, added: new Date().toISOString().slice(0,10) });
+      students = sortStudentsBySex(students);
+      localStorage.setItem(`students-${currentClassId}`, JSON.stringify(students));
+      invalidateMonthAggCache();
+      loadClassStudents();
+      dispatchRosterChanged('edit-student');
+      cancelEdit();
+      return;
     }
-    const rosterAction = (editingStudentIndex > -1 && currentStudents[editingStudentIndex]) ? 'edit-student' : 'add-student';
+
+    const existingKeys = new Set(currentStudents.map(s => `${learnerNameKey(s.name)}|${s.sex}`));
+    const pastedKeys = new Set();
+    const addedNames = [];
+    const duplicateNames = [];
+    const repeatedPasteNames = [];
+    const today = new Date().toISOString().slice(0,10);
+
+    names.forEach(name => {
+      const key = `${learnerNameKey(name)}|${sex}`;
+      if (pastedKeys.has(key)){
+        repeatedPasteNames.push(name);
+        return;
+      }
+      pastedKeys.add(key);
+      if (existingKeys.has(key)){
+        duplicateNames.push(name);
+        return;
+      }
+      students.push({ id: generateId(), name, sex, added: today });
+      existingKeys.add(key);
+      addedNames.push(name);
+    });
+
+    if (!addedNames.length){
+      const msg = duplicateNames.length || repeatedPasteNames.length
+        ? `No learners added. All entered learner names were duplicates for ${sex}.`
+        : 'No learners added.';
+      alert(msg);
+      return;
+    }
+
     students = sortStudentsBySex(students);
     localStorage.setItem(`students-${currentClassId}`, JSON.stringify(students));
     invalidateMonthAggCache();
-	loadClassStudents();
-    dispatchRosterChanged(rosterAction);
+    loadClassStudents();
+    dispatchRosterChanged(addedNames.length > 1 ? 'bulk-add-students' : 'add-student', { count: addedNames.length, sex });
     cancelEdit();
+    try { hookLocalStorageForMeter(); updateStorageMeter(); } catch(_) {}
+
+    if (names.length > 1){
+      const details = [
+        'Bulk add completed.',
+        '',
+        `Added: ${addedNames.length}`,
+        `Skipped existing duplicates: ${duplicateNames.length}`,
+        `Skipped repeated pasted lines: ${repeatedPasteNames.length}`,
+        `Sex assigned: ${sex}`
+      ];
+      alert(details.join('\n'));
+    }
     /* updateDebug('Student saved.'); */
   }
   function editStudent(index){
