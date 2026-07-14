@@ -1663,7 +1663,7 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
         <button class="danger" id="btnDeleteClass" style="flex:1;" disabled onclick="deleteSelectedClass()">Delete Class</button>
         <button class="primary" id="btnSelectClass" style="flex:1;" onclick="selectClassFromDropdownWithCreate()">Load Class</button>
-        <button class="edit" id="btnCancelClassEdit" style="flex:1;" disabled onclick="cancelClassEdit()" title="Restore the original class details without saving">Cancel Edit</button>
+        <button class="edit" id="btnCancelClassEdit" style="flex:1;" disabled onclick="cancelClassEdit()" title="Cancel edit and clear class fields">Cancel Edit</button>
         <button class="edit" id="btnEditClass" style="flex:1;" disabled onclick="editClass()">Edit Class</button>
       </div>
     </div>
@@ -4196,10 +4196,12 @@ function hookLocalStorageForMeter(){
   function cancelClassEdit(){
     if (!editingClassId) return;
     const restoreId = editingClassId;
-    const snapshot = classEditSnapshot ? normalizeClassObject(classEditSnapshot) : (getClassMeta(restoreId) || getAllClasses().find(c => c.id === restoreId));
-    if (snapshot) populateClassForm(snapshot);
     const dd = document.getElementById('classDropdown');
     if (dd) dd.value = restoreId;
+    // Match Create / Save / Delete behavior: cancelling Manage Class edit
+    // returns Grade Level, Class Name/Section, and School Year to their
+    // default blank state instead of keeping/restoring edited values.
+    clearClassForm();
     resetClassEditUI();
     updateClassButtons();
   }
