@@ -1,3 +1,4 @@
+/* v18.48 MAPEH component bundle + consolidated summary: Grades 4-10 MAPEH can be encoded as Music/Arts/PE/Health component records with a virtual read-only consolidated summary; data/CSV/shared-header compatibility retained. */
 /* v18.47 mobile-safe HPS encoding: Shared HPS inputs now use whole-number encoding and recompute/save without full panel render to avoid mobile keyboard jumps. */
 /* v18.46 mobile-safe score blur/change: learner-card score edits sanitize/recompute/save without full render to avoid mobile keyboard focus flicker. */
 /* v18.45 learner-card score encoding: Grade Sheet-style whole-number score entry, HPS clamping, arrow/Enter movement, and live state updates. */
@@ -23,7 +24,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.47-mobile-safe-hps-encoding'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.48-mapeh-component-bundle'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -39,6 +40,14 @@
   const HIDE_SUMMARY_DESC_RESPONSE_FOR_G12_THREE_TERM = true;
   const PASSING_GRADE = 75;
   const TERMS = ['term1', 'term2', 'term3', 'term4'];
+  // v18.48 MAPEH component bundle + consolidated summary
+  const MAPEH_COMPONENTS = [
+    { key: 'music', label: 'Music', shortLabel: 'Music', subject: 'MAPEH - Music' },
+    { key: 'arts', label: 'Arts', shortLabel: 'Arts', subject: 'MAPEH - Arts' },
+    { key: 'pe', label: 'Physical Education', shortLabel: 'PE', subject: 'MAPEH - Physical Education' },
+    { key: 'health', label: 'Health', shortLabel: 'Health', subject: 'MAPEH - Health' }
+  ];
+  const MAPEH_SUMMARY_KEY = 'summary';
   const TERM_LABELS = { term1: 'Term 1', term2: 'Term 2', term3: 'Term 3', term4: 'Term 4' };
   const CUSTOM_QUARTER_LABELS = { term1: 'Quarter 1', term2: 'Quarter 2', term3: 'Quarter 3', term4: 'Quarter 4' };
   const LEGACY_G12_TERM_LABELS = { term1: 'Quarter 1', term2: 'Quarter 2', term3: 'Quarter 3', term4: 'Quarter 4' };
@@ -199,14 +208,14 @@ const LEGACY_G12_DO8_2015_PROFILES = {
   const fallbackHtml = "<div id=\"classRecordModal\" class=\"modal\" aria-hidden=\"true\" role=\"dialog\" aria-modal=\"true\" style=\"display:none\">\n  <div class=\"modal-content ctm-cr-modal-content\" style=\"max-width:1200px;\">\n    <div class=\"ctm-cr-topbar\">\n      <div>\n        <h3 style=\"margin:0\">Class Record</h3>\n        <div class=\"ctm-cr-subtitle\"><span id=\"crTopClassName\">No class loaded</span><span>\u2022</span><span id=\"crTopSubject\">No subject</span><span>\u2022</span><span id=\"crTopSchoolYear\">No school year</span></div>\n      </div>\n      <div class=\"ctm-cr-topbar-actions\">\n<button class=\"edit\" id=\"crBtnNew\">New Record</button>\n        <button class=\"danger\" id=\"crBtnDelete\">Delete</button>\n        <button class=\"primary\" id=\"crBtnSave\">Save</button>\n        <button class=\"edit\" id=\"crBtnCancelEdit\" hidden>Cancel Edit</button>\n        <button class=\"primary\" id=\"crBtnImportCsv\">Import CSV</button>\n        <button class=\"primary\" id=\"crBtnExportCsv\">Export CSV</button>\n        <button class=\"danger\" id=\"crBtnClose\" style=\"padding:.25rem .6rem\">\u2715</button>\n      </div>\n    </div>\n    <div class=\"ctm-cr-disclaimer\"><b>Testing Build:</b> Mobile-first Class Record with shared HPS per term, individual learner cards, full CSV import/export, and validation.</div>\n    <div class=\"ctm-cr-manager section-lite\">\n      <div class=\"ctm-cr-manager-grid\">\n        <div><label class=\"ctm-cr-label\">Saved Record</label><select id=\"crRecordPicker\"></select></div>\n        <div><label class=\"ctm-cr-label\">Record Status</label><div id=\"crRecordStatus\" class=\"ctm-cr-status-pill\">Draft / unsaved school-year record</div></div>\n        <div><label class=\"ctm-cr-label\">Policy Source</label><div class=\"ctm-cr-status-pill\">DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)</div></div>\n      </div>\n    </div>\n    <div class=\"ctm-cr-tabs\" aria-label=\"Class Record Tabs\">\n      <div id=\"crTabsShell\" class=\"ctm-cr-tabs-shell\" role=\"tablist\" aria-label=\"Class Record Tabs\" aria-hidden=\"false\">\n      <button class=\"primary ctm-cr-tab active\" data-tab=\"header\" type=\"button\">Header Fields</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"policy\" type=\"button\">Policy Setup</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term1\" type=\"button\">Term 1</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term2\" type=\"button\">Term 2</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term3\" type=\"button\">Term 3</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term4\" type=\"button\" style=\"display:none\">Term 4</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"final\" type=\"button\">Summary</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"attendance\" type=\"button\">Attendance</button>\n      </div>\n      <div class=\"ctm-cr-tabs-footer\"><p class=\"ctm-cr-tabs-source\"><a href=\"https://drive.google.com/drive/folders/13APGK-OoX_g2bWqVZ9h-iGd16DCDNa5_?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer\">Source: DO No. 015, s. 2026 / DO No. 8, s. 2015</a></p></div>\n    </div>\n    <div id=\"crFlash\" class=\"ctm-cr-flash\" style=\"display:none\" aria-live=\"polite\" aria-atomic=\"true\" aria-hidden=\"true\"></div>\n    <section id=\"crPanelHeader\" class=\"ctm-cr-panel active\">\n      <div class=\"ctm-cr-panel-title\">Record Header</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSchoolName\">School Name</label><input id=\"crSchoolName\" placeholder=\"School Name\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolYear\">School Year</label><input id=\"crSchoolYear\" placeholder=\"2026-2027\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crGradeLevel\">Grade Level</label>\n          <select id=\"crGradeLevel\"><option value=\"\">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>\n        </div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSection\">Class / Section</label><input id=\"crSection\" placeholder=\"Section\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSemester\">Semester</label><select id=\"crSemester\"><option value=\"\">Select Semester</option><option value=\"First Semester\">First Semester</option><option value=\"Second Semester\">Second Semester</option></select></div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crTeacher\">Teacher / Class Adviser</label><input id=\"crTeacher\" placeholder=\"Teacher / Class Adviser\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolId\">School ID</label><input id=\"crSchoolId\" placeholder=\"School ID\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDistrict\">District</label><input id=\"crDistrict\" placeholder=\"District\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDivision\">Division</label><input id=\"crDivision\" placeholder=\"Division\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crRegion\">Region</label><input id=\"crRegion\" placeholder=\"Region\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSubjectGroup\">Subject Group</label>\n          <select id=\"crSubjectGroup\"><option value=\"\">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>\n        </div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSubject\">Subject</label><input id=\"crSubject\" placeholder=\"Subject\"></div>\n<div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crKeyStage\">Key Stage</label><input id=\"crKeyStage\" placeholder=\"Auto\" readonly></div>\n      </div>\n    </section>\n    <!-- Policy Setup fallback remains structurally compatible; primary layout is governed by external HTML/CSS module. -->\n    <section id=\"crPanelPolicy\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Policy Setup (Resolved)</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Grading Mode</div><div id=\"crResolvedMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Table</div><div id=\"crResolvedTable\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Numeric Mode</div><div id=\"crResolvedNumericMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Transition Rule</div><div id=\"crResolvedTransition\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Weight</div><div id=\"crWeightWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Weight</div><div id=\"crWeightPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">EX Weight</div><div id=\"crWeightEX\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Has TE</div><div id=\"crHasTE\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Count</div><div id=\"crCountWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Count</div><div id=\"crCountPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">ST Count</div><div id=\"crCountST\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Uses Descriptors</div><div id=\"crUseDescriptors\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-field\" style=\"margin-top:1rem;\"><label class=\"ctm-cr-label\" for=\"crPolicyNotes\">Validation / Notes</label><textarea id=\"crPolicyNotes\" rows=\"3\" readonly></textarea></div>\n    </section>\n    <section id=\"crPanelTerm1\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm2\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm3\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm4\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelFinal\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Summary</div>\n      <div class=\"ctm-cr-disclaimer\" style=\"margin-bottom:.75rem;\">Final Grade Summary based on the selected Grade 12 SY 2026-2027 grading system.</div>\n      <div class=\"table-scroll ctm-cr-table-scroll ctm-cr-final-scroll\" id=\"crFinalTableScroll\" aria-label=\"Scrollable class record summary table\"><table id=\"crFinalTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th><th>Instructional Response</th></tr></thead><tbody></tbody></table></div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Class Average</div><div id=\"crFinalClassAverage\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Passing Count</div><div id=\"crFinalPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Non-Passing Count</div><div id=\"crFinalNonPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Table Used</div><div id=\"crFinalTableUsed\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n    </section>\n    <section id=\"crPanelAttendance\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Attendance (Read-only)</div>\n      <div class=\"ctm-cr-disclaimer\">Source: attendance / SF2 data already tracked by the app. Read-only inside Class Record.</div>\n      <div class=\"table-scroll\"><table id=\"crAttendanceTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>Present</th><th>Absent</th><th>Tardy</th><th>Cutting</th><th>Excuse</th><th>Pending</th></tr></thead><tbody></tbody></table></div>\n    </section>\n    <div class=\"meta\" style=\"color:#667;font-size:.85rem;margin-top:1rem;text-align:justify;\"><b>Disclaimer:</b> Generated document is not an official DepEd School Form.</div>\n  </div>\n</div>\n";
 
   const state = {
-    classId: '', className: '', roster: [], savedRoster: [], activeLearnerId: '', activeTab: 'header', htmlInjected: false, suppressHostRosterOnce: false, connectedHostClassKey: '', hostSyncBound: false, hostSyncTimer: 0, autoSaveTimer: 0, finalSelectedLearnerId: '', isTransientDraft: true, headerEditMode: false, headerDirty: false,
+    classId: '', className: '', roster: [], savedRoster: [], activeLearnerId: '', activeTab: 'header', htmlInjected: false, suppressHostRosterOnce: false, connectedHostClassKey: '', hostSyncBound: false, hostSyncTimer: 0, autoSaveTimer: 0, finalSelectedLearnerId: '', mapehSummarySelectedLearnerId: '', mapehVirtualBaseHeader: null, isMapehSummaryView: false, isTransientDraft: true, headerEditMode: false, headerDirty: false,
     recordHeader: null, setupProfile: null, attendance: null, finalSummary: null, term1: null, term2: null, term3: null, term4: null
   };
   const dom = {};
   const TABS_COLLAPSE_STORAGE_KEY = 'ctm-classrecord-tabs-collapsed-v1';
   const TABS_COLLAPSE_DEFAULT = false;
 
-  function defaultRecordHeader() { return { recordId: '', classId: '', className: '', schoolYear: '', schoolId: '', schoolName: '', district: '', division: '', region: '', gradeLevel: '', keyStage: '', section: '', semester: '', g12Sy2026System: 'quarterSemester', g12DescriptorSource: 'do8-2015', modifiedTerm: 'term1', teacherName: '', subject: '', subjectKey: '', subjectGroup: '', recordLabel: '', sourcePolicy: 'DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)', customPolicyEnabled: false, gradingFramework: 'officialDepEd', customAcademicStructure: 'trimesterContinuous', customActiveTerm: 'term1', customSelectedTerms: ['term1', 'term2', 'term3'], customFinalRule: 'averageVisibleTerms', customDescriptorSource: 'do8-2015', gradeConversionMethod: 'zeroBased', transmutationTableKey: 'none' }; }
+  function defaultRecordHeader() { return { recordId: '', classId: '', className: '', schoolYear: '', schoolId: '', schoolName: '', district: '', division: '', region: '', gradeLevel: '', keyStage: '', section: '', semester: '', g12Sy2026System: 'quarterSemester', g12DescriptorSource: 'do8-2015', modifiedTerm: 'term1', teacherName: '', subject: '', subjectKey: '', subjectGroup: '', recordLabel: '', sourcePolicy: 'DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)', customPolicyEnabled: false, gradingFramework: 'officialDepEd', customAcademicStructure: 'trimesterContinuous', customActiveTerm: 'term1', customSelectedTerms: ['term1', 'term2', 'term3'], customFinalRule: 'averageVisibleTerms', customDescriptorSource: 'do8-2015', gradeConversionMethod: 'zeroBased', transmutationTableKey: 'none', mapehMode: 'single', mapehComponent: '', mapehBundleId: '', mapehReportSubject: '' }; }
 function defaultSetupProfile() { return { profileKey: '', profileName: '', gradingModeResolved: '', resultTableResolved: '', transitionRuleResolved: { schoolYear: '', gradeLevel: '', table: '', gradingMode: '', numericMode: '', transitionLabel: '' }, componentWeights: { ww: 0, pt: 0, ex: 0 }, assessmentCounts: { wwCount: 0, ptCount: 0, stCount: 0, hasTE: false, qaCount: 0, teCount: 0, qeCount: 0 }, customComponents: { ww: { count: 5, weight: 20 }, pt: { count: 5, weight: 50 }, st: { count: 2, weight: 15 }, te: { count: 1, weight: 15 }, qe: { count: 0, weight: 0 } }, customPolicyEnabled: false, gradeConversionMethod: 'zeroBased', transmutationTableKey: 'none', customAcademicStructure: 'trimesterContinuous', customFinalRule: 'averageVisibleTerms', customDescriptorSource: 'do8-2015', usesTransmutation: false, usesZeroBased: false, usesDescriptors: true, validationNotes: [] }; }
 function blankHps() { return { ww: { ww1: null, ww2: null, ww3: null, ww4: null, ww5: null }, pt: { pt1: null, pt2: null, pt3: null, pt4: null, pt5: null }, ex: { st1: null, st2: null, te: null, qa1: null, te1: null, te2: null, qe1: null, qe2: null } }; }
 function blankScores() { return { ww: { ww1: null, ww2: null, ww3: null, ww4: null, ww5: null }, pt: { pt1: null, pt2: null, pt3: null, pt4: null, pt5: null }, ex: { st1: null, st2: null, te: null, qa1: null, te1: null, te2: null, qe1: null, qe2: null } }; }
@@ -218,6 +227,66 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
   function text(v) { return v == null ? '' : String(v); }
   function num(v) { if (v === '' || v == null) return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
   function slugify(v) { return text(v).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'default'; }
+  // v18.48 MAPEH component bundle + consolidated summary helpers
+  function isMapehSubjectGroup(value) { return text(value).trim() === 'EPP / TLE / MAPEH'; }
+  function isMapehEligibleGrade(gradeLevel) { return /^Grade\s+(?:4|5|6|7|8|9|10)$/.test(text(gradeLevel).trim()); }
+  function isMapehBaseSubject(value) {
+    const raw = text(value).trim();
+    const s = raw.toLowerCase();
+    return s === 'mapeh' || s === 'music' || s === 'arts' || s === 'physical education' || s === 'pe' || s === 'p.e.' || s === 'health' || /^mapeh\s*-/i.test(raw);
+  }
+  function normalizeMapehComponent(value) {
+    const s = text(value).trim().toLowerCase();
+    if (s.includes('music')) return 'music';
+    if (s.includes('arts')) return 'arts';
+    if (s.includes('physical') || s === 'pe' || s.includes('p.e')) return 'pe';
+    if (s.includes('health')) return 'health';
+    return '';
+  }
+  function getMapehComponentMeta(componentKey) { return MAPEH_COMPONENTS.find(c => c.key === componentKey) || null; }
+  function canonicalMapehHeaderSource(header) { return header || (state && state.recordHeader) || {}; }
+  function makeMapehBundleId(header) {
+    const h = canonicalMapehHeaderSource(header);
+    const parts = ['mapeh', h.gradeLevel || '', h.section || h.className || '', h.schoolYear || '', h.classId || state.classId || ''];
+    return parts.map(slugify).join('-').replace(/-+/g, '-');
+  }
+  function getMapehComponentSubject(componentKey) { const meta = getMapehComponentMeta(componentKey); return meta ? meta.subject : 'MAPEH'; }
+  function isMapehBundleCandidate(header = state.recordHeader) {
+    const h = header || {};
+    if (!isMapehEligibleGrade(h.gradeLevel)) return false;
+    if (!isMapehSubjectGroup(h.subjectGroup)) return false;
+    return isMapehBaseSubject(h.subject) || ['component','consolidated'].includes(text(h.mapehMode).trim());
+  }
+  function shouldShowMapehUi(header = state.recordHeader) { return isMapehBundleCandidate(header); }
+  function normalizeMapehHeader(header = state.recordHeader) {
+    if (!header) return header;
+    if (!isMapehBundleCandidate(header)) {
+      header.mapehMode = header.mapehMode || 'single';
+      header.mapehComponent = '';
+      header.mapehBundleId = '';
+      header.mapehReportSubject = '';
+      return header;
+    }
+    const comp = normalizeMapehComponent(header.subject) || normalizeMapehComponent(header.mapehComponent);
+    header.subjectGroup = 'EPP / TLE / MAPEH';
+    header.mapehBundleId = header.mapehBundleId || makeMapehBundleId(header);
+    header.mapehReportSubject = header.mapehReportSubject || 'MAPEH';
+    if (comp) {
+      header.mapehMode = 'component';
+      header.mapehComponent = comp;
+      header.subject = getMapehComponentSubject(comp);
+      header.subjectKey = slugify(header.subject);
+    } else if (text(header.subject).trim().toLowerCase() === 'mapeh') {
+      header.mapehMode = 'component';
+      header.mapehComponent = 'music';
+      header.subject = getMapehComponentSubject('music');
+      header.subjectKey = slugify(header.subject);
+    }
+    return header;
+  }
+  function mapLearnerIdentity(row) {
+    return { id: text(row && (row.learnerId || row.id || row.studentId)).trim(), fallback: `${normalizeName(row && row.name)}|${normalizeSex(row && row.sex).toLowerCase()}` };
+  }
   function esc(v) { return text(v).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
   function fmt(v) { return v == null || v === '' ? '—' : String(v); }
   function round2(v) { return Number.isFinite(Number(v)) ? Math.round(Number(v) * 100) / 100 : null; }
@@ -949,6 +1018,9 @@ function resolvePolicy() {
     state.term2 = defaultTerm('term2');
     state.term3 = defaultTerm('term3');
     state.term4 = defaultTerm('term4');
+    state.isMapehSummaryView = false;
+    state.mapehVirtualBaseHeader = null;
+    state.mapehSummarySelectedLearnerId = '';
   }
   initDefaults();
 
@@ -1818,6 +1890,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
   }
   function persist(showToast = true, options = {}) {
     const opts = Object.assign({ auto: false, force: false }, options || {});
+    if (state.isMapehSummaryView || (state.recordHeader && state.recordHeader.mapehMode === 'consolidated')) return false;
     const oldKey = text(state.recordHeader && state.recordHeader.recordId).trim();
     const wasUnsavedDraft = !oldKey;
     const transient = !!state.isTransientDraft && !oldKey;
@@ -1833,6 +1906,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     state.recordHeader.recordId = key;
     localStorage.setItem(key, JSON.stringify(snapshot()));
     saveIndex(key, oldKey);
+    if (isMapehBundleCandidate(state.recordHeader) && state.recordHeader.mapehMode === 'component') { try { ensureMapehComponentRecords(state.recordHeader.mapehBundleId || makeMapehBundleId(state.recordHeader), { header: state.recordHeader }); } catch (_) {} }
     state.isTransientDraft = false;
     state.headerEditMode = false;
     state.headerDirty = false;
@@ -1878,7 +1952,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
     }
     try { persist(false, { auto: true }); } catch (_) {}
   }
-  function applySnapshot(payload) { initDefaults(); if (!payload || typeof payload !== 'object') return; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = normalizeRoster(payload.roster || []); state.roster = clone(state.savedRoster); state.recordHeader = Object.assign(defaultRecordHeader(), clone(payload.recordHeader || {})); state.setupProfile = Object.assign(defaultSetupProfile(), clone(payload.setupProfile || {})); state.term1 = Object.assign(defaultTerm('term1'), clone(payload.term1 || {})); state.term2 = Object.assign(defaultTerm('term2'), clone(payload.term2 || {})); state.term3 = Object.assign(defaultTerm('term3'), clone(payload.term3 || {})); state.term4 = Object.assign(defaultTerm('term4'), clone(payload.term4 || {})); state.finalSummary = Object.assign(defaultFinalSummary(), clone(payload.finalSummary || {})); state.attendance = Object.assign(defaultAttendance(), clone(payload.attendance || {})); state.recordHeader.gradingFramework = normalizeGradingFramework(state.recordHeader.gradingFramework); state.recordHeader.g12DescriptorSource = normalizeG12DescriptorSource(state.recordHeader.g12DescriptorSource); state.recordHeader.customAcademicStructure = normalizeCustomAcademicStructure(state.recordHeader.customAcademicStructure); state.recordHeader.customActiveTerm = normalizeModifiedTerm(state.recordHeader.customActiveTerm); state.recordHeader.customSelectedTerms = normalizeCustomSelectedTerms(state.recordHeader.customSelectedTerms, state.recordHeader.customAcademicStructure, state.recordHeader.customActiveTerm); if (!state.recordHeader.customSelectedTerms.includes(state.recordHeader.customActiveTerm)) state.recordHeader.customActiveTerm = state.recordHeader.customSelectedTerms[0] || 'term1'; state.recordHeader.gradeConversionMethod = normalizeGradeConversionMethod(state.recordHeader.gradeConversionMethod); state.recordHeader.transmutationTableKey = normalizeTransmutationTableKey(state.recordHeader.transmutationTableKey, state.recordHeader.gradeConversionMethod); state.recordHeader.customFinalRule = normalizeCustomFinalRule(state.recordHeader.customFinalRule, state.recordHeader.customAcademicStructure); state.recordHeader.customPolicyEnabled = isCustomInstitutionalMode(state.recordHeader); state.setupProfile.customComponents = normalizeCustomComponents(state.setupProfile.customComponents); state.isTransientDraft = !text(state.recordHeader && state.recordHeader.recordId).trim(); }
+  function applySnapshot(payload) { initDefaults(); if (!payload || typeof payload !== 'object') return; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = normalizeRoster(payload.roster || []); state.roster = clone(state.savedRoster); state.recordHeader = Object.assign(defaultRecordHeader(), clone(payload.recordHeader || {})); state.setupProfile = Object.assign(defaultSetupProfile(), clone(payload.setupProfile || {})); state.term1 = Object.assign(defaultTerm('term1'), clone(payload.term1 || {})); state.term2 = Object.assign(defaultTerm('term2'), clone(payload.term2 || {})); state.term3 = Object.assign(defaultTerm('term3'), clone(payload.term3 || {})); state.term4 = Object.assign(defaultTerm('term4'), clone(payload.term4 || {})); state.finalSummary = Object.assign(defaultFinalSummary(), clone(payload.finalSummary || {})); state.attendance = Object.assign(defaultAttendance(), clone(payload.attendance || {})); state.recordHeader.gradingFramework = normalizeGradingFramework(state.recordHeader.gradingFramework); state.recordHeader.g12DescriptorSource = normalizeG12DescriptorSource(state.recordHeader.g12DescriptorSource); state.recordHeader.customAcademicStructure = normalizeCustomAcademicStructure(state.recordHeader.customAcademicStructure); state.recordHeader.customActiveTerm = normalizeModifiedTerm(state.recordHeader.customActiveTerm); state.recordHeader.customSelectedTerms = normalizeCustomSelectedTerms(state.recordHeader.customSelectedTerms, state.recordHeader.customAcademicStructure, state.recordHeader.customActiveTerm); if (!state.recordHeader.customSelectedTerms.includes(state.recordHeader.customActiveTerm)) state.recordHeader.customActiveTerm = state.recordHeader.customSelectedTerms[0] || 'term1'; state.recordHeader.gradeConversionMethod = normalizeGradeConversionMethod(state.recordHeader.gradeConversionMethod); state.recordHeader.transmutationTableKey = normalizeTransmutationTableKey(state.recordHeader.transmutationTableKey, state.recordHeader.gradeConversionMethod); state.recordHeader.customFinalRule = normalizeCustomFinalRule(state.recordHeader.customFinalRule, state.recordHeader.customAcademicStructure); state.recordHeader.customPolicyEnabled = isCustomInstitutionalMode(state.recordHeader); state.setupProfile.customComponents = normalizeCustomComponents(state.setupProfile.customComponents); normalizeMapehHeader(state.recordHeader); state.isMapehSummaryView = false; state.mapehVirtualBaseHeader = null; state.isTransientDraft = !text(state.recordHeader && state.recordHeader.recordId).trim(); }
 
   function getSortedRecordPickerIndex() {
     // UI-only ordering fix: keep the draft/new entry first, but always show saved
@@ -4112,8 +4186,204 @@ function renderFinal() {
   bindFinalLearnerCardSwipe();
 }
   function renderAttendance() { dom.attBody.innerHTML = state.attendance.rows.map((row, idx) => `<tr><td>${idx + 1}</td><td>${esc(row.name)}</td><td>${esc(row.sex)}</td><td>${row.Present}</td><td>${row.Absent}</td><td>${row.Tardy}</td><td>${row.Cutting}</td><td>${row.Excuse}</td><td>${row.Pending}</td></tr>`).join('') || '<tr><td colspan="9">No attendance data found.</td></tr>'; }
-  function render() { cacheDom(); updateHeaderFields(); renderPolicy(); applyTermVisibility(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); renderFinal(); renderAttendance(); renderRecordPicker(); updateSaveEditButton(); setStatus(); }
-  function recompute() { state.recordHeader.keyStage = getKeyStage(state.recordHeader.gradeLevel); state.recordHeader.subjectGroup = coerceSubjectGroupForContext(state.recordHeader.subjectGroup, state.recordHeader.gradeLevel, state.recordHeader.schoolYear); if (dom.headerInputs && dom.headerInputs.subjectGroup && text(dom.headerInputs.subjectGroup.value).trim() !== text(state.recordHeader.subjectGroup).trim()) dom.headerInputs.subjectGroup.value = state.recordHeader.subjectGroup || ''; state.setupProfile = resolvePolicy(); hydrateTerms(); recomputeFinal(); buildAttendanceRows(); }
+  // v18.48 MAPEH component bundle + consolidated summary
+  function findMapehComponentRecordKey(bundleId, componentKey) {
+    const targetSubject = getMapehComponentSubject(componentKey);
+    const keys = loadIndex().map(item => text(item && item.key).trim()).filter(Boolean);
+    for (const key of keys) {
+      try {
+        const payload = JSON.parse(localStorage.getItem(key) || 'null');
+        const h = payload && payload.recordHeader;
+        if (!h) continue;
+        if (text(h.mapehBundleId).trim() === text(bundleId).trim() && (text(h.mapehComponent).trim() === componentKey || text(h.subject).trim() === targetSubject)) return key;
+      } catch (_) {}
+    }
+    const legacyKey = `classrecord-sy::${slugify(state.recordHeader.classId || state.classId)}::${slugify(state.recordHeader.schoolYear)}::${slugify(targetSubject)}`;
+    try { if (localStorage.getItem(legacyKey)) return legacyKey; } catch (_) {}
+    return '';
+  }
+  function makeMapehComponentSnapshot(componentKey, baseHeader) {
+    const h = Object.assign(defaultRecordHeader(), clone(baseHeader || state.recordHeader || {}));
+    h.recordId = '';
+    h.subjectGroup = 'EPP / TLE / MAPEH';
+    h.subject = getMapehComponentSubject(componentKey);
+    h.subjectKey = slugify(h.subject);
+    h.mapehMode = 'component';
+    h.mapehComponent = componentKey;
+    h.mapehBundleId = h.mapehBundleId || makeMapehBundleId(h);
+    h.mapehReportSubject = 'MAPEH';
+    const prevHeader = state.recordHeader, prevSetup = state.setupProfile;
+    state.recordHeader = h;
+    state.setupProfile = resolvePolicy();
+    const setup = clone(state.setupProfile);
+    const payload = { schemaVersion: FORM_VERSION, roster: clone(state.roster), recordHeader: clone(h), setupProfile: setup, finalSummary: defaultFinalSummary(), attendance: defaultAttendance() };
+    TERMS.forEach(k => {
+      const t = defaultTerm(k);
+      t.termLabel = getTermLabel(k, h.gradeLevel, h.schoolYear);
+      t.applicableTable = setup.resultTableResolved;
+      t.gradingMode = setup.gradingModeResolved;
+      t.numericMode = setup.transitionRuleResolved.numericMode || 'none';
+      t.assessmentConfig = Object.assign({ wwCount: 0, ptCount: 0, stCount: 0, hasTE: false, qaCount: 0 }, clone(setup.assessmentCounts));
+      t.learners = state.roster.map(makeLearnerRow);
+      payload[k] = t;
+    });
+    state.recordHeader = prevHeader;
+    state.setupProfile = prevSetup;
+    return payload;
+  }
+  function ensureMapehComponentRecords(bundleId, options = {}) {
+    if (!bundleId || !shouldShowMapehUi()) return { created: [], existing: [] };
+    const created = [], existing = [];
+    MAPEH_COMPONENTS.forEach(meta => {
+      const found = findMapehComponentRecordKey(bundleId, meta.key);
+      if (found) { existing.push(meta.key); return; }
+      const payload = makeMapehComponentSnapshot(meta.key, Object.assign({}, state.recordHeader, options.header || {}, { mapehBundleId: bundleId }));
+      const oldHeader = state.recordHeader;
+      state.recordHeader = payload.recordHeader;
+      const key = storageKey();
+      payload.recordHeader.recordId = key;
+      localStorage.setItem(key, JSON.stringify(payload));
+      saveIndex(key, '');
+      state.recordHeader = oldHeader;
+      created.push(meta.key);
+    });
+    return { created, existing };
+  }
+  function loadMapehComponentRecords(bundleId) {
+    const out = {};
+    MAPEH_COMPONENTS.forEach(meta => {
+      const key = findMapehComponentRecordKey(bundleId, meta.key);
+      if (!key) { out[meta.key] = null; return; }
+      try { out[meta.key] = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { out[meta.key] = null; }
+    });
+    return out;
+  }
+  function componentRowForLearner(record, termKey, learner) {
+    const term = record && record[termKey];
+    const rows = term && Array.isArray(term.learners) ? term.learners : [];
+    const ident = mapLearnerIdentity(learner);
+    return rows.find(r => text(r && r.learnerId).trim() && text(r.learnerId).trim() === ident.id) || rows.find(r => mapLearnerIdentity(r).fallback === ident.fallback) || null;
+  }
+  function computeMapehConsolidatedSummary(componentRecords) {
+    const visibleTerms = getVisibleTerms();
+    const missingComponents = MAPEH_COMPONENTS.filter(meta => !componentRecords[meta.key]).map(meta => meta.label);
+    const rows = state.roster.map(learner => {
+      const id = text(learner.id || learner.name);
+      const termGrades = {}, termBreakdown = {}, incompleteTerms = [];
+      visibleTerms.forEach(termKey => {
+        const vals = [];
+        const breakdown = {};
+        MAPEH_COMPONENTS.forEach(meta => {
+          const row = componentRowForLearner(componentRecords[meta.key], termKey, learner);
+          const grade = row && row.computed ? num(row.computed.finalDisplayedNumeric != null ? row.computed.finalDisplayedNumeric : row.computed.termGrade) : null;
+          breakdown[meta.key] = grade;
+          if (grade != null) vals.push(grade);
+        });
+        termBreakdown[termKey] = breakdown;
+        if (vals.length === MAPEH_COMPONENTS.length) termGrades[termKey] = roundWhole(vals.reduce((a,b)=>a+b,0) / vals.length);
+        else { termGrades[termKey] = null; incompleteTerms.push(termKey); }
+      });
+      const complete = visibleTerms.every(k => num(termGrades[k]) != null);
+      const finalGrade = complete && visibleTerms.length ? roundWhole(visibleTerms.map(k => num(termGrades[k])).reduce((a,b)=>a+b,0) / visibleTerms.length) : null;
+      const desc = finalGrade == null ? null : numericDescriptor(finalGrade, (state.setupProfile && state.setupProfile.resultTableResolved) || 'table11');
+      return { learnerId: id, name: text(learner.name), sex: normalizeSex(learner.sex), termGrades, termBreakdown, finalGrade, finalDisplayedNumeric: finalGrade, descriptorCode: desc ? desc.descriptorCode || '' : '', descriptorLabel: desc ? desc.descriptorLabel || '' : '', remarks: finalGrade == null ? 'Incomplete' : (finalGrade >= PASSING_GRADE ? 'Passed' : 'Failed'), incompleteTerms };
+    });
+    const nums = rows.map(r => num(r.finalGrade)).filter(v => v != null);
+    return { visibleTerms, missingComponents, learners: rows, classSummary: { classAverage: nums.length ? round2(nums.reduce((a,b)=>a+b,0)/nums.length) : null, passingCount: rows.filter(r => num(r.finalGrade) != null && num(r.finalGrade) >= PASSING_GRADE).length, nonPassingCount: rows.filter(r => num(r.finalGrade) != null && num(r.finalGrade) < PASSING_GRADE).length } };
+  }
+  function selectedMapehSummaryLearner(summary) {
+    const rows = summary && summary.learners || [];
+    if (!rows.length) return null;
+    if (!state.mapehSummarySelectedLearnerId || !rows.some(r => text(r.learnerId) === text(state.mapehSummarySelectedLearnerId))) state.mapehSummarySelectedLearnerId = text(rows[0].learnerId);
+    return rows.find(r => text(r.learnerId) === text(state.mapehSummarySelectedLearnerId)) || rows[0];
+  }
+  function renderMapehConsolidatedSummary(summary) {
+    if (!dom.panels || !dom.panels.final) return;
+    const panel = dom.panels.final;
+    const visibleTerms = summary.visibleTerms || [];
+    const selected = selectedMapehSummaryLearner(summary);
+    const warning = summary.missingComponents && summary.missingComponents.length ? `<div class="ctm-cr-disclaimer warning">MAPEH Summary incomplete: missing ${esc(summary.missingComponents.join(', '))} record(s).</div>` : '';
+    const headTerms = visibleTerms.map(k => `<th>${esc(getSummaryTermColumnLabel(k))}</th>`).join('');
+    const body = (summary.learners || []).map((r, idx) => `<tr data-mapeh-summary-learner="${esc(r.learnerId)}" aria-selected="${text(r.learnerId)===text(state.mapehSummarySelectedLearnerId) ? 'true' : 'false'}"><td>${idx+1}</td><td>${esc(r.name)}</td><td>${esc(r.sex)}</td>${visibleTerms.map(k => `<td>${r.termGrades[k] == null ? '—' : esc(r.termGrades[k])}</td>`).join('')}<td>${r.finalGrade == null ? '—' : esc(r.finalGrade)}</td><td>${esc(r.remarks)}</td></tr>`).join('') || `<tr><td colspan="${4+visibleTerms.length}">No learners found.</td></tr>`;
+    const details = selected ? visibleTerms.map(k => {
+      const bits = MAPEH_COMPONENTS.map(meta => `${meta.label}: ${selected.termBreakdown[k] && selected.termBreakdown[k][meta.key] != null ? selected.termBreakdown[k][meta.key] : '—'}`).join('<br>');
+      return `<div class="ctm-cr-card"><div class="ctm-cr-mini-label">${esc(getTermLabel(k))}</div><div class="ctm-cr-strong">${bits}<br>MAPEH Grade: ${selected.termGrades[k] == null ? 'Incomplete' : selected.termGrades[k]}</div></div>`;
+    }).join('') : '';
+    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warning}<div class="ctm-cr-disclaimer">Consolidated MAPEH grades are rounded averages of complete Music, Arts, Physical Education, and Health component grades. Missing component grades are not treated as zero.</div><div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH consolidated average</div></div></div>${selected ? `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div><div class="ctm-cr-grid ctm-cr-grid-4">${details}<div class="ctm-cr-card"><div class="ctm-cr-mini-label">Final MAPEH Grade</div><div class="ctm-cr-strong">${selected.finalGrade == null ? '—' : selected.finalGrade}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Remarks</div><div class="ctm-cr-strong">${esc(selected.remarks)}</div></div></div>` : ''}`;
+    panel.querySelectorAll('[data-mapeh-summary-learner]').forEach(row => row.addEventListener('click', () => { state.mapehSummarySelectedLearnerId = row.getAttribute('data-mapeh-summary-learner') || ''; renderMapehConsolidatedSummary(summary); }));
+  }
+  function renderMapehSummaryIfNeeded() {
+    if (!state.isMapehSummaryView) return false;
+    const bundleId = state.recordHeader.mapehBundleId || makeMapehBundleId(state.recordHeader);
+    const summary = computeMapehConsolidatedSummary(loadMapehComponentRecords(bundleId));
+    renderMapehConsolidatedSummary(summary);
+    return true;
+  }
+  function ensureMapehComponentSwitcherUi() {
+    if (!dom.modal) return;
+    let bar = $id('crMapehComponentBar');
+    const should = shouldShowMapehUi();
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'crMapehComponentBar';
+      bar.className = 'ctm-cr-mapeh-bar';
+      const tabs = dom.modal.querySelector('.ctm-cr-tabs');
+      if (tabs && tabs.parentNode) tabs.parentNode.insertBefore(bar, tabs.nextSibling);
+      if (!$id('ctm-cr-mapeh-style')) {
+        const st = document.createElement('style');
+        st.id = 'ctm-cr-mapeh-style';
+        st.textContent = '#classRecordModal .ctm-cr-mapeh-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0}#classRecordModal .ctm-cr-mapeh-chip{border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;border-radius:999px;padding:.38rem .72rem;font-weight:700;font-size:.82rem;cursor:pointer}#classRecordModal .ctm-cr-mapeh-chip.active{background:#4f46e5;color:#fff;border-color:#4f46e5}#classRecordModal .ctm-cr-mapeh-chip.summary{background:#ecfdf5;color:#047857;border-color:#a7f3d0}#classRecordModal .ctm-cr-mapeh-chip.summary.active{background:#059669;color:#fff}#classRecordModal .ctm-cr-disclaimer.warning{background:#fffbeb;border-color:#fde68a;color:#92400e}';
+        document.head.appendChild(st);
+      }
+    }
+    bar.style.display = should ? '' : 'none';
+    if (!should) return;
+    const active = state.isMapehSummaryView ? MAPEH_SUMMARY_KEY : text(state.recordHeader.mapehComponent || normalizeMapehComponent(state.recordHeader.subject) || 'music');
+    bar.innerHTML = MAPEH_COMPONENTS.map(meta => `<button type="button" class="ctm-cr-mapeh-chip ${active===meta.key?'active':''}" data-mapeh-switch="${meta.key}">${esc(meta.shortLabel || meta.label)}</button>`).join('') + `<button type="button" class="ctm-cr-mapeh-chip summary ${active===MAPEH_SUMMARY_KEY?'active':''}" data-mapeh-switch="${MAPEH_SUMMARY_KEY}">Summary</button>`;
+    bar.querySelectorAll('[data-mapeh-switch]').forEach(btn => btn.addEventListener('click', () => switchMapehComponent(btn.getAttribute('data-mapeh-switch'))));
+  }
+  function applyMapehSummaryActionLocks() {
+    const readonly = !!state.isMapehSummaryView;
+    ['crBtnSave','crBtnDelete','crBtnImportCsv','crBtnExportCsv'].forEach(id => {
+      const el = $id(id);
+      if (!el) return;
+      if (readonly) {
+        el.disabled = true;
+        el.title = 'MAPEH Summary is read-only. Switch to Music, Arts, PE, or Health to edit/export a component record.';
+      } else if (el.title && /MAPEH Summary is read-only/.test(el.title)) {
+        el.disabled = false;
+        el.title = '';
+      }
+    });
+  }
+  function switchMapehComponent(componentKeyOrSummary) {
+    if (!shouldShowMapehUi()) return;
+    if (!state.isMapehSummaryView) flushAutoPersist();
+    const bundleId = state.recordHeader.mapehBundleId || makeMapehBundleId(state.recordHeader);
+    ensureMapehComponentRecords(bundleId, { header: state.recordHeader });
+    if (componentKeyOrSummary === MAPEH_SUMMARY_KEY) {
+      state.mapehVirtualBaseHeader = clone(state.recordHeader);
+      state.isMapehSummaryView = true;
+      Object.assign(state.recordHeader, { recordId: '', subject: 'MAPEH', subjectKey: 'mapeh', mapehMode: 'consolidated', mapehComponent: '', mapehBundleId: bundleId, mapehReportSubject: 'MAPEH' });
+      state.activeTab = 'final';
+      render();
+      switchTab('final');
+      return;
+    }
+    const meta = getMapehComponentMeta(componentKeyOrSummary) || MAPEH_COMPONENTS[0];
+    const key = findMapehComponentRecordKey(bundleId, meta.key);
+    if (key) {
+      const payload = JSON.parse(localStorage.getItem(key) || '{}');
+      applySnapshot(payload);
+      loadFromHost();
+      normalizeMapehHeader(state.recordHeader);
+      recompute();
+      render();
+      switchTab(state.activeTab === 'final' ? 'term1' : state.activeTab);
+    }
+  }
+  function render() { cacheDom(); normalizeMapehHeader(state.recordHeader); updateHeaderFields(); renderPolicy(); applyTermVisibility(); ensureMapehComponentSwitcherUi(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); if (!renderMapehSummaryIfNeeded()) renderFinal(); renderAttendance(); renderRecordPicker(); updateSaveEditButton(); setStatus(); applyMapehSummaryActionLocks(); }
+  function recompute() { state.recordHeader.keyStage = getKeyStage(state.recordHeader.gradeLevel); normalizeMapehHeader(state.recordHeader); state.recordHeader.subjectGroup = coerceSubjectGroupForContext(state.recordHeader.subjectGroup, state.recordHeader.gradeLevel, state.recordHeader.schoolYear); if (dom.headerInputs && dom.headerInputs.subjectGroup && text(dom.headerInputs.subjectGroup.value).trim() !== text(state.recordHeader.subjectGroup).trim()) dom.headerInputs.subjectGroup.value = state.recordHeader.subjectGroup || ''; state.setupProfile = resolvePolicy(); hydrateTerms(); recomputeFinal(); buildAttendanceRows(); }
   function resetDraft(keepContext) { const old = clone(state.recordHeader), oldRoster = clone(state.roster); initDefaults(); state.isTransientDraft = true; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = keepContext ? oldRoster : []; state.roster = clone(state.savedRoster); Object.assign(state.recordHeader, { classId: state.classId, className: state.className, section: keepContext ? (old.section || '') : '', schoolName: keepContext ? old.schoolName : '', schoolYear: keepContext ? old.schoolYear : '', gradeLevel: keepContext ? old.gradeLevel : '', teacherName: keepContext ? old.teacherName : '', subjectGroup: keepContext ? old.subjectGroup : '', subject: keepContext ? old.subject : '', schoolId: keepContext ? old.schoolId : '' }); loadFromHost(); recompute(); render(); }
 
   function resetDraftForNewRecord() { const shared = readSharedHeaderSnapshot(); initDefaults(); state.isTransientDraft = true; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = []; state.roster = []; loadFromHost(); applySharedHeaderData(shared, { forceEmptyOnly: false, rerender: false }); clearClassScopedHeaderFields(); recompute(); render(); }
@@ -4130,6 +4400,7 @@ function renderFinal() {
 
   function csvEscape(v) { v = text(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function exportCsv() {
+    if (state.isMapehSummaryView || (state.recordHeader && state.recordHeader.mapehMode === 'consolidated')) { flash('MAPEH Summary is read-only. Export each MAPEH component CSV separately.', 'warning'); return; }
     const lines = [];
     lines.push(['TYPE','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'].join(','));
     lines.push(['META','schemaVersion',FORM_VERSION].map(csvEscape).join(','));
@@ -4268,6 +4539,7 @@ function importCsvText(csvText) {
   loadFromHost();
   state.recordHeader = Object.assign(state.recordHeader, imported.header);
   state.recordHeader.subjectKey = slugify(state.recordHeader.subject || '');
+  if (isMapehEligibleGrade(state.recordHeader.gradeLevel) && isMapehBaseSubject(state.recordHeader.subject)) { if (!state.recordHeader.subjectGroup) state.recordHeader.subjectGroup = 'EPP / TLE / MAPEH'; normalizeMapehHeader(state.recordHeader); }
   state.setupProfile = resolvePolicy();
   TERMS.forEach(key => {
     const fresh = defaultTerm(key), importedTerm = imported.terms[key], importedMap = termRowsByKey[key];
@@ -4299,7 +4571,7 @@ function importCsvText(csvText) {
 }
   function promptImportCsv() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,text/csv'; input.addEventListener('change', () => { const file = input.files && input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { importCsvText(String(reader.result || '')); } catch (err) { flash(err && err.message ? err.message : 'Unable to import CSV.', 'error'); } }; reader.readAsText(file); }); input.click(); }
 
-  function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; markHeaderSettingsDirty(); state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : (k === 'g12Sy2026System' ? normalizeG12Sy2026System(el.value) : (k === 'g12DescriptorSource' ? normalizeG12DescriptorSource(el.value) : (k === 'modifiedTerm' ? normalizeModifiedTerm(el.value) : el.value))); if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'gradeLevel' || k === 'schoolYear' || k === 'g12Sy2026System' || k === 'g12DescriptorSource' || k === 'modifiedTerm') {
+  function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; markHeaderSettingsDirty(); state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : (k === 'g12Sy2026System' ? normalizeG12Sy2026System(el.value) : (k === 'g12DescriptorSource' ? normalizeG12DescriptorSource(el.value) : (k === 'modifiedTerm' ? normalizeModifiedTerm(el.value) : el.value))); if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'subject' || k === 'subjectGroup' || k === 'gradeLevel' || k === 'schoolYear' || k === 'section') normalizeMapehHeader(state.recordHeader); if (k === 'gradeLevel' || k === 'schoolYear' || k === 'g12Sy2026System' || k === 'g12DescriptorSource' || k === 'modifiedTerm') {
       if (isLegacyGrade12Do8(state.recordHeader.gradeLevel, state.recordHeader.schoolYear)) {
         state.recordHeader.g12Sy2026System = normalizeG12Sy2026System(state.recordHeader.g12Sy2026System);
         state.recordHeader.g12DescriptorSource = normalizeG12DescriptorSource(state.recordHeader.g12DescriptorSource);
