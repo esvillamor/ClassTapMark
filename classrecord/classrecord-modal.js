@@ -1,3 +1,6 @@
+/* v18.51 MAPEH bundle delete fix: Delete now works from component or Summary view and removes all indexed paired-component records safely. */
+/* v18.50 MAPEH paired-component records: MAPEH is paired as Music and Arts plus PE and Health; existing four-component records are not deleted. */
+/* v18.49 Initial Grade / Term Grade pill display: numeric learner achievement cards now show Initial Grade whenever available plus Term Grade, without changing computation, saved data, CSV, or shared-header compatibility. */
 /* v18.48 MAPEH component bundle + consolidated summary: Grades 4-10 MAPEH can be encoded as Music/Arts/PE/Health component records with a virtual read-only consolidated summary; data/CSV/shared-header compatibility retained. */
 /* v18.47 mobile-safe HPS encoding: Shared HPS inputs now use whole-number encoding and recompute/save without full panel render to avoid mobile keyboard jumps. */
 /* v18.46 mobile-safe score blur/change: learner-card score edits sanitize/recompute/save without full render to avoid mobile keyboard focus flicker. */
@@ -24,7 +27,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.48-mapeh-component-bundle'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.51-mapeh-delete-fix'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -40,8 +43,12 @@
   const HIDE_SUMMARY_DESC_RESPONSE_FOR_G12_THREE_TERM = true;
   const PASSING_GRADE = 75;
   const TERMS = ['term1', 'term2', 'term3', 'term4'];
-  // v18.48 MAPEH component bundle + consolidated summary
+  // v18.50 MAPEH paired component bundle + consolidated summary
   const MAPEH_COMPONENTS = [
+    { key: 'musicArts', legacyKeys: ['music', 'arts'], label: 'Music and Arts', shortLabel: 'Music & Arts', subject: 'MAPEH - Music and Arts' },
+    { key: 'peHealth', legacyKeys: ['pe', 'health'], label: 'Physical Education and Health', shortLabel: 'PE & Health', subject: 'MAPEH - Physical Education and Health' }
+  ];
+  const MAPEH_LEGACY_COMPONENTS = [
     { key: 'music', label: 'Music', shortLabel: 'Music', subject: 'MAPEH - Music' },
     { key: 'arts', label: 'Arts', shortLabel: 'Arts', subject: 'MAPEH - Arts' },
     { key: 'pe', label: 'Physical Education', shortLabel: 'PE', subject: 'MAPEH - Physical Education' },
@@ -232,15 +239,14 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
   function isMapehEligibleGrade(gradeLevel) { return /^Grade\s+(?:4|5|6|7|8|9|10)$/.test(text(gradeLevel).trim()); }
   function isMapehBaseSubject(value) {
     const raw = text(value).trim();
-    const s = raw.toLowerCase();
-    return s === 'mapeh' || s === 'music' || s === 'arts' || s === 'physical education' || s === 'pe' || s === 'p.e.' || s === 'health' || /^mapeh\s*-/i.test(raw);
+    const s = raw.toLowerCase().replace(/&/g, ' and ');
+    return s === 'mapeh' || s === 'music' || s === 'arts' || s === 'music and arts' || s === 'physical education' || s === 'pe' || s === 'p.e.' || s === 'health' || s === 'pe and health' || s === 'physical education and health' || /^mapeh\s*-/i.test(raw);
   }
   function normalizeMapehComponent(value) {
-    const s = text(value).trim().toLowerCase();
-    if (s.includes('music')) return 'music';
-    if (s.includes('arts')) return 'arts';
-    if (s.includes('physical') || s === 'pe' || s.includes('p.e')) return 'pe';
-    if (s.includes('health')) return 'health';
+    const s = text(value).trim().toLowerCase().replace(/&/g, ' and ');
+    if (!s) return '';
+    if (s.includes('music') || s.includes('arts')) return 'musicArts';
+    if (s.includes('physical') || s === 'pe' || s.includes('p.e') || s.includes('health')) return 'peHealth';
     return '';
   }
   function getMapehComponentMeta(componentKey) { return MAPEH_COMPONENTS.find(c => c.key === componentKey) || null; }
@@ -278,8 +284,8 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
       header.subjectKey = slugify(header.subject);
     } else if (text(header.subject).trim().toLowerCase() === 'mapeh') {
       header.mapehMode = 'component';
-      header.mapehComponent = 'music';
-      header.subject = getMapehComponentSubject('music');
+      header.mapehComponent = 'musicArts';
+      header.subject = getMapehComponentSubject('musicArts');
       header.subjectKey = slugify(header.subject);
     }
     return header;
@@ -3435,6 +3441,40 @@ function termStats(termKey) {
     return raw;
   }
 
+  function resultNumericDisplayValue(value, options = {}) {
+    const fallback = text(options.fallbackValue != null ? options.fallbackValue : '—').trim() || '—';
+    if (value == null || value === '') return fallback;
+    if (typeof value === 'number') return fmt(options.reportedNumeric ? summaryReportedNumeric(value, options.floor == null ? 60 : options.floor) : value);
+    const raw = text(value).trim();
+    if (!raw) return fallback;
+    if (/^-?\d+(?:\.\d+)?$/.test(raw)) {
+      const n = Number(raw);
+      return fmt(options.reportedNumeric ? summaryReportedNumeric(n, options.floor == null ? 60 : options.floor) : n);
+    }
+    return raw;
+  }
+
+  function isNumericLikeGradeValue(value) {
+    if (value == null || value === '') return false;
+    if (typeof value === 'number') return Number.isFinite(value);
+    return /^-?\d+(?:\.\d+)?$/.test(text(value).trim());
+  }
+
+  function renderGradePill(label, value, className = '', options = {}) {
+    if (!isNumericLikeGradeValue(value)) return '';
+    const display = resultNumericDisplayValue(value, Object.assign({ fallbackValue: '' }, options));
+    if (!display) return '';
+    const cls = ['ctm-cr-achievement-chip', 'ctm-cr-grade-pill', className].filter(Boolean).join(' ');
+    return `<span class="${esc(cls)}"><span class="ctm-cr-achievement-chip-label">${esc(label)}</span><span class="ctm-cr-achievement-chip-value">${esc(display)}</span></span>`;
+  }
+
+  function numericTermGradeValue(result) {
+    if (!result) return null;
+    if (result.termGrade != null && result.termGrade !== '') return result.termGrade;
+    if (result.finalDisplayedNumeric != null && result.finalDisplayedNumeric !== '') return result.finalDisplayedNumeric;
+    return null;
+  }
+
   function summaryDescriptorText(result) {
     return text(result && result.descriptorLabel).trim()
       || text(result && result.descriptorCode).trim()
@@ -3473,15 +3513,20 @@ function termStats(termKey) {
     const wrapperClass = compact ? 'ctm-cr-achievement-wrap compact' : 'ctm-cr-achievement-wrap';
     const meterClass = compact ? 'ctm-cr-achievement-meter compact' : 'ctm-cr-achievement-meter';
     const ariaLabel = text(options.ariaLabel || `${title}: ${displayName}`).trim() || title;
-    const gradeText = compact ? '' : resultGradeDisplayText(result, { fallbackValue: '' });
+    const termGradeValue = numericTermGradeValue(result);
     const remarksText = compact ? '' : achievementMeterRemarksText(result, tableKey, activeCode);
-    const showGradeChip = !!gradeText && gradeText !== '—' && gradeText !== displayName;
     const chipBits = [];
     const activeLevelClass = currentStep ? (currentStep.levelClass || 'level-neutral') : 'level-neutral';
     const achievementChipClass = `ctm-cr-achievement-chip ctm-cr-achievement-chip-colored ${activeLevelClass}`;
-    if (showGradeChip) chipBits.push(`<span class="${esc(achievementChipClass)}"><span class="ctm-cr-achievement-chip-label">Grade</span><span class="ctm-cr-achievement-chip-value">${esc(gradeText)}</span></span>`);
+    if (!compact) {
+      const showInitialGrade = !!(result && result.transmutedGrade != null && result.transmutedGrade !== '' && result.initialGrade != null && result.initialGrade !== '');
+      const initialChip = showInitialGrade ? renderGradePill('Initial Grade', result && result.initialGrade, 'ctm-cr-grade-pill-initial') : '';
+      if (initialChip) chipBits.push(initialChip);
+      const termChip = renderGradePill('Term Grade', termGradeValue, `ctm-cr-grade-pill-term ctm-cr-achievement-chip-colored ${activeLevelClass}`);
+      if (termChip) chipBits.push(termChip);
+    }
     if (remarksText) chipBits.push(`<span class="${esc(achievementChipClass)}"><span class="ctm-cr-achievement-chip-label">Remarks</span><span class="ctm-cr-achievement-chip-value">${esc(remarksText)}</span></span>`);
-    const chipsHtml = chipBits.length ? `<div class="ctm-cr-achievement-chip-row">${chipBits.join('')}</div>` : '';
+    const chipsHtml = chipBits.length ? `<div class="ctm-cr-achievement-chip-row ctm-cr-grade-chip-row">${chipBits.join('')}</div>` : '';
     const stepsHtml = steps.map(step => {
       const fullLabel = step.localizedLabel ? `${step.label} (${step.localizedLabel})` : step.label;
       const stepRangeText = compact ? '' : achievementMeterRangeText({ descriptorCode: step.code }, tableKey, step.code);
@@ -4258,6 +4303,31 @@ function renderFinal() {
     });
     return out;
   }
+  function getMapehBundleRecordKeys(bundleId) {
+    const id = text(bundleId).trim();
+    if (!id) return [];
+    const found = new Set();
+    loadIndex().forEach(item => {
+      const key = text((item && item.key) || item).trim();
+      if (!key) return;
+      try {
+        const payload = JSON.parse(localStorage.getItem(key) || 'null');
+        const h = payload && payload.recordHeader || {};
+        if (text(h.mapehBundleId).trim() === id) found.add(key);
+      } catch (_) {}
+    });
+    MAPEH_COMPONENTS.forEach(meta => {
+      const key = findMapehComponentRecordKey(id, meta.key);
+      if (key) found.add(key);
+    });
+    return Array.from(found);
+  }
+  function deleteMapehBundleRecords(bundleId) {
+    const keys = getMapehBundleRecordKeys(bundleId);
+    keys.forEach(key => { try { localStorage.removeItem(key); } catch (_) {} });
+    try { localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), keys))); } catch (_) {}
+    return keys.length;
+  }
   function componentRowForLearner(record, termKey, learner) {
     const term = record && record[termKey];
     const rows = term && Array.isArray(term.learners) ? term.learners : [];
@@ -4309,7 +4379,7 @@ function renderFinal() {
       const bits = MAPEH_COMPONENTS.map(meta => `${meta.label}: ${selected.termBreakdown[k] && selected.termBreakdown[k][meta.key] != null ? selected.termBreakdown[k][meta.key] : '—'}`).join('<br>');
       return `<div class="ctm-cr-card"><div class="ctm-cr-mini-label">${esc(getTermLabel(k))}</div><div class="ctm-cr-strong">${bits}<br>MAPEH Grade: ${selected.termGrades[k] == null ? 'Incomplete' : selected.termGrades[k]}</div></div>`;
     }).join('') : '';
-    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warning}<div class="ctm-cr-disclaimer">Consolidated MAPEH grades are rounded averages of complete Music, Arts, Physical Education, and Health component grades. Missing component grades are not treated as zero.</div><div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH consolidated average</div></div></div>${selected ? `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div><div class="ctm-cr-grid ctm-cr-grid-4">${details}<div class="ctm-cr-card"><div class="ctm-cr-mini-label">Final MAPEH Grade</div><div class="ctm-cr-strong">${selected.finalGrade == null ? '—' : selected.finalGrade}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Remarks</div><div class="ctm-cr-strong">${esc(selected.remarks)}</div></div></div>` : ''}`;
+    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warning}<div class="ctm-cr-disclaimer">Consolidated MAPEH grades are rounded averages of the two paired component records: Music and Arts, and Physical Education and Health. Missing paired component grades are not treated as zero.</div><div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH paired average</div></div></div>${selected ? `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div><div class="ctm-cr-grid ctm-cr-grid-4">${details}<div class="ctm-cr-card"><div class="ctm-cr-mini-label">Final MAPEH Grade</div><div class="ctm-cr-strong">${selected.finalGrade == null ? '—' : selected.finalGrade}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Remarks</div><div class="ctm-cr-strong">${esc(selected.remarks)}</div></div></div>` : ''}`;
     panel.querySelectorAll('[data-mapeh-summary-learner]').forEach(row => row.addEventListener('click', () => { state.mapehSummarySelectedLearnerId = row.getAttribute('data-mapeh-summary-learner') || ''; renderMapehConsolidatedSummary(summary); }));
   }
   function renderMapehSummaryIfNeeded() {
@@ -4338,23 +4408,33 @@ function renderFinal() {
     }
     bar.style.display = should ? '' : 'none';
     if (!should) return;
-    const active = state.isMapehSummaryView ? MAPEH_SUMMARY_KEY : text(state.recordHeader.mapehComponent || normalizeMapehComponent(state.recordHeader.subject) || 'music');
+    const active = state.isMapehSummaryView ? MAPEH_SUMMARY_KEY : text(state.recordHeader.mapehComponent || normalizeMapehComponent(state.recordHeader.subject) || 'musicArts');
     bar.innerHTML = MAPEH_COMPONENTS.map(meta => `<button type="button" class="ctm-cr-mapeh-chip ${active===meta.key?'active':''}" data-mapeh-switch="${meta.key}">${esc(meta.shortLabel || meta.label)}</button>`).join('') + `<button type="button" class="ctm-cr-mapeh-chip summary ${active===MAPEH_SUMMARY_KEY?'active':''}" data-mapeh-switch="${MAPEH_SUMMARY_KEY}">Summary</button>`;
     bar.querySelectorAll('[data-mapeh-switch]').forEach(btn => btn.addEventListener('click', () => switchMapehComponent(btn.getAttribute('data-mapeh-switch'))));
   }
   function applyMapehSummaryActionLocks() {
     const readonly = !!state.isMapehSummaryView;
-    ['crBtnSave','crBtnDelete','crBtnImportCsv','crBtnExportCsv'].forEach(id => {
+    ['crBtnSave','crBtnImportCsv','crBtnExportCsv'].forEach(id => {
       const el = $id(id);
       if (!el) return;
       if (readonly) {
         el.disabled = true;
-        el.title = 'MAPEH Summary is read-only. Switch to Music, Arts, PE, or Health to edit/export a component record.';
+        el.title = 'MAPEH Summary is read-only. Switch to Music and Arts or PE and Health to edit/export a paired component record.';
       } else if (el.title && /MAPEH Summary is read-only/.test(el.title)) {
         el.disabled = false;
         el.title = '';
       }
     });
+    const del = $id('crBtnDelete');
+    if (del) {
+      if (readonly && text(state.recordHeader && state.recordHeader.mapehBundleId).trim()) {
+        del.disabled = false;
+        del.title = 'Delete the entire MAPEH bundle.';
+      } else if (del.title === 'Delete the entire MAPEH bundle.') {
+        del.disabled = false;
+        del.title = '';
+      }
+    }
   }
   function switchMapehComponent(componentKeyOrSummary) {
     if (!shouldShowMapehUi()) return;
@@ -4597,7 +4677,46 @@ function importCsvText(csvText) {
     } catch (_) {
       flash('Unable to load selected record.', 'error');
     }
-  }); $id('crBtnSave').addEventListener('click', () => { if (hasSavedClassRecordLoaded() && !state.headerEditMode && !state.headerDirty) { enableSavedHeaderEditing(); return; } persist(true, { force: true }); }); const cancelEditBtn = $id('crBtnCancelEdit'); if (cancelEditBtn) cancelEditBtn.addEventListener('click', () => cancelSavedHeaderEditing()); $id('crBtnNew').addEventListener('click', () => triggerNewRecordReset({ showFlash: true })); $id('crBtnDelete').addEventListener('click', () => { const key = state.recordHeader.recordId; if (!key) { triggerNewRecordReset({ showFlash: false }); return; } if (!window.confirm('Delete this saved school-year Class Record?')) return; localStorage.removeItem(key); localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), key))); triggerNewRecordReset({ showFlash: false }); flash('Saved school-year Class Record deleted. A fresh blank draft is ready.', 'success'); }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
+  }); $id('crBtnSave').addEventListener('click', () => { if (hasSavedClassRecordLoaded() && !state.headerEditMode && !state.headerDirty) { enableSavedHeaderEditing(); return; } persist(true, { force: true }); }); const cancelEditBtn = $id('crBtnCancelEdit'); if (cancelEditBtn) cancelEditBtn.addEventListener('click', () => cancelSavedHeaderEditing()); $id('crBtnNew').addEventListener('click', () => triggerNewRecordReset({ showFlash: true })); $id('crBtnDelete').addEventListener('click', () => {
+      const currentKey = text(state.recordHeader && state.recordHeader.recordId).trim();
+      const bundleId = text(state.recordHeader && state.recordHeader.mapehBundleId).trim();
+      const isSummaryBundle = !!(state.isMapehSummaryView || text(state.recordHeader && state.recordHeader.mapehMode).trim() === 'consolidated') && !!bundleId;
+      const isComponentBundle = isMapehBundleCandidate(state.recordHeader) && !!bundleId;
+      if (isSummaryBundle) {
+        if (!window.confirm('Delete the entire MAPEH bundle, including Music and Arts and PE and Health records?')) return;
+        const removed = deleteMapehBundleRecords(bundleId);
+        triggerNewRecordReset({ showFlash: false });
+        flash(removed ? 'Entire MAPEH bundle deleted.' : 'No saved MAPEH component records were found for this bundle.', removed ? 'success' : 'warning');
+        return;
+      }
+      if (!currentKey) {
+        triggerNewRecordReset({ showFlash: false });
+        return;
+      }
+      if (isComponentBundle) {
+        const choice = window.prompt('MAPEH Bundle Delete: Deleted pair is auto recreated after save is executed from the other paired components.\n1 = Delete paired components.\n2 = Delete entire MAPEH bundle\n0 = Cancel', '1');
+        if (choice == null || choice === '0' || choice === '') return;
+        if (choice === '1') {
+          localStorage.removeItem(currentKey);
+          localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), currentKey)));
+          triggerNewRecordReset({ showFlash: false });
+          flash('MAPEH paired component deleted.', 'success');
+          return;
+        }
+        if (choice === '2') {
+          const removed = deleteMapehBundleRecords(bundleId);
+          triggerNewRecordReset({ showFlash: false });
+          flash(removed ? 'Entire MAPEH bundle deleted.' : 'No saved MAPEH component records were found for this bundle.', removed ? 'success' : 'warning');
+          return;
+        }
+        return;
+      }
+      if (!window.confirm('Delete this saved school-year Class Record?')) return;
+      localStorage.removeItem(currentKey);
+      localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), currentKey)));
+      triggerNewRecordReset({ showFlash: false });
+      flash('Saved school-year Class Record deleted. A fresh blank draft is ready.', 'success');
+    }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
 
   function hasLoadedHostClass() {
     const loadedId = text(window.currentClassId || '').trim();

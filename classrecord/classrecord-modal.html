@@ -1,3 +1,6 @@
+<!-- v18.51 companion: MAPEH bundle delete fix is in JS; HTML IDs/data hooks unchanged. -->
+<!-- v18.50 MAPEH paired-component companion: JS now uses Music and Arts plus PE and Health paired records while preserving existing HTML IDs/data hooks. -->
+<!-- v18.49 Initial Grade / Term Grade pill display companion: JS shows Initial Grade whenever available plus Term Grade, without data/CSV/shared-header changes. -->
 <!-- v18.46 mobile-safe score blur/change companion: JS avoids full render after score blur/change to prevent mobile keyboard focus flicker. -->
 <!-- v18.45 learner-card score encoding companion: JS adds Grade Sheet-style whole-number learner score typing, HPS clamping, and Enter/arrow movement. -->
 <!-- v18.44 EX share normalization companion: JS now normalizes ST/TE percentage to encoded positive-HPS fields so full scores with ST2 blank can return 100. -->
@@ -866,6 +869,26 @@
 #classRecordModal .ctm-cr-achievement-name{ font-size: .9rem; font-weight: 800; line-height: 1.25; color: #0f172a; }
 #classRecordModal .ctm-cr-achievement-desc{ margin-top: .18rem; font-size: .78rem; line-height: 1.42; color: #475569; }
 #classRecordModal .ctm-cr-achievement-chip-row{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.5rem; }
+#classRecordModal .ctm-cr-grade-chip-row{ align-items:center; }
+#classRecordModal .ctm-cr-grade-pill{
+  font-weight: 800;
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.42);
+}
+#classRecordModal .ctm-cr-grade-pill .ctm-cr-achievement-chip-label,
+#classRecordModal .ctm-cr-grade-pill .ctm-cr-achievement-chip-value{
+  color: inherit !important;
+}
+#classRecordModal .ctm-cr-grade-pill-initial{
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+#classRecordModal .ctm-cr-grade-pill-term{
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+}
 #classRecordModal .ctm-cr-achievement-chip{ display:inline-flex; align-items:center; gap:.35rem; border:1px solid #dbe4f0; background:#f8fafc; border-radius:999px; padding:.24rem .55rem; font-size:.74rem; line-height:1.2; color:#1e293b; }
 #classRecordModal .ctm-cr-achievement-chip-label{ font-weight:700; color:#475569; }
 #classRecordModal .ctm-cr-achievement-chip-value{ font-weight:700; color:#0f172a; }
