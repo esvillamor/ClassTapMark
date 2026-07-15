@@ -5,7 +5,7 @@
   const PASSING_GRADE = 75;
   const STORAGE_PREFIX = 'gradesheet:';
   const LEGACY_STORAGE_PREFIX = 'gradesheet::';
-  const VERSION = 'CTM-GRADESHEET-GROUPED-LEARNER-DROPDOWN-ONE-ROW-NAV-2026-07-11';
+  const VERSION = 'CTM-GRADESHEET-MAPEH-BUNDLE-AWARE-2026-07-15';
   const Q_KEYS = ['q1','q2','q3','q4'];
   const T_TO_Q = {t1:'q1',t2:'q2',t3:'q3'};
   const state = {htmlInjected:false,classId:'',className:'',roster:[],activeTab:'overview',academicStructure:'quarter',showArchived:'active',subjects:[],grades:{},selectedLearnerId:'',selectedSubjectId:'',saveTimer:0};
@@ -103,8 +103,105 @@
   function findClassRecordLearner(rec,l){ const lists=classRecordLearnerRows(rec&&rec.payload||{}), ids=[l&&l.learnerId,l&&l.id,l&&l.lrn].map(text).filter(Boolean); for(const list of lists){ const m=makeLearnerMaps(list); for(const id of ids){ if(m.byId.has(id))return m.byId.get(id); if(m.byLrn.has(id))return m.byLrn.get(id); } if(m.byNameSex.has(learnerMatchKey(l)))return m.byNameSex.get(learnerMatchKey(l)); if(m.byName.has(gsNorm(l&&l.name)))return m.byName.get(gsNorm(l&&l.name)); } return null; }
   function extractCrlGrade(row,term){ if(!row)return null; if(term==='final'){ const fr=row.finalResult||{}; return toWholeGrade(row.finalGrade??row.finalDisplayedNumeric??row.semesterGrade??fr.finalDisplayedNumeric??fr.termGrade); } if(row.termGrades&&row.termGrades[term]!=null&&row.termGrades[term]!=='')return toWholeGrade(row.termGrades[term]); const tr=row.termResults&&row.termResults[term]; if(tr)return toWholeGrade(tr.termGrade??tr.finalDisplayedNumeric??tr.transmutedGrade); const c=row.computed||{}; return toWholeGrade(c.termGrade??c.finalDisplayedNumeric??row.termGrade); }
   function extractLinkedGrade(rec,l,term){ let row=findClassRecordLearner(rec,l), v=extractCrlGrade(row,term); if(v!=null)return v; const p=rec&&rec.payload||{}; if(term!=='final'&&p[term]&&Array.isArray(p[term].learners)){ const m=makeLearnerMaps(p[term].learners); row=m.byId.get(text(l.learnerId))||m.byLrn.get(text(l.learnerId))||m.byNameSex.get(learnerMatchKey(l))||m.byName.get(gsNorm(l.name)); v=extractCrlGrade(row,term); } return v; }
+  // CTM FIX 2026-07-15: Grade Sheet MAPEH bundle awareness.
+  // Class Record v18.50+ saves MAPEH as two paired component records:
+  //   1) Music and Arts, 2) PE and Health.
+  // Older records may still exist as four legacy records: Music, Arts, PE, Health.
+  // The Grade Sheet now links a single "MAPEH" subject to the consolidated paired result
+  // instead of averaging all visible subjects blindly or depending on one component record.
+  const MAPEH_PAIRED_KEYS=['musicArts','peHealth'];
+  const MAPEH_LEGACY_PAIRS={musicArts:['music','arts'],peHealth:['pe','health']};
+  function normalizeMapehSubjectText(v){ return gsNorm(text(v).replace(/&/g,' and ')); }
+  function isMapehBundleSubject(s){
+    const raw=normalizeMapehSubjectText([s&&s.name,s&&s.linkedRecord].filter(Boolean).join(' '));
+    if(!raw) return false;
+    if(raw==='mapeh') return true;
+    if(/\bmapeh\b/.test(raw)&&!/(music|arts|physical|\bpe\b|p e|health)/.test(raw.replace(/mapeh/g,''))) return true;
+    return raw==='mapeh summary'||raw==='mapeh consolidated'||raw==='consolidated mapeh';
+  }
+  function mapehPairedComponentKey(v){
+    const s=normalizeMapehSubjectText(v);
+    if(!s) return '';
+    if(s==='musicarts'||s==='music arts'||/music\s+and\s+arts/.test(s)) return 'musicArts';
+    if(s==='pehealth'||s==='p e health'||/\bpe\s+and\s+health\b/.test(s)||/physical\s+education\s+and\s+health/.test(s)) return 'peHealth';
+    return '';
+  }
+  function mapehLegacyComponentKey(v){
+    const s=normalizeMapehSubjectText(v);
+    const hasMusic=/\bmusic\b/.test(s), hasArts=/\barts?\b/.test(s), hasPe=/\bpe\b|p e|physical\s+education/.test(s), hasHealth=/\bhealth\b/.test(s);
+    if(hasMusic&&!hasArts) return 'music';
+    if(hasArts&&!hasMusic) return 'arts';
+    if(hasPe&&!hasHealth) return 'pe';
+    if(hasHealth&&!hasPe) return 'health';
+    return '';
+  }
+  function classRecordHeaderOf(r){ return (r&&r.header)||(r&&r.payload&&r.payload.recordHeader)||{}; }
+  function isConsolidatedMapehRecord(r){ const h=classRecordHeaderOf(r), subj=normalizeMapehSubjectText(h.subject||h.recordLabel||r&&r.label); return text(h.mapehMode)==='consolidated'||subj==='mapeh'||subj==='mapeh summary'||subj==='consolidated mapeh'; }
+  function collectMapehBundleRecords(s,records){
+    const out={consolidated:null,paired:{},legacy:{},hasAny:false,bundleId:''};
+    const ref=normalizeMapehSubjectText(s&&s.linkedRecord);
+    (records||[]).forEach(r=>{
+      if(!recordMatchesClass(r)) return;
+      const h=classRecordHeaderOf(r);
+      const ids=[r.key,h.recordId,h.recordLabel,h.subject,h.mapehBundleId,r.label].map(normalizeMapehSubjectText).filter(Boolean);
+      if(ref&&ref!=='mapeh'&&!ids.some(x=>x===ref||x.includes(ref)||ref.includes(x))) return;
+      const subj=h.subject||h.recordLabel||r.label;
+      const explicit=text(h.mapehComponent);
+      let pair=MAPEH_PAIRED_KEYS.includes(explicit)?explicit:mapehPairedComponentKey(subj||explicit);
+      const legacy=mapehLegacyComponentKey(subj||explicit);
+      if(isConsolidatedMapehRecord(r)){ out.consolidated=r; out.hasAny=true; out.bundleId=out.bundleId||text(h.mapehBundleId); return; }
+      if(pair){ out.paired[pair]=r; out.hasAny=true; out.bundleId=out.bundleId||text(h.mapehBundleId); return; }
+      if(legacy){ out.legacy[legacy]=r; out.hasAny=true; out.bundleId=out.bundleId||text(h.mapehBundleId); }
+    });
+    return out;
+  }
+  function extractMapehBundleGrade(bundle,l,term){
+    if(bundle&&bundle.consolidated){ const v=extractLinkedGrade(bundle.consolidated,l,term); if(v!=null) return v; }
+    const pairedVals=MAPEH_PAIRED_KEYS.map(k=>bundle&&bundle.paired&&bundle.paired[k]?extractLinkedGrade(bundle.paired[k],l,term):null);
+    if(pairedVals.every(v=>v!=null)) return averageWhole(pairedVals);
+    const legacyPairVals=MAPEH_PAIRED_KEYS.map(pairKey=>{
+      const keys=MAPEH_LEGACY_PAIRS[pairKey]||[];
+      const vals=keys.map(k=>bundle&&bundle.legacy&&bundle.legacy[k]?extractLinkedGrade(bundle.legacy[k],l,term):null);
+      return vals.every(v=>v!=null)?averageWhole(vals):null;
+    });
+    if(legacyPairVals.every(v=>v!=null)) return averageWhole(legacyPairVals);
+    return null;
+  }
   function forceSetGradeState(lid,sid,q,val){ if(!lid||!sid||!q||!Q_KEYS.includes(q))return false; const v=toWholeGrade(val); state.grades[lid]=state.grades[lid]||{}; state.grades[lid][sid]=state.grades[lid][sid]||{}; const old=toWholeGrade(state.grades[lid][sid][q]); if(v==null){ if(Object.prototype.hasOwnProperty.call(state.grades[lid][sid],q)){delete state.grades[lid][sid][q]; return true;} return false;} if(old!==v){state.grades[lid][sid][q]=v; return true;} return false; }
-  function syncLinkedGrades(opts={}){ ensureDataShape(); const linked=state.subjects.filter(s=>s&&s.sourceType==='linked'&&!s.archived&&(!opts.subjectId||s.id===opts.subjectId)); if(!linked.length)return{changed:false,values:0,missingRecords:0}; const records=discoverClassRecords(); let changed=false,values=0,missingRecords=0; linked.forEach(s=>{ const rec=resolveLinkedRecord(s,records); if(!rec){missingRecords++; return;} visiblePeriodsForSubject(s).forEach(p=>{ const term=resolveSourceTerm(s.linkedColumn,p.key); state.roster.forEach(l=>{ const v=extractLinkedGrade(rec,l,term); if(v!=null)values++; if(forceSetGradeState(l.learnerId,s.id,p.key,v))changed=true; }); }); }); if(!opts.silent){ if(values)flash(`Linked grades synced: ${values} value${values===1?'':'s'}`); else if(missingRecords)flash('Linked Class Record not found'); else flash('No linked grades found'); } return{changed,values,missingRecords}; }
+  function syncLinkedGrades(opts={}){
+    ensureDataShape();
+    const linked=state.subjects.filter(s=>s&&s.sourceType==='linked'&&!s.archived&&(!opts.subjectId||s.id===opts.subjectId));
+    if(!linked.length)return{changed:false,values:0,missingRecords:0};
+    const records=discoverClassRecords();
+    let changed=false,values=0,missingRecords=0;
+    linked.forEach(s=>{
+      if(isMapehBundleSubject(s)){
+        const bundle=collectMapehBundleRecords(s,records);
+        if(!bundle.hasAny){missingRecords++; return;}
+        visiblePeriodsForSubject(s).forEach(p=>{
+          const term=resolveSourceTerm(s.linkedColumn,p.key);
+          state.roster.forEach(l=>{
+            const v=extractMapehBundleGrade(bundle,l,term);
+            if(v!=null)values++;
+            if(forceSetGradeState(l.learnerId,s.id,p.key,v))changed=true;
+          });
+        });
+        return;
+      }
+      const rec=resolveLinkedRecord(s,records);
+      if(!rec){missingRecords++; return;}
+      visiblePeriodsForSubject(s).forEach(p=>{
+        const term=resolveSourceTerm(s.linkedColumn,p.key);
+        state.roster.forEach(l=>{
+          const v=extractLinkedGrade(rec,l,term);
+          if(v!=null)values++;
+          if(forceSetGradeState(l.learnerId,s.id,p.key,v))changed=true;
+        });
+      });
+    });
+    if(!opts.silent){ if(values)flash(`Linked grades synced: ${values} value${values===1?'':'s'}`); else if(missingRecords)flash('Linked Class Record not found'); else flash('No linked grades found'); }
+    return{changed,values,missingRecords};
+  }
   function ensureGradeSheetRuntimeStyles(){
     if($id('ctm-gs-runtime-fixes'))return;
     const style=document.createElement('style');
