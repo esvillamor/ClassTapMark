@@ -1,3 +1,4 @@
+/* v18.52 Detailed Computations toggle fix: summary clicks/taps are treated as an interactive control and no longer get swallowed by learner-card swipe handling. */
 /* v18.51 MAPEH bundle delete fix: Delete now works from component or Summary view and removes all indexed paired-component records safely. */
 /* v18.50 MAPEH paired-component records: MAPEH is paired as Music and Arts plus PE and Health; existing four-component records are not deleted. */
 /* v18.49 Initial Grade / Term Grade pill display: numeric learner achievement cards now show Initial Grade whenever available plus Term Grade, without changing computation, saved data, CSV, or shared-header compatibility. */
@@ -27,7 +28,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.51-mapeh-delete-fix'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.52-computation-details-toggle-fix'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -3149,7 +3150,7 @@ function jumpFinalLearner(dir) {
   renderFinal();
 }
 function isSwipeInteractiveTarget(target) {
-  return !!(target && target.closest && target.closest('button, a, input, select, textarea, label, option, [role="button"], [data-nav], [data-term-picker], [data-pick-learner]'));
+  return !!(target && target.closest && target.closest('button, a, input, select, textarea, label, option, summary, details, .ctm-cr-computation-details, [role="button"], [data-nav], [data-term-picker], [data-pick-learner]'));
 }
 function bindSwipeNavigator(card, handlers) {
   if (!card || !handlers || card.__ctmSwipeNavBound) return;
@@ -3539,6 +3540,245 @@ function termStats(termKey) {
     return `<div class="${wrapperClass}"><div class="${meterClass}"><div class="ctm-cr-achievement-head"><span class="ctm-cr-achievement-title">${esc(title)}</span><span class="ctm-cr-achievement-code">${esc(codePill || '—')}</span></div><div class="ctm-cr-achievement-scale" style="--ctm-meter-steps:${Math.max(1, steps.length)};" role="img" aria-label="${esc(ariaLabel)}">${stepsHtml}</div><div class="ctm-cr-achievement-meta"><div class="ctm-cr-achievement-name">${esc(displayName || 'No descriptor yet')}</div>${chipsHtml}${descriptionHtml}${instructionalResponseHtml}</div></div></div>`;
   }
 
+
+
+  // v18.52 UI-only detailed computation breakdown helpers. Do not mutate saved data, CSV schema, localStorage, shared headers, MAPEH bundles, or computed results.
+  function computationFormatNumber(value, digits = 2) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return n.toFixed(digits);
+  }
+  function computationFormatWholeOrNumber(value, digits = 2) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return Number.isInteger(n) ? String(n) : n.toFixed(digits);
+  }
+  function computationFormatPercent(value, digits = 2) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return `${n.toFixed(digits)}%`;
+  }
+  function computationSafeNumber(value) {
+    const n = num(value);
+    return n == null || !Number.isFinite(Number(n)) ? null : Number(n);
+  }
+  function componentFieldLabel(fieldKey) {
+    const def = getScoreFieldDefinition(fieldKey);
+    return def ? def.label : text(fieldKey).toUpperCase();
+  }
+  function computationTableLabel(tableKey) {
+    const key = text(tableKey).trim();
+    if (key === 'table7') return 'Table 7';
+    if (key === 'table8') return 'Table 8';
+    if (key === 'table10') return 'Table 10';
+    if (key === 'table11') return 'Table 11';
+    return key || '—';
+  }
+  function lookupDescriptorForComputation(result, tableKey) {
+    const key = text(tableKey || (result && result.tableUsed)).trim();
+    const code = text(result && (result.descriptorCode || result.letterGrade)).trim().toUpperCase();
+    const label = text(result && result.descriptorLabel).trim().toUpperCase();
+    const grade = num(result && (result.finalDisplayedNumeric != null ? result.finalDisplayedNumeric : result.termGrade));
+    let row = null;
+    if (key === 'table10' || key === 'table11') row = grade != null ? numericDescriptor(grade, key) : null;
+    else if (key === 'table7' || key === 'table8') {
+      row = getDescriptorProfile(key).find(item => text(item.code).trim().toUpperCase() === code || text(item.label).trim().toUpperCase() === label) || null;
+    }
+    if (!row && (key === 'table10' || key === 'table11')) {
+      const table = key === 'table10' ? TABLE10 : TABLE11;
+      row = table.find(item => text(item.descriptorCode).trim().toUpperCase() === code || text(item.descriptorLabel).trim().toUpperCase() === label) || null;
+    }
+    return row || null;
+  }
+  function getActiveScoreFieldsForBreakdown(term, setupProfile) {
+    if (!term || !isNumericTable(term.applicableTable)) return [];
+    return visibleScoreFields(term).map(field => Object.assign({}, field));
+  }
+  function getComputationComponentDefinitions(term, setupProfile) {
+    const setup = setupProfile || state.setupProfile || defaultSetupProfile();
+    if (isCustomInstitutionalMode()) {
+      const c = normalizeCustomComponents(setup.customComponents || (state.recordHeader && state.recordHeader.customComponents));
+      const map = {
+        ww: { label: 'Written Works', group: 'ww', keys: ['ww1','ww2','ww3','ww4','ww5'] },
+        pt: { label: 'Performance Tasks', group: 'pt', keys: ['pt1','pt2','pt3','pt4','pt5'] },
+        st: { label: 'Summative Test', group: 'ex', keys: ['st1','st2'] },
+        te: { label: 'Term Exam', group: 'ex', keys: ['te1','te2'] },
+        qe: { label: 'Quarter Exam', group: 'ex', keys: ['qe1','qe2'] }
+      };
+      return Object.keys(map).map(key => {
+        const cfg = c[key] || { count: 0, weight: 0 };
+        const meta = map[key];
+        return { key, label: meta.label, group: meta.group, weight: Number(cfg.weight || 0) / 100, fieldKeys: meta.keys.slice(0, Math.max(0, Number(cfg.count || 0))), custom: true };
+      }).filter(def => def.weight > 0 || def.fieldKeys.length > 0);
+    }
+    const weights = (setup && setup.componentWeights) || { ww: 0, pt: 0, ex: 0 };
+    const fields = getActiveScoreFieldsForBreakdown(term, setup);
+    const byGroup = group => fields.filter(f => f.group === group).map(f => f.key);
+    return [
+      { key: 'ww', label: 'Written Works', group: 'ww', weight: Number(weights.ww || 0), fieldKeys: byGroup('ww') },
+      { key: 'pt', label: 'Performance Tasks', group: 'pt', weight: Number(weights.pt || 0), fieldKeys: byGroup('pt') },
+      { key: 'ex', label: 'Summative Test and Term Exam', group: 'ex', weight: Number(weights.ex || 0), fieldKeys: byGroup('ex') }
+    ];
+  }
+  function buildNormalComponentBreakdown(componentKey, fields, row, term, weight, label) {
+    const used = [];
+    const skipped = [];
+    let scoreTotal = 0;
+    let hpsTotal = 0;
+    (fields || []).forEach(fieldKey => {
+      const group = componentKey === 'ww' ? 'ww' : (componentKey === 'pt' ? 'pt' : 'ex');
+      const hv = computationSafeNumber(term && term.hps && term.hps[group] && term.hps[group][fieldKey]);
+      const rawScore = computationSafeNumber(row && row.scores && row.scores[group] && row.scores[group][fieldKey]);
+      const fieldLabel = componentFieldLabel(fieldKey);
+      if (!(hv != null && hv > 0)) {
+        skipped.push({ key: fieldKey, label: fieldLabel, reason: 'HPS not set. This field is not included.' });
+        return;
+      }
+      const scoreUsed = rawScore == null ? 0 : Math.max(0, Math.min(rawScore, hv));
+      hpsTotal += hv;
+      scoreTotal += scoreUsed;
+      used.push({ key: fieldKey, label: fieldLabel, hps: hv, score: rawScore, scoreUsed, missing: rawScore == null, clamped: rawScore != null && rawScore !== scoreUsed });
+    });
+    const percentageScore = hpsTotal > 0 ? (scoreTotal / hpsTotal) * 100 : null;
+    const weightedScore = percentageScore == null ? null : percentageScore * Number(weight || 0);
+    return { key: componentKey, label, weight: Number(weight || 0), scoreTotal, hpsTotal, percentageScore, weightedScore, used, skipped, subShareMode: false };
+  }
+  function buildExamShareComponentBreakdown(fields, row, term, weight, label) {
+    const qaHps = computationSafeNumber(term && term.hps && term.hps.ex && term.hps.ex.qa1);
+    if (qaHps != null && qaHps > 0) return buildNormalComponentBreakdown('ex', fields, row, term, weight, label);
+    const shares = { st1: 0.3, st2: 0.3, te: 0.4 };
+    const used = [];
+    const skipped = [];
+    let activeShareTotal = 0;
+    let normalizedContribution = 0;
+    let scoreTotal = 0;
+    let hpsTotal = 0;
+    (fields || []).forEach(fieldKey => {
+      const hv = computationSafeNumber(term && term.hps && term.hps.ex && term.hps.ex[fieldKey]);
+      const rawScore = computationSafeNumber(row && row.scores && row.scores.ex && row.scores.ex[fieldKey]);
+      const fieldLabel = componentFieldLabel(fieldKey);
+      const share = Number(shares[fieldKey] || 0);
+      if (!(hv != null && hv > 0)) {
+        skipped.push({ key: fieldKey, label: fieldLabel, reason: 'HPS not set. This field is not included.' });
+        return;
+      }
+      const scoreUsed = rawScore == null ? 0 : Math.max(0, Math.min(rawScore, hv));
+      const ps = (scoreUsed / hv) * 100;
+      activeShareTotal += share;
+      normalizedContribution += ps * share;
+      scoreTotal += scoreUsed;
+      hpsTotal += hv;
+      used.push({ key: fieldKey, label: fieldLabel, hps: hv, score: rawScore, scoreUsed, missing: rawScore == null, clamped: rawScore != null && rawScore !== scoreUsed, share, ps, weightedShare: ps * share });
+    });
+    const percentageScore = activeShareTotal > 0 ? normalizedContribution / activeShareTotal : null;
+    const weightedScore = percentageScore == null ? null : percentageScore * Number(weight || 0);
+    return { key: 'ex', label, weight: Number(weight || 0), scoreTotal, hpsTotal, percentageScore, weightedScore, used, skipped, subShareMode: activeShareTotal > 0 };
+  }
+  function buildComponentBreakdown(componentKey, fields, row, term, weight, label) {
+    if (!term || !row) return null;
+    if (!isCustomInstitutionalMode() && componentKey === 'ex') return buildExamShareComponentBreakdown(fields, row, term, weight, label || 'Summative Test and Term Exam');
+    return buildNormalComponentBreakdown(componentKey, fields, row, term, weight, label || componentKey.toUpperCase());
+  }
+  function buildLearnerComputationBreakdown(row, term, setupProfile) {
+    if (!row || !term || !setupProfile) return null;
+    const result = row.computed || defaultComputed();
+    const tableKey = term.applicableTable || result.tableUsed || '';
+    if (tableKey === 'table7' || tableKey === 'table8') {
+      const descriptorRow = lookupDescriptorForComputation(result, tableKey);
+      return { descriptive: true, tableLabel: computationTableLabel(tableKey), descriptorCode: text(result.descriptorCode || result.letterGrade), descriptorLabel: text((descriptorRow && descriptorRow.label) || result.descriptorLabel), localizedLabel: text((descriptorRow && descriptorRow.localizedLabel) || result.localizedLabel), generalDescription: text(result.generalDescription || (descriptorRow && descriptorRow.generalDescription)), instructionalResponse: text(result.instructionalResponse) };
+    }
+    if (!isNumericTable(tableKey)) return null;
+    const defs = getComputationComponentDefinitions(term, setupProfile);
+    const components = defs.map(def => buildComponentBreakdown(def.key, def.fieldKeys, row, term, def.weight, def.label)).filter(Boolean);
+    const included = components.filter(c => c.percentageScore != null && c.hpsTotal > 0 && c.weight > 0);
+    const unroundedInitial = included.reduce((sum, c) => sum + Number(c.weightedScore || 0), 0);
+    const storedInitial = computationSafeNumber(result.initialGrade);
+    const termGrade = result.termGrade != null && result.termGrade !== '' ? result.termGrade : result.finalDisplayedNumeric;
+    const storedTermGrade = computationSafeNumber(termGrade);
+    const method = isCustomInstitutionalMode()
+      ? normalizeGradeConversionMethod((setupProfile && setupProfile.gradeConversionMethod) || (state.recordHeader && state.recordHeader.gradeConversionMethod))
+      : (isLegacyGrade12Term(term) || (setupProfile && setupProfile.usesTransmutation) ? 'transmutation' : 'zeroBased');
+    const transmutationKey = isCustomInstitutionalMode()
+      ? normalizeTransmutationTableKey((setupProfile && setupProfile.transmutationTableKey) || (state.recordHeader && state.recordHeader.transmutationTableKey), method)
+      : (isLegacyGrade12Term(term) ? 'deped-do8-2015-appendix-b' : ((setupProfile && setupProfile.usesTransmutation) ? 'deped-do015-2026-adjusted' : 'none'));
+    const conversionLabel = method === 'transmutation' ? getTransmutationRegistryEntry(transmutationKey).label : 'Zero-Based Direct Computation';
+    const descriptorRow = lookupDescriptorForComputation(result, tableKey);
+    const warnings = [];
+    if (storedInitial != null && included.length) {
+      const diff = Math.abs(unroundedInitial - storedInitial);
+      if (diff > 0.005) warnings.push(`Note: Displayed breakdown uses rounded values. Official stored result remains ${computationFormatNumber(storedInitial, 2)}.`);
+      if (diff > 0.05) warnings.push('Please review active HPS, missing scores, or selected conversion table.');
+    }
+    return { descriptive: false, tableLabel: computationTableLabel(tableKey), components, included, unroundedInitial, storedInitial, termGrade: termGrade, storedTermGrade, conversionLabel, method, transmutationKey, descriptorCode: text(result.descriptorCode || result.letterGrade), descriptorLabel: text((descriptorRow && (descriptorRow.descriptorLabel || descriptorRow.label)) || result.descriptorLabel), localizedLabel: text((descriptorRow && descriptorRow.localizedLabel) || result.localizedLabel), remarks: text(result.remarks || achievementMeterRemarksText(result, tableKey, result.descriptorCode)), generalDescription: text(result.generalDescription), instructionalResponse: text(result.instructionalResponse), warnings };
+  }
+  function renderComputationFieldList(component) {
+    const usedLines = (component.used || []).map(item => {
+      const scoreText = item.missing ? 'Missing' : computationFormatWholeOrNumber(item.scoreUsed, 2);
+      const clampText = item.clamped ? ' (clamped to HPS)' : '';
+      return `<div class="ctm-cr-computation-line ctm-cr-computation-muted">${esc(item.label)}: ${esc(scoreText)} / ${esc(computationFormatWholeOrNumber(item.hps, 2))}${esc(clampText)}${item.missing ? ' <span class="ctm-cr-computation-warning">Missing score counted as 0 by current app logic.</span>' : ''}</div>`;
+    }).join('');
+    const skippedLines = (component.skipped || []).map(item => `<div class="ctm-cr-computation-line ctm-cr-computation-muted">${esc(item.label)}: Not included — HPS not set.</div>`).join('');
+    return usedLines + skippedLines;
+  }
+  function renderComponentBreakdownHtml(component) {
+    if (!component) return '';
+    if (!(component.hpsTotal > 0)) {
+      return `<div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">${esc(component.label)}</div><div class="ctm-cr-computation-line ctm-cr-computation-muted">HPS not set. This component is not included.</div>${renderComputationFieldList(component)}</div>`;
+    }
+    const weightPct = component.weight * 100;
+    const shareLines = component.subShareMode ? (component.used || []).map(item => `<div class="ctm-cr-computation-line ctm-cr-computation-muted">${esc(item.label)} Share: ${esc(computationFormatNumber(item.scoreUsed, 2))} ÷ ${esc(computationFormatNumber(item.hps, 2))} × 100 × ${esc(computationFormatPercent(item.share * 100, 0))} = ${esc(computationFormatNumber(item.weightedShare, 2))}</div>`).join('') : '';
+    return `<div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">${esc(component.label)}</div><div class="ctm-cr-computation-line">Component Score: ${esc(computationFormatNumber(component.scoreTotal, 2))} / ${esc(computationFormatNumber(component.hpsTotal, 2))}</div>${renderComputationFieldList(component)}${shareLines}<div class="ctm-cr-computation-line">Percentage Score: ${esc(computationFormatNumber(component.scoreTotal, 2))} ÷ ${esc(computationFormatNumber(component.hpsTotal, 2))} × 100 = ${esc(computationFormatPercent(component.percentageScore, 2))}${component.subShareMode ? ' <span class="ctm-cr-computation-muted">(normalized from active ST/TE shares)</span>' : ''}</div><div class="ctm-cr-computation-line">Weighted Score: ${esc(computationFormatNumber(component.percentageScore, 2))} × ${esc(computationFormatPercent(weightPct, 0))} = ${esc(computationFormatNumber(component.weightedScore, 2))}</div></div>`;
+  }
+  function renderComputationBreakdownHtml(breakdown) {
+    if (!breakdown) return '';
+    if (breakdown.descriptive) {
+      return `<details class="ctm-cr-computation-details"><summary role="button" tabindex="0" aria-expanded="false">Detailed Computations</summary><div class="ctm-cr-computation-body"><div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">Descriptor</div><div class="ctm-cr-computation-line ctm-cr-computation-muted">Detailed numeric computation is not applicable because this term uses descriptive grading.</div><div class="ctm-cr-computation-line">Applicable Table: ${esc(breakdown.tableLabel)}</div><div class="ctm-cr-computation-line">Descriptor Code: ${esc(breakdown.descriptorCode || '—')}</div><div class="ctm-cr-computation-line">Descriptor Label: ${esc(breakdown.descriptorLabel || '—')}</div>${breakdown.localizedLabel ? `<div class="ctm-cr-computation-line">Localized Label: ${esc(breakdown.localizedLabel)}</div>` : ''}${breakdown.generalDescription ? `<div class="ctm-cr-computation-line">General Description: ${esc(breakdown.generalDescription)}</div>` : ''}${breakdown.instructionalResponse ? `<div class="ctm-cr-computation-line">Instructional Response: ${esc(breakdown.instructionalResponse)}</div>` : ''}</div></div></details>`;
+    }
+    if (!breakdown.components || !breakdown.components.length) {
+      return `<details class="ctm-cr-computation-details"><summary role="button" tabindex="0" aria-expanded="false">Detailed Computations</summary><div class="ctm-cr-computation-body"><div class="ctm-cr-computation-warning">No active numeric components available for detailed computation.</div></div></details>`;
+    }
+    const componentHtml = breakdown.components.map(renderComponentBreakdownHtml).join('');
+    const formulaLabels = (breakdown.included || []).map(c => `${c.key.toUpperCase()} WS`).join(' + ');
+    const formulaValues = (breakdown.included || []).map(c => computationFormatNumber(c.weightedScore, 2)).join(' + ');
+    const officialInitial = breakdown.storedInitial != null ? breakdown.storedInitial : breakdown.unroundedInitial;
+    const conversionLine = breakdown.method === 'transmutation'
+      ? `Initial Grade ${computationFormatNumber(officialInitial, 2)} → Term Grade ${fmt(breakdown.termGrade)}`
+      : `Initial Grade ${computationFormatNumber(officialInitial, 2)} → Term Grade ${fmt(breakdown.termGrade)}`;
+    const warningsHtml = (breakdown.warnings || []).map(w => `<div class="ctm-cr-computation-warning">${esc(w)}</div>`).join('');
+    return `<details class="ctm-cr-computation-details"><summary role="button" tabindex="0" aria-expanded="false">Detailed Computations <span>Tap/click to view how the Initial Grade and Term Grade were computed</span></summary><div class="ctm-cr-computation-body">${componentHtml}<div class="ctm-cr-computation-section ctm-cr-computation-total"><div class="ctm-cr-computation-title">Initial Grade</div><div class="ctm-cr-computation-line">Initial Grade = ${esc(formulaLabels || 'sum of included weighted scores')}</div><div class="ctm-cr-computation-line">Initial Grade = ${esc(formulaValues || '—')} = ${esc(computationFormatNumber(officialInitial, 2))}</div><div class="ctm-cr-computation-muted">Displayed values are rounded to 2 decimal places; actual computation uses the app’s internal precision.</div></div><div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">Grade Conversion</div><div class="ctm-cr-computation-line">Grade Conversion: ${esc(breakdown.conversionLabel || 'Zero-Based Direct Computation')}</div><div class="ctm-cr-computation-line">${esc(conversionLine)}</div></div><div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">Descriptor</div><div class="ctm-cr-computation-line">Applicable Table: ${esc(breakdown.tableLabel)}</div><div class="ctm-cr-computation-line">Term Grade: ${esc(fmt(breakdown.termGrade))}</div><div class="ctm-cr-computation-line">Descriptor Code: ${esc(breakdown.descriptorCode || '—')}</div><div class="ctm-cr-computation-line">Descriptor Label: ${esc(breakdown.descriptorLabel || '—')}</div>${breakdown.localizedLabel ? `<div class="ctm-cr-computation-line">Localized Label: ${esc(breakdown.localizedLabel)}</div>` : ''}<div class="ctm-cr-computation-line">Remarks: ${esc(breakdown.remarks || '—')}</div></div>${warningsHtml}</div></details>`;
+  }
+
+  function syncComputationDetailsExpandedState(details) {
+    if (!details) return;
+    const summary = details.querySelector('summary');
+    if (summary) summary.setAttribute('aria-expanded', details.open ? 'true' : 'false');
+  }
+
+  function toggleComputationDetailsFromSummary(summary) {
+    if (!summary || !summary.closest) return;
+    const details = summary.closest('.ctm-cr-computation-details');
+    if (!details) return;
+    details.open = !details.open;
+    syncComputationDetailsExpandedState(details);
+  }
+
+  function onComputationDetailsClick(ev) {
+    const summary = ev && ev.target && ev.target.closest ? ev.target.closest('.ctm-cr-computation-details > summary') : null;
+    if (!summary) return;
+    if (ev.cancelable) ev.preventDefault();
+    if (ev.stopPropagation) ev.stopPropagation();
+    toggleComputationDetailsFromSummary(summary);
+  }
+
+  function onComputationDetailsKeydown(ev) {
+    const summary = ev && ev.target && ev.target.closest ? ev.target.closest('.ctm-cr-computation-details > summary') : null;
+    if (!summary) return;
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    if (ev.cancelable) ev.preventDefault();
+    if (ev.stopPropagation) ev.stopPropagation();
+    toggleComputationDetailsFromSummary(summary);
+  }
+
   function learnerStatusBadge(row, term) {
     const invalid = hasValidationIssue(row, term);
     const missing = missingScoreCount(row, term);
@@ -3590,8 +3830,9 @@ function buildTermPanel(termKey) {
     : null;
   const learnerAchievementTitle = getSubjectAchievementMeterTitle('Subject');
   const learnerAchievementHtml = learner ? renderAchievementMeter(learnerAchievementSource || {}, { tableKey: term.applicableTable, title: learnerAchievementTitle, ariaLabel: learner ? `${learner.name} ${learnerAchievementTitle} achievement meter` : `${learnerAchievementTitle} achievement meter` }) : '';
+  const learnerComputationHtml = learner ? renderComputationBreakdownHtml(buildLearnerComputationBreakdown(learner, term, state.setupProfile || defaultSetupProfile())) : '';
   const learnerInfoHtml = learner
-    ? `${hasNumeric ? `<div class="ctm-cr-pill-list" style="margin-bottom:.65rem;">${learnerStatusBadge(learner, term)}</div>` : ''}${learnerAchievementHtml}`
+    ? `${hasNumeric ? `<div class="ctm-cr-pill-list" style="margin-bottom:.65rem;">${learnerStatusBadge(learner, term)}</div>` : ''}${learnerAchievementHtml}${learnerComputationHtml}`
     : '';
   const notesHtml = learner
     ? `<div class="ctm-cr-compact-header" style="margin-top:.75rem;"><div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-${esc(termKey)}-teacher-notes-${esc(slugify(learner.learnerId))}">Teacher Remarks</label><textarea id="cr-${esc(termKey)}-teacher-notes-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-teacher-notes-${esc(slugify(learner.learnerId))}" rows="2" data-term="${termKey}" data-teacher-notes="1" data-learner-id="${esc(learner.learnerId)}">${esc(learner.computed.teacherNotes || '')}</textarea></div><div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-${esc(termKey)}-intervention-${esc(slugify(learner.learnerId))}">Intervention Notes</label><textarea id="cr-${esc(termKey)}-intervention-${esc(slugify(learner.learnerId))}" name="cr-${esc(termKey)}-intervention-${esc(slugify(learner.learnerId))}" rows="2" data-term="${termKey}" data-intervention="1" data-learner-id="${esc(learner.learnerId)}">${esc(learner.computed.interventionNotes || '')}</textarea></div></div>`
@@ -3821,6 +4062,14 @@ function buildTermPanel(termKey) {
       });
       const next = wrapper.firstElementChild;
       if (next) achievementWrap.replaceWith(next);
+    }
+    const computationDetails = panel.querySelector('.ctm-cr-learner-card .ctm-cr-computation-details');
+    const computationHtml = renderComputationBreakdownHtml(buildLearnerComputationBreakdown(row, term, state.setupProfile || defaultSetupProfile()));
+    if (computationDetails && computationHtml) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = computationHtml;
+      const next = wrapper.firstElementChild;
+      if (next) computationDetails.replaceWith(next);
     }
     const activeMini = panel.querySelector(`[data-pick-learner="${CSS.escape(row.learnerId)}"] .ctm-cr-chip b`);
     if (activeMini) activeMini.textContent = fmt(row.computed && row.computed.termGrade);
@@ -4716,7 +4965,7 @@ function importCsvText(csvText) {
       localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), currentKey)));
       triggerNewRecordReset({ showFlash: false });
       flash('Saved school-year Class Record deleted. A fresh blank draft is ready.', 'success');
-    }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
+    }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', onComputationDetailsClick); document.addEventListener('keydown', onComputationDetailsKeydown); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
 
   function hasLoadedHostClass() {
     const loadedId = text(window.currentClassId || '').trim();

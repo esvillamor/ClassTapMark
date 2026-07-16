@@ -1,3 +1,4 @@
+<!-- v18.52 companion: Detailed Computations toggle fix is in JS/CSS; HTML IDs/data hooks unchanged. -->
 <!-- v18.51 companion: MAPEH bundle delete fix is in JS; HTML IDs/data hooks unchanged. -->
 <!-- v18.50 MAPEH paired-component companion: JS now uses Music and Arts plus PE and Health paired records while preserving existing HTML IDs/data hooks. -->
 <!-- v18.49 Initial Grade / Term Grade pill display companion: JS shows Initial Grade whenever available plus Term Grade, without data/CSV/shared-header changes. -->
@@ -936,6 +937,87 @@
 #classRecordModal .ctm-cr-achievement-chip.ctm-cr-achievement-chip-colored.level-neutral{ background:#ede9fe; border-color:#c4b5fd; color:#5b21b6; }
 #classRecordModal .ctm-cr-learner-card .ctm-cr-attendance-summary{
   margin-top: .65rem;
+}
+
+
+/* ===== Detailed Computations card v18.52 (UI-only; no data/schema changes) ===== */
+#classRecordModal .ctm-cr-computation-details{
+  margin-top:.65rem;
+  border:1px solid #dbe4f0;
+  border-radius:12px;
+  background:#f8fafc;
+  color:#334155;
+  overflow:hidden;
+}
+#classRecordModal .ctm-cr-computation-details summary{
+  cursor:pointer;
+  padding:.55rem .7rem;
+  font-size:.82rem;
+  font-weight:800;
+  color:#0f172a;
+  list-style-position:inside;
+}
+#classRecordModal .ctm-cr-computation-details summary span{
+  display:block;
+  margin-top:.12rem;
+  font-size:.68rem;
+  font-weight:600;
+  color:#64748b;
+}
+#classRecordModal .ctm-cr-computation-body{
+  display:grid;
+  gap:.5rem;
+  padding:.05rem .7rem .7rem;
+  font-size:.78rem;
+  line-height:1.42;
+}
+#classRecordModal .ctm-cr-computation-section{
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  background:#fff;
+  padding:.55rem .6rem;
+  min-width:0;
+}
+#classRecordModal .ctm-cr-computation-title{
+  font-size:.78rem;
+  font-weight:800;
+  color:#1d4ed8;
+  margin-bottom:.24rem;
+}
+#classRecordModal .ctm-cr-computation-line{
+  margin:.12rem 0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+#classRecordModal .ctm-cr-computation-muted{
+  color:#64748b;
+}
+#classRecordModal .ctm-cr-computation-total{
+  background:#eff6ff;
+  border-color:#bfdbfe;
+}
+#classRecordModal .ctm-cr-computation-warning{
+  margin-top:.28rem;
+  padding:.35rem .45rem;
+  border:1px solid #fde68a;
+  border-radius:8px;
+  background:#fffbeb;
+  color:#92400e;
+  font-size:.74rem;
+  line-height:1.35;
+}
+#classRecordModal .ctm-cr-computation-details summary{
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#classRecordModal .ctm-cr-computation-details[open] summary{
+  border-bottom:1px solid #e2e8f0;
+}
+@media (max-width:560px){
+  #classRecordModal .ctm-cr-computation-details summary{font-size:.76rem;padding:.5rem .55rem;}
+  #classRecordModal .ctm-cr-computation-body{font-size:.72rem;padding:.05rem .55rem .55rem;}
+  #classRecordModal .ctm-cr-computation-section{padding:.48rem .5rem;}
 }
 
 /* ===== Floating Class Record notification ===== */
