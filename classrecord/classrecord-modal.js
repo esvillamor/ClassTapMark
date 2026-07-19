@@ -1,3 +1,14 @@
+/* v18.63 MAPEH_Tn View in Excel format-map activation fix: MAPEH_T1/T2/T3 now actually apply the fixed XLSX 8-column merge/style map instead of falling back to the generic summary styling. */
+/* v18.62 MAPEH View in Excel fixed-xlsx conformance: MAPEH_T1/T2/T3 and Summary of Grades now use the fixed workbook row starts, merges, widths, and 3-term Term 4 hiding. */
+/* v18.61 MAPEH consolidated View in Excel layout fix: Summary of Grades and MAPEH_Tn now align to the captured MAPEH-aware class record template; fixes shifted headers/learner rows and term-summary formatting. */
+/* v18.60 MAPEH Summary-tab trigger fix: opening the Summary tab on any eligible MAPEH component now renders/exports the consolidated paired MAPEH Summary workbook. */
+/* v18.59 MAPEH consolidated Excel alignment: Summary view exports MA_Tn/PEH_Tn/MAPEH_Tn plus combined Summary of Grades; component views remain component-only. */
+/* v18.58 View in Excel header alignment fix: teacher value merges Q5:T5; SCHOOL YEAR caption/value merges V3:W3 and X3:Y3. */
+/* v18.57 MAPEH-aware Summary + consolidated View in Excel: virtual paired Music & Arts / PE & Health summary with read-only UI and XLSX export. */
+/* v18.56 View in Excel Phase 2 hardening: uses a style-capable writer when available, preserves mapped formats, and adds optional XML verification for widths/styles. */
+/* v18.55 View in Excel map-format export: Term/Quarter and Summary sheets now apply the attached cell format map for row heights, widths, merges, borders, fills, alignment, and number formats. */
+/* v18.54 Summary auto-refresh + Summary detailed computations: entering Summary recomputes latest term/quarter values and shows per-term plus final computation details. */
+/* v18.53 View in Excel export: generates a saveable .xlsx copy from Class Record state without scraping rendered tables. */
 /* v18.52 Detailed Computations toggle fix: summary clicks/taps are treated as an interactive control and no longer get swallowed by learner-card swipe handling. */
 /* v18.51 MAPEH bundle delete fix: Delete now works from component or Summary view and removes all indexed paired-component records safely. */
 /* v18.50 MAPEH paired-component records: MAPEH is paired as Music and Arts plus PE and Health; existing four-component records are not deleted. */
@@ -28,7 +39,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.52-computation-details-toggle-fix'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.63-mapeh-tn-fixed-xlsx-format-map'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -213,7 +224,7 @@ const LEGACY_G12_DO8_2015_PROFILES = {
   'SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects': { profileName: 'SHS Grade 12 Legacy TVL / Sports / Arts & Design Other Subjects', weights: { ww: 0.20, pt: 0.60, ex: 0.20 }, assessmentCounts: { wwCount: 5, ptCount: 5, stCount: 0, hasTE: false, qaCount: 1 } },
   'SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance': { profileName: 'SHS Grade 12 Legacy TVL / Sports / Arts & Design Immersion / Research / Exhibit / Performance', weights: { ww: 0.20, pt: 0.60, ex: 0.20 }, assessmentCounts: { wwCount: 5, ptCount: 5, stCount: 0, hasTE: false, qaCount: 1 } }
 };
-  const fallbackHtml = "<div id=\"classRecordModal\" class=\"modal\" aria-hidden=\"true\" role=\"dialog\" aria-modal=\"true\" style=\"display:none\">\n  <div class=\"modal-content ctm-cr-modal-content\" style=\"max-width:1200px;\">\n    <div class=\"ctm-cr-topbar\">\n      <div>\n        <h3 style=\"margin:0\">Class Record</h3>\n        <div class=\"ctm-cr-subtitle\"><span id=\"crTopClassName\">No class loaded</span><span>\u2022</span><span id=\"crTopSubject\">No subject</span><span>\u2022</span><span id=\"crTopSchoolYear\">No school year</span></div>\n      </div>\n      <div class=\"ctm-cr-topbar-actions\">\n<button class=\"edit\" id=\"crBtnNew\">New Record</button>\n        <button class=\"danger\" id=\"crBtnDelete\">Delete</button>\n        <button class=\"primary\" id=\"crBtnSave\">Save</button>\n        <button class=\"edit\" id=\"crBtnCancelEdit\" hidden>Cancel Edit</button>\n        <button class=\"primary\" id=\"crBtnImportCsv\">Import CSV</button>\n        <button class=\"primary\" id=\"crBtnExportCsv\">Export CSV</button>\n        <button class=\"danger\" id=\"crBtnClose\" style=\"padding:.25rem .6rem\">\u2715</button>\n      </div>\n    </div>\n    <div class=\"ctm-cr-disclaimer\"><b>Testing Build:</b> Mobile-first Class Record with shared HPS per term, individual learner cards, full CSV import/export, and validation.</div>\n    <div class=\"ctm-cr-manager section-lite\">\n      <div class=\"ctm-cr-manager-grid\">\n        <div><label class=\"ctm-cr-label\">Saved Record</label><select id=\"crRecordPicker\"></select></div>\n        <div><label class=\"ctm-cr-label\">Record Status</label><div id=\"crRecordStatus\" class=\"ctm-cr-status-pill\">Draft / unsaved school-year record</div></div>\n        <div><label class=\"ctm-cr-label\">Policy Source</label><div class=\"ctm-cr-status-pill\">DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)</div></div>\n      </div>\n    </div>\n    <div class=\"ctm-cr-tabs\" aria-label=\"Class Record Tabs\">\n      <div id=\"crTabsShell\" class=\"ctm-cr-tabs-shell\" role=\"tablist\" aria-label=\"Class Record Tabs\" aria-hidden=\"false\">\n      <button class=\"primary ctm-cr-tab active\" data-tab=\"header\" type=\"button\">Header Fields</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"policy\" type=\"button\">Policy Setup</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term1\" type=\"button\">Term 1</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term2\" type=\"button\">Term 2</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term3\" type=\"button\">Term 3</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term4\" type=\"button\" style=\"display:none\">Term 4</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"final\" type=\"button\">Summary</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"attendance\" type=\"button\">Attendance</button>\n      </div>\n      <div class=\"ctm-cr-tabs-footer\"><p class=\"ctm-cr-tabs-source\"><a href=\"https://drive.google.com/drive/folders/13APGK-OoX_g2bWqVZ9h-iGd16DCDNa5_?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer\">Source: DO No. 015, s. 2026 / DO No. 8, s. 2015</a></p></div>\n    </div>\n    <div id=\"crFlash\" class=\"ctm-cr-flash\" style=\"display:none\" aria-live=\"polite\" aria-atomic=\"true\" aria-hidden=\"true\"></div>\n    <section id=\"crPanelHeader\" class=\"ctm-cr-panel active\">\n      <div class=\"ctm-cr-panel-title\">Record Header</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSchoolName\">School Name</label><input id=\"crSchoolName\" placeholder=\"School Name\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolYear\">School Year</label><input id=\"crSchoolYear\" placeholder=\"2026-2027\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crGradeLevel\">Grade Level</label>\n          <select id=\"crGradeLevel\"><option value=\"\">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>\n        </div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSection\">Class / Section</label><input id=\"crSection\" placeholder=\"Section\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSemester\">Semester</label><select id=\"crSemester\"><option value=\"\">Select Semester</option><option value=\"First Semester\">First Semester</option><option value=\"Second Semester\">Second Semester</option></select></div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crTeacher\">Teacher / Class Adviser</label><input id=\"crTeacher\" placeholder=\"Teacher / Class Adviser\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolId\">School ID</label><input id=\"crSchoolId\" placeholder=\"School ID\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDistrict\">District</label><input id=\"crDistrict\" placeholder=\"District\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDivision\">Division</label><input id=\"crDivision\" placeholder=\"Division\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crRegion\">Region</label><input id=\"crRegion\" placeholder=\"Region\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSubjectGroup\">Subject Group</label>\n          <select id=\"crSubjectGroup\"><option value=\"\">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>\n        </div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSubject\">Subject</label><input id=\"crSubject\" placeholder=\"Subject\"></div>\n<div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crKeyStage\">Key Stage</label><input id=\"crKeyStage\" placeholder=\"Auto\" readonly></div>\n      </div>\n    </section>\n    <!-- Policy Setup fallback remains structurally compatible; primary layout is governed by external HTML/CSS module. -->\n    <section id=\"crPanelPolicy\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Policy Setup (Resolved)</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Grading Mode</div><div id=\"crResolvedMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Table</div><div id=\"crResolvedTable\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Numeric Mode</div><div id=\"crResolvedNumericMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Transition Rule</div><div id=\"crResolvedTransition\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Weight</div><div id=\"crWeightWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Weight</div><div id=\"crWeightPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">EX Weight</div><div id=\"crWeightEX\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Has TE</div><div id=\"crHasTE\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Count</div><div id=\"crCountWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Count</div><div id=\"crCountPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">ST Count</div><div id=\"crCountST\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Uses Descriptors</div><div id=\"crUseDescriptors\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-field\" style=\"margin-top:1rem;\"><label class=\"ctm-cr-label\" for=\"crPolicyNotes\">Validation / Notes</label><textarea id=\"crPolicyNotes\" rows=\"3\" readonly></textarea></div>\n    </section>\n    <section id=\"crPanelTerm1\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm2\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm3\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm4\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelFinal\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Summary</div>\n      <div class=\"ctm-cr-disclaimer\" style=\"margin-bottom:.75rem;\">Final Grade Summary based on the selected Grade 12 SY 2026-2027 grading system.</div>\n      <div class=\"table-scroll ctm-cr-table-scroll ctm-cr-final-scroll\" id=\"crFinalTableScroll\" aria-label=\"Scrollable class record summary table\"><table id=\"crFinalTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th><th>Instructional Response</th></tr></thead><tbody></tbody></table></div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Class Average</div><div id=\"crFinalClassAverage\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Passing Count</div><div id=\"crFinalPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Non-Passing Count</div><div id=\"crFinalNonPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Table Used</div><div id=\"crFinalTableUsed\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n    </section>\n    <section id=\"crPanelAttendance\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Attendance (Read-only)</div>\n      <div class=\"ctm-cr-disclaimer\">Source: attendance / SF2 data already tracked by the app. Read-only inside Class Record.</div>\n      <div class=\"table-scroll\"><table id=\"crAttendanceTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>Present</th><th>Absent</th><th>Tardy</th><th>Cutting</th><th>Excuse</th><th>Pending</th></tr></thead><tbody></tbody></table></div>\n    </section>\n    <div class=\"meta\" style=\"color:#667;font-size:.85rem;margin-top:1rem;text-align:justify;\"><b>Disclaimer:</b> Generated document is not an official DepEd School Form.</div>\n  </div>\n</div>\n";
+  const fallbackHtml = "<div id=\"classRecordModal\" class=\"modal\" aria-hidden=\"true\" role=\"dialog\" aria-modal=\"true\" style=\"display:none\">\n  <div class=\"modal-content ctm-cr-modal-content\" style=\"max-width:1200px;\">\n    <div class=\"ctm-cr-topbar\">\n      <div>\n        <h3 style=\"margin:0\">Class Record</h3>\n        <div class=\"ctm-cr-subtitle\"><span id=\"crTopClassName\">No class loaded</span><span>\u2022</span><span id=\"crTopSubject\">No subject</span><span>\u2022</span><span id=\"crTopSchoolYear\">No school year</span></div>\n      </div>\n      <div class=\"ctm-cr-topbar-actions\">\n<button class=\"edit\" id=\"crBtnNew\">New Record</button>\n        <button class=\"danger\" id=\"crBtnDelete\">Delete</button>\n        <button class=\"primary\" id=\"crBtnSave\">Save</button>\n        <button class=\"edit\" id=\"crBtnCancelEdit\" hidden>Cancel Edit</button>\n        <button class=\"primary\" id=\"crBtnImportCsv\">Import CSV</button>\n        <button class=\"primary\" id=\"crBtnViewExcel\">View in Excel</button>\n        <button class=\"primary\" id=\"crBtnExportCsv\">Export CSV</button>\n        <button class=\"danger\" id=\"crBtnClose\" style=\"padding:.25rem .6rem\">\u2715</button>\n      </div>\n    </div>\n    <div class=\"ctm-cr-disclaimer\"><b>Testing Build:</b> Mobile-first Class Record with shared HPS per term, individual learner cards, full CSV import/export, and validation.</div>\n    <div class=\"ctm-cr-manager section-lite\">\n      <div class=\"ctm-cr-manager-grid\">\n        <div><label class=\"ctm-cr-label\">Saved Record</label><select id=\"crRecordPicker\"></select></div>\n        <div><label class=\"ctm-cr-label\">Record Status</label><div id=\"crRecordStatus\" class=\"ctm-cr-status-pill\">Draft / unsaved school-year record</div></div>\n        <div><label class=\"ctm-cr-label\">Policy Source</label><div class=\"ctm-cr-status-pill\">DO No. 015, s. 2026 / DO No. 8, s. 2015 (G12 SY 2026-2027)</div></div>\n      </div>\n    </div>\n    <div class=\"ctm-cr-tabs\" aria-label=\"Class Record Tabs\">\n      <div id=\"crTabsShell\" class=\"ctm-cr-tabs-shell\" role=\"tablist\" aria-label=\"Class Record Tabs\" aria-hidden=\"false\">\n      <button class=\"primary ctm-cr-tab active\" data-tab=\"header\" type=\"button\">Header Fields</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"policy\" type=\"button\">Policy Setup</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term1\" type=\"button\">Term 1</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term2\" type=\"button\">Term 2</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term3\" type=\"button\">Term 3</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"term4\" type=\"button\" style=\"display:none\">Term 4</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"final\" type=\"button\">Summary</button>\n      <button class=\"edit ctm-cr-tab\" data-tab=\"attendance\" type=\"button\">Attendance</button>\n      </div>\n      <div class=\"ctm-cr-tabs-footer\"><p class=\"ctm-cr-tabs-source\"><a href=\"https://drive.google.com/drive/folders/13APGK-OoX_g2bWqVZ9h-iGd16DCDNa5_?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer\">Source: DO No. 015, s. 2026 / DO No. 8, s. 2015</a></p></div>\n    </div>\n    <div id=\"crFlash\" class=\"ctm-cr-flash\" style=\"display:none\" aria-live=\"polite\" aria-atomic=\"true\" aria-hidden=\"true\"></div>\n    <section id=\"crPanelHeader\" class=\"ctm-cr-panel active\">\n      <div class=\"ctm-cr-panel-title\">Record Header</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSchoolName\">School Name</label><input id=\"crSchoolName\" placeholder=\"School Name\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolYear\">School Year</label><input id=\"crSchoolYear\" placeholder=\"2026-2027\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crGradeLevel\">Grade Level</label>\n          <select id=\"crGradeLevel\"><option value=\"\">Select Grade Level</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>\n        </div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSection\">Class / Section</label><input id=\"crSection\" placeholder=\"Section\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSemester\">Semester</label><select id=\"crSemester\"><option value=\"\">Select Semester</option><option value=\"First Semester\">First Semester</option><option value=\"Second Semester\">Second Semester</option></select></div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crTeacher\">Teacher / Class Adviser</label><input id=\"crTeacher\" placeholder=\"Teacher / Class Adviser\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSchoolId\">School ID</label><input id=\"crSchoolId\" placeholder=\"School ID\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDistrict\">District</label><input id=\"crDistrict\" placeholder=\"District\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crDivision\">Division</label><input id=\"crDivision\" placeholder=\"Division\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crRegion\">Region</label><input id=\"crRegion\" placeholder=\"Region\"></div>\n        <div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crSubjectGroup\">Subject Group</label>\n          <select id=\"crSubjectGroup\"><option value=\"\">Select Subject Group</option><option>Sensory Perceptual and Motor Development / Socio-emotional Development / Cognitive Development / Language, Literacy and Communication Development</option><option>Language / Reading and Literacy / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / GMRC / Makabansa</option><option>Filipino / English / Mathematics / Science / GMRC / Makabansa</option><option>AP / English / Filipino / Mathematics / Science / GMRC / Values</option><option>EPP / TLE / MAPEH</option><option>SHS Core / Other SHS Academic Electives</option><option>SHS Field Exposure / Arts Apprenticeship / Creative Production</option><option>SHS Arts / Sports / Health / Wellness</option><option>SHS Research Electives / Design & Innovation</option><option>SHS TechPro Electives</option><option>SHS Work Immersion</option><option>SHS Grade 12 (DO 8, s. 2015) Core Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) Academic Track Work Immersion / Research / Business Enterprise Simulation / Exhibit / Performance</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Other Subjects</option><option>SHS Grade 12 (DO 8, s. 2015) TVL / Sports / Arts & Design Work Immersion / Research / Exhibit / Performance</option></select>\n        </div>\n        <div class=\"ctm-cr-field span-2\"><label class=\"ctm-cr-label\" for=\"crSubject\">Subject</label><input id=\"crSubject\" placeholder=\"Subject\"></div>\n<div class=\"ctm-cr-field\"><label class=\"ctm-cr-label\" for=\"crKeyStage\">Key Stage</label><input id=\"crKeyStage\" placeholder=\"Auto\" readonly></div>\n      </div>\n    </section>\n    <!-- Policy Setup fallback remains structurally compatible; primary layout is governed by external HTML/CSS module. -->\n    <section id=\"crPanelPolicy\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Policy Setup (Resolved)</div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Grading Mode</div><div id=\"crResolvedMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Resolved Table</div><div id=\"crResolvedTable\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Numeric Mode</div><div id=\"crResolvedNumericMode\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Transition Rule</div><div id=\"crResolvedTransition\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Weight</div><div id=\"crWeightWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Weight</div><div id=\"crWeightPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">EX Weight</div><div id=\"crWeightEX\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Has TE</div><div id=\"crHasTE\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">WW Count</div><div id=\"crCountWW\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">PT Count</div><div id=\"crCountPT\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">ST Count</div><div id=\"crCountST\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Uses Descriptors</div><div id=\"crUseDescriptors\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n      <div class=\"ctm-cr-field\" style=\"margin-top:1rem;\"><label class=\"ctm-cr-label\" for=\"crPolicyNotes\">Validation / Notes</label><textarea id=\"crPolicyNotes\" rows=\"3\" readonly></textarea></div>\n    </section>\n    <section id=\"crPanelTerm1\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm2\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm3\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelTerm4\" class=\"ctm-cr-panel\"></section>\n    <section id=\"crPanelFinal\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Summary</div>\n      <div class=\"ctm-cr-disclaimer\" style=\"margin-bottom:.75rem;\">Final Grade Summary based on the selected Grade 12 SY 2026-2027 grading system.</div>\n      <div class=\"table-scroll ctm-cr-table-scroll ctm-cr-final-scroll\" id=\"crFinalTableScroll\" aria-label=\"Scrollable class record summary table\"><table id=\"crFinalTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>T1</th><th>T2</th><th>T3</th><th>Remarks</th><th>Teacher Remarks</th><th>Intervention Notes</th><th>General Description</th><th>Instructional Response</th></tr></thead><tbody></tbody></table></div>\n      <div class=\"ctm-cr-grid ctm-cr-grid-4\" style=\"margin-top:.75rem;\">\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Class Average</div><div id=\"crFinalClassAverage\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Passing Count</div><div id=\"crFinalPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Non-Passing Count</div><div id=\"crFinalNonPassingCount\" class=\"ctm-cr-strong\">\u2014</div></div>\n        <div class=\"ctm-cr-card\"><div class=\"ctm-cr-mini-label\">Table Used</div><div id=\"crFinalTableUsed\" class=\"ctm-cr-strong\">\u2014</div></div>\n      </div>\n    </section>\n    <section id=\"crPanelAttendance\" class=\"ctm-cr-panel\">\n      <div class=\"ctm-cr-panel-title\">Attendance (Read-only)</div>\n      <div class=\"ctm-cr-disclaimer\">Source: attendance / SF2 data already tracked by the app. Read-only inside Class Record.</div>\n      <div class=\"table-scroll\"><table id=\"crAttendanceTable\" class=\"ctm-cr-table\"><thead><tr><th>#</th><th>Learner</th><th>Sex</th><th>Present</th><th>Absent</th><th>Tardy</th><th>Cutting</th><th>Excuse</th><th>Pending</th></tr></thead><tbody></tbody></table></div>\n    </section>\n    <div class=\"meta\" style=\"color:#667;font-size:.85rem;margin-top:1rem;text-align:justify;\"><b>Disclaimer:</b> Generated document is not an official DepEd School Form.</div>\n  </div>\n</div>\n";
 
   const state = {
     classId: '', className: '', roster: [], savedRoster: [], activeLearnerId: '', activeTab: 'header', htmlInjected: false, suppressHostRosterOnce: false, connectedHostClassKey: '', hostSyncBound: false, hostSyncTimer: 0, autoSaveTimer: 0, finalSelectedLearnerId: '', mapehSummarySelectedLearnerId: '', mapehVirtualBaseHeader: null, isMapehSummaryView: false, isTransientDraft: true, headerEditMode: false, headerDirty: false,
@@ -264,6 +275,11 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
     if (!isMapehSubjectGroup(h.subjectGroup)) return false;
     return isMapehBaseSubject(h.subject) || ['component','consolidated'].includes(text(h.mapehMode).trim());
   }
+  // v18.57 MAPEH-aware Summary + consolidated View in Excel helpers
+  function isMapehSummaryEligible(header = state.recordHeader) { return isMapehBundleCandidate(header); }
+  function getMapehBundleId(header = state.recordHeader) { const h = canonicalMapehHeaderSource(header); return text(h.mapehBundleId).trim() || makeMapehBundleId(h); }
+  function isMapehPairedComponentHeader(header, componentKey) { const h = header || {}; return isMapehSummaryEligible(h) && (text(h.mapehComponent).trim() === componentKey || normalizeMapehComponent(h.subject) === componentKey); }
+  function sameMapehFallbackBundle(a, b) { const x = a || {}, y = b || {}; return isMapehSummaryEligible(x) && isMapehSummaryEligible(y) && text(x.gradeLevel).trim() === text(y.gradeLevel).trim() && text(x.schoolYear).trim() === text(y.schoolYear).trim() && text(x.subjectGroup).trim() === text(y.subjectGroup).trim() && text(x.classId || state.classId).trim() === text(y.classId || state.classId).trim() && text(x.section || x.className).trim().toLowerCase() === text(y.section || y.className).trim().toLowerCase(); }
   function shouldShowMapehUi(header = state.recordHeader) { return isMapehBundleCandidate(header); }
   function normalizeMapehHeader(header = state.recordHeader) {
     if (!header) return header;
@@ -278,6 +294,14 @@ function defaultTerm(key) { return { termKey: key, termLabel: TERM_LABELS[key], 
     header.subjectGroup = 'EPP / TLE / MAPEH';
     header.mapehBundleId = header.mapehBundleId || makeMapehBundleId(header);
     header.mapehReportSubject = header.mapehReportSubject || 'MAPEH';
+    // v18.57: preserve the virtual read-only consolidated Summary; do not coerce it into a third editable component record.
+    if (text(header.mapehMode).trim() === 'consolidated') {
+      header.subject = 'MAPEH';
+      header.subjectKey = 'mapeh';
+      header.mapehComponent = '';
+      header.mapehReportSubject = 'MAPEH';
+      return header;
+    }
     if (comp) {
       header.mapehMode = 'component';
       header.mapehComponent = comp;
@@ -2049,6 +2073,7 @@ function learnerAttendanceSummaryHtml(learner, termKey) {
   function refreshRecordManagerState() {
     try { updateSaveEditButton(); } catch (_) {}
     try { setStatus(); } catch (_) {}
+    try { updateExcelButtonState(); } catch (_) {}
   }
 
   function hasSavedClassRecordLoaded() {
@@ -2345,6 +2370,21 @@ function switchTab(name) {
       btn.setAttribute('data-active', active ? 'true' : 'false');
     });
     Object.keys(dom.panels).forEach(k => dom.panels[k].classList.toggle('active', k === name));
+    if (name === 'final') refreshFinalPanelForEntry();
+  }
+
+  function refreshFinalPanelForEntry() {
+    // v18.54: Score/HPS input handlers intentionally avoid full re-rendering while typing
+    // to prevent mobile keyboard flicker. When the Summary tab is opened, force a safe
+    // recompute and rebuild only the final/summary view so values no longer stay stale
+    // until a learner row is clicked.
+    recompute();
+    if (!renderMapehSummaryIfNeeded()) renderFinal();
+    renderAttendance();
+    updateSaveEditButton();
+    setStatus();
+    applyMapehSummaryActionLocks();
+    updateExcelButtonState();
   }
 
   
@@ -2466,7 +2506,7 @@ function applyCustomHeaderLockState(){ const locked=hasSavedClassRecordLoaded()&
 function cacheDom() {
     ensureG12Sy2026Controls();
     ensureCustomInstitutionalControls();
-    dom.modal = $id('classRecordModal'); dom.recordPicker = $id('crRecordPicker'); dom.cancelEditButton = $id('crBtnCancelEdit'); dom.recordStatus = $id('crRecordStatus'); dom.flash = $id('crFlash'); dom.topClassName = $id('crTopClassName'); dom.topSubject = $id('crTopSubject'); dom.topSchoolYear = $id('crTopSchoolYear'); dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); dom.panels = { header:$id('crPanelHeader'), policy:$id('crPanelPolicy'), term1:$id('crPanelTerm1'), term2:$id('crPanelTerm2'), term3:$id('crPanelTerm3'), term4:$id('crPanelTerm4'), final:$id('crPanelFinal'), attendance:$id('crPanelAttendance') }; dom.headerInputs = { schoolName:$id('crSchoolName'), schoolYear:$id('crSchoolYear'), gradeLevel:$id('crGradeLevel'), section:$id('crSection'), semester:$id('crSemester'), teacherName:$id('crTeacher'), schoolId:$id('crSchoolId'), district:$id('crDistrict'), division:$id('crDivision'), region:$id('crRegion'), subjectGroup:$id('crSubjectGroup'), subject:$id('crSubject'), recordLabel:$id('crRecordLabel'), g12Sy2026System:$id('crG12Sy2026System'), g12DescriptorSource:$id('crG12DescriptorSource'), modifiedTerm:$id('crModifiedTerm'), gradingFramework:$id('crGradingFramework'), customAcademicStructure:$id('crCustomAcademicStructure'), customActiveTerm:$id('crCustomActiveTerm'), customFinalRule:$id('crCustomFinalRule'), gradeConversionMethod:$id('crGradeConversionMethod'), transmutationTableKey:$id('crTransmutationTableKey'), keyStage:$id('crKeyStage') }; dom.policy = { mode:$id('crResolvedMode'), table:$id('crResolvedTable'), numericMode:$id('crResolvedNumericMode'), transition:$id('crResolvedTransition'), ww:$id('crWeightWW'), pt:$id('crWeightPT'), ex:$id('crWeightEX'), hasTE:$id('crHasTE'), countWW:$id('crCountWW'), countPT:$id('crCountPT'), countST:$id('crCountST'), useDescriptors:$id('crUseDescriptors'), notes:$id('crPolicyNotes') }; dom.finalTable = $id('crFinalTable'); dom.finalBody = document.querySelector('#crFinalTable tbody'); dom.attBody = document.querySelector('#crAttendanceTable tbody'); dom.finalClassAverage = $id('crFinalClassAverage'); dom.finalPassingCount = $id('crFinalPassingCount'); dom.finalNonPassingCount = $id('crFinalNonPassingCount'); dom.finalTableUsed = $id('crFinalTableUsed'); dom.tabsFooter = dom.modal ? dom.modal.querySelector('.ctm-cr-tabs-footer') : null; } ensureActiveTabHighlightStyle(); (dom.tabs || []).forEach(btn => { if (!btn.hasAttribute('role')) btn.setAttribute('role', 'tab'); if (!btn.hasAttribute('aria-selected')) btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false'); if (!btn.hasAttribute('data-active')) btn.setAttribute('data-active', btn.classList.contains('active') ? 'true' : 'false'); });
+    dom.modal = $id('classRecordModal'); dom.recordPicker = $id('crRecordPicker'); dom.cancelEditButton = $id('crBtnCancelEdit'); dom.viewExcelButton = $id('crBtnViewExcel'); dom.recordStatus = $id('crRecordStatus'); dom.flash = $id('crFlash'); dom.topClassName = $id('crTopClassName'); dom.topSubject = $id('crTopSubject'); dom.topSchoolYear = $id('crTopSchoolYear'); dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); dom.panels = { header:$id('crPanelHeader'), policy:$id('crPanelPolicy'), term1:$id('crPanelTerm1'), term2:$id('crPanelTerm2'), term3:$id('crPanelTerm3'), term4:$id('crPanelTerm4'), final:$id('crPanelFinal'), attendance:$id('crPanelAttendance') }; dom.headerInputs = { schoolName:$id('crSchoolName'), schoolYear:$id('crSchoolYear'), gradeLevel:$id('crGradeLevel'), section:$id('crSection'), semester:$id('crSemester'), teacherName:$id('crTeacher'), schoolId:$id('crSchoolId'), district:$id('crDistrict'), division:$id('crDivision'), region:$id('crRegion'), subjectGroup:$id('crSubjectGroup'), subject:$id('crSubject'), recordLabel:$id('crRecordLabel'), g12Sy2026System:$id('crG12Sy2026System'), g12DescriptorSource:$id('crG12DescriptorSource'), modifiedTerm:$id('crModifiedTerm'), gradingFramework:$id('crGradingFramework'), customAcademicStructure:$id('crCustomAcademicStructure'), customActiveTerm:$id('crCustomActiveTerm'), customFinalRule:$id('crCustomFinalRule'), gradeConversionMethod:$id('crGradeConversionMethod'), transmutationTableKey:$id('crTransmutationTableKey'), keyStage:$id('crKeyStage') }; dom.policy = { mode:$id('crResolvedMode'), table:$id('crResolvedTable'), numericMode:$id('crResolvedNumericMode'), transition:$id('crResolvedTransition'), ww:$id('crWeightWW'), pt:$id('crWeightPT'), ex:$id('crWeightEX'), hasTE:$id('crHasTE'), countWW:$id('crCountWW'), countPT:$id('crCountPT'), countST:$id('crCountST'), useDescriptors:$id('crUseDescriptors'), notes:$id('crPolicyNotes') }; dom.finalTable = $id('crFinalTable'); dom.finalBody = document.querySelector('#crFinalTable tbody'); dom.attBody = document.querySelector('#crAttendanceTable tbody'); dom.finalClassAverage = $id('crFinalClassAverage'); dom.finalPassingCount = $id('crFinalPassingCount'); dom.finalNonPassingCount = $id('crFinalNonPassingCount'); dom.finalTableUsed = $id('crFinalTableUsed'); dom.tabsFooter = dom.modal ? dom.modal.querySelector('.ctm-cr-tabs-footer') : null; } ensureActiveTabHighlightStyle(); (dom.tabs || []).forEach(btn => { if (!btn.hasAttribute('role')) btn.setAttribute('role', 'tab'); if (!btn.hasAttribute('aria-selected')) btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false'); if (!btn.hasAttribute('data-active')) btn.setAttribute('data-active', btn.classList.contains('active') ? 'true' : 'false'); });
 
   function applyTermVisibility() {
     const custom = isCustomInstitutionalMode();
@@ -3748,6 +3788,49 @@ function termStats(termKey) {
     return `<details class="ctm-cr-computation-details"><summary role="button" tabindex="0" aria-expanded="false">Detailed Computations <span>Tap/click to view how the Initial Grade and Term Grade were computed</span></summary><div class="ctm-cr-computation-body">${componentHtml}<div class="ctm-cr-computation-section ctm-cr-computation-total"><div class="ctm-cr-computation-title">Initial Grade</div><div class="ctm-cr-computation-line">Initial Grade = ${esc(formulaLabels || 'sum of included weighted scores')}</div><div class="ctm-cr-computation-line">Initial Grade = ${esc(formulaValues || '—')} = ${esc(computationFormatNumber(officialInitial, 2))}</div><div class="ctm-cr-computation-muted">Displayed values are rounded to 2 decimal places; actual computation uses the app’s internal precision.</div></div><div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">Grade Conversion</div><div class="ctm-cr-computation-line">Grade Conversion: ${esc(breakdown.conversionLabel || 'Zero-Based Direct Computation')}</div><div class="ctm-cr-computation-line">${esc(conversionLine)}</div></div><div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">Descriptor</div><div class="ctm-cr-computation-line">Applicable Table: ${esc(breakdown.tableLabel)}</div><div class="ctm-cr-computation-line">Term Grade: ${esc(fmt(breakdown.termGrade))}</div><div class="ctm-cr-computation-line">Descriptor Code: ${esc(breakdown.descriptorCode || '—')}</div><div class="ctm-cr-computation-line">Descriptor Label: ${esc(breakdown.descriptorLabel || '—')}</div>${breakdown.localizedLabel ? `<div class="ctm-cr-computation-line">Localized Label: ${esc(breakdown.localizedLabel)}</div>` : ''}<div class="ctm-cr-computation-line">Remarks: ${esc(breakdown.remarks || '—')}</div></div>${warningsHtml}</div></details>`;
   }
 
+  function findSummarySourceTermRow(summaryRow, termKey) {
+    const term = state[termKey];
+    const rows = term && Array.isArray(term.learners) ? term.learners : [];
+    if (!rows.length || !summaryRow) return null;
+    const id = text(summaryRow.learnerId || summaryRow.studentId || summaryRow.id || summaryRow.name).trim();
+    return rows.find(row => text(row && row.learnerId).trim() === id)
+      || rows.find(row => mapLearnerIdentity(row).fallback === mapLearnerIdentity(summaryRow).fallback)
+      || null;
+  }
+
+  function renderSummaryDetailedComputationsHtml(selected, visibleTerms, finalSummary, opts = {}) {
+    if (!selected) return '';
+    const terms = Array.isArray(visibleTerms) ? visibleTerms : getVisibleTerms();
+    const numericFinal = !(opts && opts.isDescriptiveFinal);
+    const finalResult = selected.finalResult || defaultComputed();
+    const termLines = terms.map(termKey => {
+      const result = selected.termResults && selected.termResults[termKey] ? selected.termResults[termKey] : defaultComputed();
+      const rawValue = result.termGrade != null ? result.termGrade : result.finalDisplayedNumeric;
+      const displayValue = numericFinal ? summaryReportedNumeric(rawValue, 60) : fmt(rawValue);
+      return `${getSummaryTermColumnLabel(termKey)} = ${fmt(displayValue)}`;
+    });
+    const includedValues = terms.map(termKey => {
+      const result = selected.termResults && selected.termResults[termKey] ? selected.termResults[termKey] : defaultComputed();
+      const rawValue = result.termGrade != null ? result.termGrade : result.finalDisplayedNumeric;
+      return numericFinal ? summaryReportedNumeric(rawValue, 60) : rawValue;
+    }).filter(value => value != null && value !== '');
+    const finalNumeric = finalResult.finalDisplayedNumeric != null ? finalResult.finalDisplayedNumeric : finalResult.termGrade;
+    const finalFormula = numericFinal
+      ? (terms.length > 1 ? `Final Grade = (${termLines.join(' + ')}) ÷ ${terms.length}` : `Final Grade = ${termLines[0] || 'selected term only'}`)
+      : 'Final Descriptor = descriptor summary from the visible term/quarter results';
+    const summarySection = `<div class="ctm-cr-computation-section ctm-cr-computation-total"><div class="ctm-cr-computation-title">Final / Summary Computation</div><div class="ctm-cr-computation-line">Included Periods: ${esc(terms.map(getSummaryTermColumnLabel).join(', ') || '—')}</div><div class="ctm-cr-computation-line">Computation Mode: ${esc(fmt(finalSummary && (finalSummary.finalComputationMode || finalSummary.numericMode)))}</div><div class="ctm-cr-computation-line">${esc(finalFormula)}</div><div class="ctm-cr-computation-line">Final / Summary Result: ${esc(fmt(numericFinal ? summaryReportedNumeric(finalNumeric, 60) : summaryDescriptorText(finalResult)))}</div><div class="ctm-cr-computation-line">Descriptor: ${esc(summaryDescriptorText(finalResult) || '—')}</div><div class="ctm-cr-computation-line">Remarks: ${esc(finalResult.remarks || '—')}</div></div>`;
+    const termDetails = terms.map(termKey => {
+      const term = state[termKey];
+      const sourceRow = findSummarySourceTermRow(selected, termKey);
+      if (!term || !sourceRow) {
+        return `<div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">${esc(getSummaryTermColumnLabel(termKey))}</div><div class="ctm-cr-computation-warning">No source learner row was found for this period.</div></div>`;
+      }
+      const detail = renderComputationBreakdownHtml(buildLearnerComputationBreakdown(sourceRow, term, state.setupProfile || defaultSetupProfile()));
+      return `<div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">${esc(getSummaryTermColumnLabel(termKey))} Source Computation</div>${detail || '<div class="ctm-cr-computation-warning">No detailed computation is available for this period.</div>'}</div>`;
+    }).join('');
+    return `<details class="ctm-cr-computation-details ctm-cr-summary-final-computation"><summary role="button" tabindex="0" aria-expanded="false">Summary Detailed Computations <span>Tap/click to view the final computation plus each term/quarter source breakdown</span></summary><div class="ctm-cr-computation-body">${summarySection}${termDetails}</div></details>`;
+  }
+
   function syncComputationDetailsExpandedState(details) {
     if (!details) return;
     const summary = details.querySelector('summary');
@@ -4442,12 +4525,13 @@ function renderFinal() {
     }
 
     const attendanceSummaryCard = finalLearnerAttendanceSummaryHtml(selected, visibleTerms);
+    const summaryComputationHtml = renderSummaryDetailedComputationsHtml(selected, visibleTerms, finalSummary, { legacy, isDescriptiveFinal });
     const detailFields = [
       `<div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-final-teacher-notes-readonly">Teacher Remarks</label><textarea id="cr-final-teacher-notes-readonly" name="cr-final-teacher-notes-readonly" rows="2" readonly>${esc(selected.finalResult.teacherNotes || '')}</textarea></div>`,
       `<div class="ctm-cr-field"><label class="ctm-cr-label" for="cr-final-intervention-notes-readonly">Intervention Notes</label><textarea id="cr-final-intervention-notes-readonly" name="cr-final-intervention-notes-readonly" rows="2" readonly>${esc(selected.finalResult.interventionNotes || '')}</textarea></div>`
     ];
 
-    selectedSummaryHtml = `<div class="ctm-cr-summary-selected-row row-count-${row1Cards.length}">${row1Cards.join('')}</div>${selectedAchievementHtml}${attendanceSummaryCard ? `<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${attendanceSummaryCard}</div>` : ''}<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${detailFields.join('')}</div>`;
+    selectedSummaryHtml = `<div class="ctm-cr-summary-selected-row row-count-${row1Cards.length}">${row1Cards.join('')}</div>${selectedAchievementHtml}${summaryComputationHtml ? `<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${summaryComputationHtml}</div>` : ''}${attendanceSummaryCard ? `<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${attendanceSummaryCard}</div>` : ''}<div class="ctm-cr-summary-detail-grid" style="margin-top:.85rem;">${detailFields.join('')}</div>`;
   }
 
   panel.innerHTML = `
@@ -4483,18 +4567,55 @@ function renderFinal() {
   // v18.48 MAPEH component bundle + consolidated summary
   function findMapehComponentRecordKey(bundleId, componentKey) {
     const targetSubject = getMapehComponentSubject(componentKey);
+    const bundle = text(bundleId).trim();
+    const baseHeader = state.recordHeader || {};
     const keys = loadIndex().map(item => text(item && item.key).trim()).filter(Boolean);
+    let safeFallbackKey = '';
     for (const key of keys) {
       try {
         const payload = JSON.parse(localStorage.getItem(key) || 'null');
         const h = payload && payload.recordHeader;
         if (!h) continue;
-        if (text(h.mapehBundleId).trim() === text(bundleId).trim() && (text(h.mapehComponent).trim() === componentKey || text(h.subject).trim() === targetSubject)) return key;
+        const isTarget = text(h.mapehComponent).trim() === componentKey || text(h.subject).trim() === targetSubject || normalizeMapehComponent(h.subject) === componentKey;
+        if (!isTarget) continue;
+        if (bundle && text(h.mapehBundleId).trim() === bundle) return key;
+        if (!safeFallbackKey && sameMapehFallbackBundle(h, baseHeader)) safeFallbackKey = key;
       } catch (_) {}
     }
+    if (safeFallbackKey) return safeFallbackKey;
     const legacyKey = `classrecord-sy::${slugify(state.recordHeader.classId || state.classId)}::${slugify(state.recordHeader.schoolYear)}::${slugify(targetSubject)}`;
     try { if (localStorage.getItem(legacyKey)) return legacyKey; } catch (_) {}
     return '';
+  }
+  function findMapehPairedRecords(bundleId = getMapehBundleId(state.recordHeader)) {
+    const out = { bundleId: text(bundleId).trim(), musicArts: null, peHealth: null, legacyDetected: false, warnings: [] };
+    MAPEH_COMPONENTS.forEach(meta => {
+      const key = findMapehComponentRecordKey(out.bundleId, meta.key);
+      if (!key) {
+        out[meta.key] = null;
+        out.warnings.push(`${meta.shortLabel || meta.label} component record is missing.`);
+        return;
+      }
+      try {
+        const payload = JSON.parse(localStorage.getItem(key) || 'null');
+        out[meta.key] = payload ? Object.assign({ __storageKey: key }, payload) : null;
+      } catch (_) {
+        out[meta.key] = null;
+        out.warnings.push(`${meta.shortLabel || meta.label} component record could not be loaded.`);
+      }
+    });
+    try {
+      loadIndex().forEach(item => {
+        const key = text(item && item.key).trim();
+        if (!key) return;
+        const payload = JSON.parse(localStorage.getItem(key) || 'null');
+        const h = payload && payload.recordHeader || {};
+        const legacyHit = MAPEH_LEGACY_COMPONENTS.some(meta => text(h.mapehComponent).trim() === meta.key || text(h.subject).trim() === meta.subject || normalizeMapehComponent(h.subject) === meta.key);
+        if (legacyHit && (text(h.mapehBundleId).trim() === out.bundleId || sameMapehFallbackBundle(h, state.recordHeader))) out.legacyDetected = true;
+      });
+    } catch (_) {}
+    if (out.legacyDetected) out.warnings.push('Legacy four-component MAPEH records detected. This Summary currently expects paired Music & Arts and PE & Health records.');
+    return out;
   }
   function makeMapehComponentSnapshot(componentKey, baseHeader) {
     const h = Object.assign(defaultRecordHeader(), clone(baseHeader || state.recordHeader || {}));
@@ -4581,34 +4702,100 @@ function renderFinal() {
     const term = record && record[termKey];
     const rows = term && Array.isArray(term.learners) ? term.learners : [];
     const ident = mapLearnerIdentity(learner);
-    return rows.find(r => text(r && r.learnerId).trim() && text(r.learnerId).trim() === ident.id) || rows.find(r => mapLearnerIdentity(r).fallback === ident.fallback) || null;
+    return rows.find(r => ident.id && text(r && r.learnerId).trim() === ident.id) || rows.find(r => mapLearnerIdentity(r).fallback === ident.fallback) || null;
   }
-  function computeMapehConsolidatedSummary(componentRecords) {
+  function mapehRowKey(row) { const ident = mapLearnerIdentity(row || {}); return ident.id ? `id:${ident.id}` : `name:${ident.fallback}`; }
+  function mapehLearnerFromRow(row) { return { learnerId: text(row && (row.learnerId || row.id || row.studentId || row.lrn || row.name)).trim(), id: text(row && (row.learnerId || row.id || row.studentId || row.lrn || row.name)).trim(), lrn: text(row && row.lrn).trim(), name: text(row && row.name).trim(), sex: normalizeSex(row && row.sex) }; }
+  function collectMapehRecordLearners(record) {
+    const keyed = new Map();
+    const add = row => { if (!row) return; const learner = mapehLearnerFromRow(row); if (!learner.name && !learner.learnerId) return; const key = mapehRowKey(learner); if (!keyed.has(key)) keyed.set(key, learner); };
+    (Array.isArray(record && record.roster) ? record.roster : []).forEach(add);
+    TERMS.forEach(k => { const term = record && record[k]; (Array.isArray(term && term.learners) ? term.learners : []).forEach(add); });
+    return Array.from(keyed.values());
+  }
+  function buildMapehLearnerRows(musicArtsRecord, peHealthRecord) {
+    const keyed = new Map();
+    (Array.isArray(state.roster) ? state.roster : []).forEach(row => { const l = mapehLearnerFromRow(row); if (l.name || l.learnerId) keyed.set(mapehRowKey(l), l); });
+    collectMapehRecordLearners(musicArtsRecord).forEach(l => { const key = mapehRowKey(l); if (!keyed.has(key)) keyed.set(key, l); });
+    collectMapehRecordLearners(peHealthRecord).forEach(l => { const key = mapehRowKey(l); if (!keyed.has(key)) keyed.set(key, l); });
+    return Array.from(keyed.values());
+  }
+  function computeMapehTermGrade(musicArtsGrade, peHealthGrade) {
+    const ma = num(musicArtsGrade), pe = num(peHealthGrade);
+    return ma == null || pe == null ? null : roundWhole((ma + pe) / 2);
+  }
+  function computeMapehFinalGrade(termGrades) {
+    const vals = (Array.isArray(termGrades) ? termGrades : Object.values(termGrades || {})).map(num).filter(v => v != null);
+    return vals.length ? roundWhole(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  }
+  function mapehComponentFinal(record, learner) {
+    const vals = getVisibleTerms().map(k => {
+      const row = componentRowForLearner(record, k, learner);
+      return row && row.computed ? num(row.computed.finalDisplayedNumeric != null ? row.computed.finalDisplayedNumeric : row.computed.termGrade) : null;
+    }).filter(v => v != null);
+    return vals.length ? roundWhole(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  }
+  function computeMapehConsolidatedSummary(bundleIdOrRecords) {
+    const paired = (bundleIdOrRecords && (bundleIdOrRecords.musicArts !== undefined || bundleIdOrRecords.peHealth !== undefined)) ? bundleIdOrRecords : findMapehPairedRecords(bundleIdOrRecords || getMapehBundleId(state.recordHeader));
+    const componentRecords = { musicArts: paired.musicArts || null, peHealth: paired.peHealth || null };
     const visibleTerms = getVisibleTerms();
-    const missingComponents = MAPEH_COMPONENTS.filter(meta => !componentRecords[meta.key]).map(meta => meta.label);
-    const rows = state.roster.map(learner => {
-      const id = text(learner.id || learner.name);
-      const termGrades = {}, termBreakdown = {}, incompleteTerms = [];
+    const warnings = Array.isArray(paired.warnings) ? paired.warnings.slice() : [];
+    const genericWarning = 'MAPEH Summary combines Music & Arts and PE & Health. Missing paired component grades are not treated as zero and are marked Incomplete.';
+    if (!warnings.includes(genericWarning)) warnings.unshift(genericWarning);
+    const learnersBase = buildMapehLearnerRows(componentRecords.musicArts, componentRecords.peHealth);
+    const rows = learnersBase.map(learner => {
+      const id = text(learner.learnerId || learner.id || learner.name);
+      const terms = {}, termGrades = {}, termBreakdown = {}, warningNotes = [];
       visibleTerms.forEach(termKey => {
-        const vals = [];
-        const breakdown = {};
-        MAPEH_COMPONENTS.forEach(meta => {
-          const row = componentRowForLearner(componentRecords[meta.key], termKey, learner);
-          const grade = row && row.computed ? num(row.computed.finalDisplayedNumeric != null ? row.computed.finalDisplayedNumeric : row.computed.termGrade) : null;
-          breakdown[meta.key] = grade;
-          if (grade != null) vals.push(grade);
-        });
-        termBreakdown[termKey] = breakdown;
-        if (vals.length === MAPEH_COMPONENTS.length) termGrades[termKey] = roundWhole(vals.reduce((a,b)=>a+b,0) / vals.length);
-        else { termGrades[termKey] = null; incompleteTerms.push(termKey); }
+        const maRow = componentRowForLearner(componentRecords.musicArts, termKey, learner);
+        const peRow = componentRowForLearner(componentRecords.peHealth, termKey, learner);
+        const maGrade = maRow && maRow.computed ? num(maRow.computed.finalDisplayedNumeric != null ? maRow.computed.finalDisplayedNumeric : maRow.computed.termGrade) : null;
+        const peGrade = peRow && peRow.computed ? num(peRow.computed.finalDisplayedNumeric != null ? peRow.computed.finalDisplayedNumeric : peRow.computed.termGrade) : null;
+        const missing = [];
+        if (maGrade == null) missing.push('Music & Arts');
+        if (peGrade == null) missing.push('PE & Health');
+        const mapehGrade = computeMapehTermGrade(maGrade, peGrade);
+        const complete = mapehGrade != null;
+        if (!complete) warningNotes.push(`${getSummaryTermColumnLabel(termKey)}: Missing ${missing.join(' and ')}`);
+        terms[termKey] = { label: getSummaryTermColumnLabel(termKey), musicArtsGrade: maGrade, peHealthGrade: peGrade, mapehGrade, complete, missing };
+        termGrades[termKey] = mapehGrade;
+        termBreakdown[termKey] = { musicArts: maGrade, peHealth: peGrade };
       });
-      const complete = visibleTerms.every(k => num(termGrades[k]) != null);
-      const finalGrade = complete && visibleTerms.length ? roundWhole(visibleTerms.map(k => num(termGrades[k])).reduce((a,b)=>a+b,0) / visibleTerms.length) : null;
-      const desc = finalGrade == null ? null : numericDescriptor(finalGrade, (state.setupProfile && state.setupProfile.resultTableResolved) || 'table11');
-      return { learnerId: id, name: text(learner.name), sex: normalizeSex(learner.sex), termGrades, termBreakdown, finalGrade, finalDisplayedNumeric: finalGrade, descriptorCode: desc ? desc.descriptorCode || '' : '', descriptorLabel: desc ? desc.descriptorLabel || '' : '', remarks: finalGrade == null ? 'Incomplete' : (finalGrade >= PASSING_GRADE ? 'Passed' : 'Failed'), incompleteTerms };
+      const completeTermValues = visibleTerms.map(k => termGrades[k]).filter(v => num(v) != null);
+      const finalMapehGrade = computeMapehFinalGrade(completeTermValues);
+      const incomplete = visibleTerms.some(k => !(terms[k] && terms[k].complete)) || !componentRecords.musicArts || !componentRecords.peHealth;
+      const descriptorTable = (state.setupProfile && state.setupProfile.resultTableResolved) || 'table11';
+      const desc = finalMapehGrade == null ? null : numericDescriptor(finalMapehGrade, descriptorTable);
+      const componentFinals = { musicArts: mapehComponentFinal(componentRecords.musicArts, learner), peHealth: mapehComponentFinal(componentRecords.peHealth, learner) };
+      return {
+        learnerId: id, name: text(learner.name), sex: normalizeSex(learner.sex), terms, termGrades, termBreakdown, componentFinals,
+        finalMapehGrade, finalGrade: finalMapehGrade, finalDisplayedNumeric: finalMapehGrade,
+        descriptorCode: desc ? (desc.descriptorCode || desc.code || '') : '', descriptorLabel: desc ? (desc.descriptorLabel || desc.label || '') : '',
+        generalDescription: desc ? (desc.generalDescription || '') : '', instructionalResponse: desc ? (desc.instructionalResponse || '') : '',
+        remarks: finalMapehGrade == null ? 'Incomplete' : (incomplete ? 'Incomplete' : (finalMapehGrade >= PASSING_GRADE ? 'Passed' : 'Failed')),
+        incomplete, warningNotes
+      };
     });
-    const nums = rows.map(r => num(r.finalGrade)).filter(v => v != null);
-    return { visibleTerms, missingComponents, learners: rows, classSummary: { classAverage: nums.length ? round2(nums.reduce((a,b)=>a+b,0)/nums.length) : null, passingCount: rows.filter(r => num(r.finalGrade) != null && num(r.finalGrade) >= PASSING_GRADE).length, nonPassingCount: rows.filter(r => num(r.finalGrade) != null && num(r.finalGrade) < PASSING_GRADE).length } };
+    // roster alignment warnings
+    const maKeys = new Set(collectMapehRecordLearners(componentRecords.musicArts).map(mapehRowKey));
+    const peKeys = new Set(collectMapehRecordLearners(componentRecords.peHealth).map(mapehRowKey));
+    maKeys.forEach(k => { if (!peKeys.has(k)) warnings.push('A learner exists in Music & Arts but not in PE & Health.'); });
+    peKeys.forEach(k => { if (!maKeys.has(k)) warnings.push('A learner exists in PE & Health but not in Music & Arts.'); });
+    if (maKeys.size && peKeys.size && (maKeys.size !== peKeys.size || Array.from(maKeys).some(k => !peKeys.has(k)))) warnings.push('Component rosters do not align.');
+    rows.forEach(r => (r.warningNotes || []).forEach(note => warnings.push(`${r.name || r.learnerId}: ${note}`)));
+    const nums = rows.map(r => num(r.finalMapehGrade)).filter(v => v != null && !rows.find(x => x.finalMapehGrade === v && x.incomplete));
+    const completeRows = rows.filter(r => !r.incomplete && num(r.finalMapehGrade) != null);
+    return {
+      mode: 'mapehConsolidated', tableUsed: 'MAPEH paired average', visibleTerms,
+      components: {
+        musicArts: { recordId: text(componentRecords.musicArts && (componentRecords.musicArts.__storageKey || componentRecords.musicArts.recordHeader && componentRecords.musicArts.recordHeader.recordId)), subject: getMapehComponentSubject('musicArts'), found: !!componentRecords.musicArts },
+        peHealth: { recordId: text(componentRecords.peHealth && (componentRecords.peHealth.__storageKey || componentRecords.peHealth.recordHeader && componentRecords.peHealth.recordHeader.recordId)), subject: getMapehComponentSubject('peHealth'), found: !!componentRecords.peHealth }
+      },
+      missingComponents: MAPEH_COMPONENTS.filter(meta => !componentRecords[meta.key]).map(meta => meta.shortLabel || meta.label),
+      learners: rows,
+      classSummary: { learnerCount: rows.length, classAverage: completeRows.length ? round2(completeRows.reduce((sum, r) => sum + Number(r.finalMapehGrade), 0) / completeRows.length) : null, passingCount: completeRows.filter(r => Number(r.finalMapehGrade) >= PASSING_GRADE).length, nonPassingCount: completeRows.filter(r => Number(r.finalMapehGrade) < PASSING_GRADE).length, incompleteCount: rows.filter(r => r.incomplete || r.finalMapehGrade == null).length, tableUsed: 'MAPEH paired average' },
+      warnings: Array.from(new Set(warnings.filter(Boolean)))
+    };
   }
   function selectedMapehSummaryLearner(summary) {
     const rows = summary && summary.learners || [];
@@ -4616,25 +4803,47 @@ function renderFinal() {
     if (!state.mapehSummarySelectedLearnerId || !rows.some(r => text(r.learnerId) === text(state.mapehSummarySelectedLearnerId))) state.mapehSummarySelectedLearnerId = text(rows[0].learnerId);
     return rows.find(r => text(r.learnerId) === text(state.mapehSummarySelectedLearnerId)) || rows[0];
   }
+  function renderMapehSelectedLearnerDetail(learnerId, summary) {
+    const rows = summary && summary.learners || [];
+    const selected = rows.find(r => text(r.learnerId) === text(learnerId)) || rows[0] || null;
+    if (!selected) return '<div class="ctm-cr-disclaimer">Select a learner row to review the MAPEH breakdown.</div>';
+    const termRows = (summary.visibleTerms || []).map(k => {
+      const t = selected.terms[k] || {};
+      return `<tr><td>${esc(t.label || getSummaryTermColumnLabel(k))}</td><td>${fmt(t.musicArtsGrade)}</td><td>${fmt(t.peHealthGrade)}</td><td>${fmt(t.mapehGrade)}</td><td>${t.complete ? 'Complete' : esc('Incomplete' + (t.missing && t.missing.length ? ': Missing ' + t.missing.join(', ') : ''))}</td></tr>`;
+    }).join('');
+    return `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div><div class="ctm-cr-grid ctm-cr-grid-4 ctm-cr-summary-selected-grid"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Learner</div><div class="ctm-cr-strong">${esc(selected.name)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Sex</div><div class="ctm-cr-strong">${esc(selected.sex)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Music & Arts Final</div><div class="ctm-cr-strong">${fmt(selected.componentFinals && selected.componentFinals.musicArts)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">PE & Health Final</div><div class="ctm-cr-strong">${fmt(selected.componentFinals && selected.componentFinals.peHealth)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Final MAPEH</div><div class="ctm-cr-strong">${fmt(selected.finalMapehGrade)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Descriptor</div><div class="ctm-cr-strong">${esc(selected.descriptorLabel || selected.descriptorCode || '—')}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Remarks</div><div class="ctm-cr-strong">${esc(selected.remarks)}</div></div></div><div class="table-scroll ctm-cr-table-scroll" style="margin-top:.75rem;"><table class="ctm-cr-table"><thead><tr><th>Term / Quarter</th><th>Music & Arts</th><th>PE & Health</th><th>MAPEH</th><th>Status</th></tr></thead><tbody>${termRows}</tbody></table></div>`;
+  }
+  function renderMapehSummary(summary) { return renderMapehConsolidatedSummary(summary); }
   function renderMapehConsolidatedSummary(summary) {
     if (!dom.panels || !dom.panels.final) return;
     const panel = dom.panels.final;
     const visibleTerms = summary.visibleTerms || [];
     const selected = selectedMapehSummaryLearner(summary);
-    const warning = summary.missingComponents && summary.missingComponents.length ? `<div class="ctm-cr-disclaimer warning">MAPEH Summary incomplete: missing ${esc(summary.missingComponents.join(', '))} record(s).</div>` : '';
+    const warnings = (summary.warnings || []).map(w => `<div class="ctm-cr-disclaimer warning">${esc(w)}</div>`).join('');
     const headTerms = visibleTerms.map(k => `<th>${esc(getSummaryTermColumnLabel(k))}</th>`).join('');
-    const body = (summary.learners || []).map((r, idx) => `<tr data-mapeh-summary-learner="${esc(r.learnerId)}" aria-selected="${text(r.learnerId)===text(state.mapehSummarySelectedLearnerId) ? 'true' : 'false'}"><td>${idx+1}</td><td>${esc(r.name)}</td><td>${esc(r.sex)}</td>${visibleTerms.map(k => `<td>${r.termGrades[k] == null ? '—' : esc(r.termGrades[k])}</td>`).join('')}<td>${r.finalGrade == null ? '—' : esc(r.finalGrade)}</td><td>${esc(r.remarks)}</td></tr>`).join('') || `<tr><td colspan="${4+visibleTerms.length}">No learners found.</td></tr>`;
-    const details = selected ? visibleTerms.map(k => {
-      const bits = MAPEH_COMPONENTS.map(meta => `${meta.label}: ${selected.termBreakdown[k] && selected.termBreakdown[k][meta.key] != null ? selected.termBreakdown[k][meta.key] : '—'}`).join('<br>');
-      return `<div class="ctm-cr-card"><div class="ctm-cr-mini-label">${esc(getTermLabel(k))}</div><div class="ctm-cr-strong">${bits}<br>MAPEH Grade: ${selected.termGrades[k] == null ? 'Incomplete' : selected.termGrades[k]}</div></div>`;
-    }).join('') : '';
-    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warning}<div class="ctm-cr-disclaimer">Consolidated MAPEH grades are rounded averages of the two paired component records: Music and Arts, and Physical Education and Health. Missing paired component grades are not treated as zero.</div><div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH paired average</div></div></div>${selected ? `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div><div class="ctm-cr-grid ctm-cr-grid-4">${details}<div class="ctm-cr-card"><div class="ctm-cr-mini-label">Final MAPEH Grade</div><div class="ctm-cr-strong">${selected.finalGrade == null ? '—' : selected.finalGrade}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Remarks</div><div class="ctm-cr-strong">${esc(selected.remarks)}</div></div></div>` : ''}`;
+    const body = (summary.learners || []).map((r, idx) => {
+      const termCells = visibleTerms.map(k => {
+        const t = r.terms && r.terms[k] || {};
+        return `<td>${t.complete ? `${esc(t.mapehGrade)}<div class="ctm-cr-small">M&A: ${fmt(t.musicArtsGrade)} | PE&H: ${fmt(t.peHealthGrade)}</div>` : `—<div class="ctm-cr-small">${esc((t.missing || []).length ? 'Missing ' + t.missing.join(', ') : 'Incomplete')}</div>`}</td>`;
+      }).join('');
+      return `<tr data-mapeh-summary-learner="${esc(r.learnerId)}" aria-selected="${text(r.learnerId)===text(state.mapehSummarySelectedLearnerId) ? 'true' : 'false'}"><td>${idx+1}</td><td>${esc(r.name)}</td><td>${esc(r.sex)}</td>${termCells}<td>${fmt(r.finalMapehGrade)}</td><td>${esc(r.descriptorLabel || r.descriptorCode || '—')}</td><td>${esc(r.remarks)}</td></tr>`;
+    }).join('') || `<tr><td colspan="${6+visibleTerms.length}">No learners found.</td></tr>`;
+    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warnings}<div class="ctm-cr-disclaimer">MAPEH Summary combines Music & Arts and PE & Health. Missing paired component grades are not treated as zero and are marked Incomplete.</div><div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Descriptor</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4 ctm-cr-summary-top-grid" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Incomplete Count</div><div class="ctm-cr-strong">${summary.classSummary.incompleteCount}</div></div><div class="ctm-cr-card ctm-cr-summary-row2-half"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH paired average</div></div><div class="ctm-cr-card ctm-cr-summary-row2-half"><div class="ctm-cr-mini-label">Learner Count</div><div class="ctm-cr-strong">${summary.classSummary.learnerCount}</div></div></div>${selected ? renderMapehSelectedLearnerDetail(selected.learnerId, summary) : ''}`;
     panel.querySelectorAll('[data-mapeh-summary-learner]').forEach(row => row.addEventListener('click', () => { state.mapehSummarySelectedLearnerId = row.getAttribute('data-mapeh-summary-learner') || ''; renderMapehConsolidatedSummary(summary); }));
   }
+  function shouldUseMapehConsolidatedSummaryMode() {
+    const h = state.recordHeader || {};
+    return !!(isMapehSummaryEligible(h) && (state.isMapehSummaryView || text(h.mapehMode).trim() === 'consolidated' || text(state.activeTab).trim() === 'final'));
+  }
+  function shouldExportMapehConsolidatedWorkbook() {
+    const h = state.recordHeader || {};
+    return !!(isMapehSummaryEligible(h) && (state.isMapehSummaryView || text(h.mapehMode).trim() === 'consolidated' || text(state.activeTab).trim() === 'final'));
+  }
   function renderMapehSummaryIfNeeded() {
-    if (!state.isMapehSummaryView) return false;
-    const bundleId = state.recordHeader.mapehBundleId || makeMapehBundleId(state.recordHeader);
-    const summary = computeMapehConsolidatedSummary(loadMapehComponentRecords(bundleId));
+    if (!shouldUseMapehConsolidatedSummaryMode()) return false;
+    const bundleId = getMapehBundleId(state.recordHeader);
+    const summary = computeMapehConsolidatedSummary(bundleId);
+    state.mapehConsolidatedSummary = summary;
     renderMapehConsolidatedSummary(summary);
     return true;
   }
@@ -4689,7 +4898,6 @@ function renderFinal() {
     if (!shouldShowMapehUi()) return;
     if (!state.isMapehSummaryView) flushAutoPersist();
     const bundleId = state.recordHeader.mapehBundleId || makeMapehBundleId(state.recordHeader);
-    ensureMapehComponentRecords(bundleId, { header: state.recordHeader });
     if (componentKeyOrSummary === MAPEH_SUMMARY_KEY) {
       state.mapehVirtualBaseHeader = clone(state.recordHeader);
       state.isMapehSummaryView = true;
@@ -4699,6 +4907,7 @@ function renderFinal() {
       switchTab('final');
       return;
     }
+    ensureMapehComponentRecords(bundleId, { header: state.recordHeader });
     const meta = getMapehComponentMeta(componentKeyOrSummary) || MAPEH_COMPONENTS[0];
     const key = findMapehComponentRecordKey(bundleId, meta.key);
     if (key) {
@@ -4711,7 +4920,7 @@ function renderFinal() {
       switchTab(state.activeTab === 'final' ? 'term1' : state.activeTab);
     }
   }
-  function render() { cacheDom(); normalizeMapehHeader(state.recordHeader); updateHeaderFields(); renderPolicy(); applyTermVisibility(); ensureMapehComponentSwitcherUi(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); if (!renderMapehSummaryIfNeeded()) renderFinal(); renderAttendance(); renderRecordPicker(); updateSaveEditButton(); setStatus(); applyMapehSummaryActionLocks(); }
+  function render() { cacheDom(); normalizeMapehHeader(state.recordHeader); updateHeaderFields(); renderPolicy(); applyTermVisibility(); ensureMapehComponentSwitcherUi(); TERMS.forEach(termKey => { if (dom.panels[termKey]) buildTermPanel(termKey); }); if (!renderMapehSummaryIfNeeded()) renderFinal(); renderAttendance(); renderRecordPicker(); updateSaveEditButton(); setStatus(); applyMapehSummaryActionLocks(); updateExcelButtonState(); }
   function recompute() { state.recordHeader.keyStage = getKeyStage(state.recordHeader.gradeLevel); normalizeMapehHeader(state.recordHeader); state.recordHeader.subjectGroup = coerceSubjectGroupForContext(state.recordHeader.subjectGroup, state.recordHeader.gradeLevel, state.recordHeader.schoolYear); if (dom.headerInputs && dom.headerInputs.subjectGroup && text(dom.headerInputs.subjectGroup.value).trim() !== text(state.recordHeader.subjectGroup).trim()) dom.headerInputs.subjectGroup.value = state.recordHeader.subjectGroup || ''; state.setupProfile = resolvePolicy(); hydrateTerms(); recomputeFinal(); buildAttendanceRows(); }
   function resetDraft(keepContext) { const old = clone(state.recordHeader), oldRoster = clone(state.roster); initDefaults(); state.isTransientDraft = true; state.headerEditMode = false; state.headerDirty = false; state.savedRoster = keepContext ? oldRoster : []; state.roster = clone(state.savedRoster); Object.assign(state.recordHeader, { classId: state.classId, className: state.className, section: keepContext ? (old.section || '') : '', schoolName: keepContext ? old.schoolName : '', schoolYear: keepContext ? old.schoolYear : '', gradeLevel: keepContext ? old.gradeLevel : '', teacherName: keepContext ? old.teacherName : '', subjectGroup: keepContext ? old.subjectGroup : '', subject: keepContext ? old.subject : '', schoolId: keepContext ? old.schoolId : '' }); loadFromHost(); recompute(); render(); }
 
@@ -4898,6 +5107,811 @@ function importCsvText(csvText) {
   render();
   flash('CSV Class Record imported.', 'success');
 }
+
+  // v18.53 View in Excel export
+  const EXCEL_COPY_NOTE = 'This Excel workbook is a generated copy for viewing, printing, and offline reference. To Edit go to Review and Unprotect Sheet. Edits made in Excel will not update the Class Record module.';
+
+  function excelValue(v) {
+    if (v == null) return '';
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    return String(v);
+  }
+  function excelPercent(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '';
+    return Math.round(n * 10000) / 100;
+  }
+  function excelRound(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n * 100) / 100 : '';
+  }
+  function sanitizeExcelFileName(value) {
+    return text(value || '')
+      .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\.+|\.+$/g, '')
+      .slice(0, 120) || 'ClassRecord';
+  }
+  function getExcelSheetSafeName(value, fallback) {
+    const raw = text(value || fallback || 'Sheet').replace(/[\\/*?:\[\]]+/g, ' ').replace(/\s+/g, ' ').trim() || fallback || 'Sheet';
+    return raw.slice(0, 31);
+  }
+  function getExcelVisibleTerms() {
+    try { return getVisibleTerms().filter(k => TERMS.includes(k)); } catch (_) { return ['term1','term2','term3'].filter(k => state[k]); }
+  }
+  function getExcelSheetNameForTerm(termKey) {
+    return getExcelSheetSafeName(getTermLabel(termKey).toUpperCase(), (TERM_LABELS[termKey] || termKey).toUpperCase());
+  }
+  function getExcelActiveSheetFromCurrentTab(snapshot) {
+    const tab = text(state.activeTab || 'header');
+    if (tab === 'header') return 'COVER';
+    if (tab === 'policy') return 'POLICY SETUP';
+    if (tab === 'attendance') return 'ATTENDANCE SUMMARY';
+    if (tab === 'final') return 'SUMMARY OF GRADES';
+    if (TERMS.includes(tab)) return snapshot.termSheetNames && snapshot.termSheetNames[tab] || getExcelSheetNameForTerm(tab);
+    return 'COVER';
+  }
+  function hasMapehConsolidatedExcelExportableData() {
+    if (!shouldExportMapehConsolidatedWorkbook()) return false;
+    try {
+      const summary = state.mapehConsolidatedSummary || computeMapehConsolidatedSummary(getMapehBundleId(state.recordHeader));
+      const hasLearners = !!(summary && Array.isArray(summary.learners) && summary.learners.length);
+      const hasComponent = !!(summary && summary.components && Object.keys(summary.components).some(k => summary.components[k] && summary.components[k].found));
+      const hasHeader = !!text(state.recordHeader && [state.recordHeader.schoolYear, state.recordHeader.gradeLevel, state.recordHeader.section, state.recordHeader.subject, state.recordHeader.mapehBundleId].join(' ')).trim();
+      return !!(hasHeader && (hasLearners || hasComponent));
+    } catch (_) {
+      return false;
+    }
+  }
+  function hasExcelExportableData() {
+    if (shouldExportMapehConsolidatedWorkbook()) return hasMapehConsolidatedExcelExportableData();
+    const rosterCount = Array.isArray(state.roster) ? state.roster.length : 0;
+    const hasHeader = !!text(state.recordHeader && [state.recordHeader.schoolYear, state.recordHeader.gradeLevel, state.recordHeader.section, state.recordHeader.subject, state.recordHeader.recordId].join(' ')).trim();
+    const hasFinal = !!(state.finalSummary && Array.isArray(state.finalSummary.learners) && state.finalSummary.learners.length);
+    const hasTermData = TERMS.some(k => {
+      const term = state[k];
+      return !!(term && Array.isArray(term.learners) && term.learners.some(row => {
+        const c = row && row.computed || {};
+        const scores = row && row.scores || {};
+        const hasScores = ['ww','pt','ex'].some(g => Object.values(scores[g] || {}).some(v => num(v) != null));
+        return hasScores || text(c.descriptorCode || c.descriptorLabel || c.teacherNotes || c.interventionNotes).trim();
+      }));
+    });
+    return !!(rosterCount && (hasHeader || hasTermData || hasFinal));
+  }
+  function updateExcelButtonState() {
+    const btn = $id('crBtnViewExcel');
+    if (!btn) return;
+    const ok = hasExcelExportableData();
+    btn.disabled = !ok;
+    btn.title = ok ? 'Generate a saveable Excel copy for viewing, printing, and offline reference.' : 'Nothing to view in Excel yet. Please save or encode Class Record data first.';
+  }
+  function buildActiveClassRecordExcelSnapshot() {
+    try { recompute(); } catch (_) {}
+    const header = clone(state.recordHeader || defaultRecordHeader());
+    const setup = clone(state.setupProfile || defaultSetupProfile());
+    const visibleTerms = getExcelVisibleTerms();
+    const termSheetNames = {};
+    visibleTerms.forEach(k => { termSheetNames[k] = getExcelSheetNameForTerm(k); });
+    return {
+      exportVersion: FORM_VERSION + '-view-excel',
+      generatedAt: new Date().toLocaleString(),
+      note: EXCEL_COPY_NOTE,
+      recordHeader: header,
+      setupProfile: setup,
+      roster: clone(state.roster || []),
+      attendance: clone(state.attendance || defaultAttendance()),
+      terms: visibleTerms.reduce((acc, k) => { acc[k] = clone(state[k] || defaultTerm(k)); return acc; }, {}),
+      visibleTerms,
+      termSheetNames,
+      finalSummary: clone(state.finalSummary || defaultFinalSummary()),
+      activeTab: state.activeTab || 'header',
+      mapeh: {
+        isSummaryView: !!state.isMapehSummaryView,
+        mode: text(header.mapehMode || ''),
+        component: text(header.mapehComponent || ''),
+        bundleId: text(header.mapehBundleId || ''),
+        reportSubject: text(header.mapehReportSubject || '')
+      }
+    };
+  }
+  function buildExcelCoverSheetRows(snapshot) {
+    const h = snapshot.recordHeader || {};
+    const rows = [
+      ['Class Record Generated Excel Copy'],
+      [EXCEL_COPY_NOTE],
+      [],
+      ['Field','Value'],
+      ['Region', h.region], ['Division', h.division], ['District', h.district], ['School Name', h.schoolName], ['School ID', h.schoolId],
+      ['School Year', h.schoolYear], ['Grade Level', h.gradeLevel], ['Section', h.section], ['Semester', h.semester],
+      ['Grading Framework', normalizeGradingFramework(h.gradingFramework) === 'customInstitutional' ? 'Custom Institutional' : 'Official DepEd'],
+      ['Grade 12 SY 2026-2027 Grading System', currentG12SystemLabel() || h.g12Sy2026System],
+      ['Descriptor Source', h.g12DescriptorSource || h.customDescriptorSource || ''], ['Subject Group', h.subjectGroup], ['Subject', h.subject],
+      ['Teacher/Class Adviser', h.teacherName], ['Date/Time generated', snapshot.generatedAt],
+      ['Export Version', snapshot.exportVersion], ['Class Record Source of Truth', 'Class Record module local state/storage'],
+      ['MAPEH Mode', snapshot.mapeh.mode], ['MAPEH Component', snapshot.mapeh.component], ['MAPEH Bundle ID', snapshot.mapeh.bundleId]
+    ];
+    return rows;
+  }
+  function buildExcelPolicySheetRows(snapshot) {
+    const setup = snapshot.setupProfile || {};
+    const w = setup.componentWeights || {};
+    const c = setup.assessmentCounts || {};
+    const cc = setup.customComponents || {};
+    const rows = [
+      ['Policy Setup'], [EXCEL_COPY_NOTE], [], ['Field','Value'],
+      ['Grading Mode', setup.gradingModeResolved], ['Result Table', setup.resultTableResolved], ['Numeric Mode', setup.transitionRuleResolved && setup.transitionRuleResolved.numericMode || setup.numericMode],
+      ['Transition Rule', setup.transitionRuleResolved && setup.transitionRuleResolved.transitionLabel || ''],
+      ['WW Weight', excelPercent(w.ww)], ['PT Weight', excelPercent(w.pt)], ['EX/ST/TE/QA/QE Weight', excelPercent(w.ex)],
+      ['WW Count', c.wwCount], ['PT Count', c.ptCount], ['ST Count', c.stCount], ['Has TE', c.hasTE ? 'Yes' : 'No'], ['QA Count', c.qaCount || 0], ['TE Count', c.teCount || 0], ['QE Count', c.qeCount || 0],
+      ['Transmutation Table Key', setup.transmutationTableKey], ['Custom Academic Structure', setup.customAcademicStructure], ['Selected/Visible Terms', snapshot.visibleTerms.map(getTermLabel).join(', ')],
+      ['Final Grade Rule', setup.customFinalRule], ['Descriptor Source', setup.customDescriptorSource || (snapshot.recordHeader && snapshot.recordHeader.g12DescriptorSource) || ''],
+      ['Uses Transmutation', setup.usesTransmutation ? 'Yes' : 'No'], ['Uses Zero Based', setup.usesZeroBased ? 'Yes' : 'No'], ['Uses Descriptors', setup.usesDescriptors ? 'Yes' : 'No'],
+      ['Custom WW', cc.ww ? `${cc.ww.count} item(s), ${cc.ww.weight}%` : ''], ['Custom PT', cc.pt ? `${cc.pt.count} item(s), ${cc.pt.weight}%` : ''],
+      ['Custom ST', cc.st ? `${cc.st.count} item(s), ${cc.st.weight}%` : ''], ['Custom TE', cc.te ? `${cc.te.count} item(s), ${cc.te.weight}%` : ''], ['Custom QE', cc.qe ? `${cc.qe.count} item(s), ${cc.qe.weight}%` : ''],
+      ['Validation Notes', Array.isArray(setup.validationNotes) ? setup.validationNotes.join(' ') : text(setup.validationNotes || '')]
+    ];
+    return rows;
+  }
+  function excelPercentLabel(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0%';
+    const pct = Math.round(n * 10000) / 100;
+    return `${pct % 1 === 0 ? Math.round(pct) : pct}%`;
+  }
+  function excelStaticNumber(v, decimals = 2) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '';
+    const factor = Math.pow(10, decimals);
+    return Math.round(n * factor) / factor;
+  }
+  function excelScoreValue(container, group, key) {
+    return excelValue(container && container[group] && container[group][key]);
+  }
+  function excelHpsValue(term, group, key) {
+    return excelValue(term && term.hps && term.hps[group] && term.hps[group][key]);
+  }
+  function excelHpsTotal(term, group, keys) {
+    const total = (keys || []).reduce((sum, key) => {
+      const n = Number(term && term.hps && term.hps[group] && term.hps[group][key]);
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+    return total || '';
+  }
+  function excelComponentForKey(row, term, key) {
+    const breakdown = buildLearnerComputationBreakdown(row, term, state.setupProfile || defaultSetupProfile());
+    const comp = breakdown && Array.isArray(breakdown.components) ? breakdown.components.find(c => c && c.key === key) : null;
+    if (comp) return comp;
+    const group = key === 'ww' ? 'ww' : (key === 'pt' ? 'pt' : 'ex');
+    const keys = key === 'ww' ? ['ww1','ww2','ww3','ww4','ww5'] : (key === 'pt' ? ['pt1','pt2','pt3'] : ['st1','st2','te']);
+    let scoreTotal = 0;
+    let hpsTotal = 0;
+    keys.forEach(fieldKey => {
+      const hv = Number(term && term.hps && term.hps[group] && term.hps[group][fieldKey]);
+      if (!Number.isFinite(hv) || hv <= 0) return;
+      const sv = Number(row && row.scores && row.scores[group] && row.scores[group][fieldKey]);
+      hpsTotal += hv;
+      scoreTotal += Number.isFinite(sv) ? Math.max(0, Math.min(sv, hv)) : 0;
+    });
+    const weights = state.setupProfile && state.setupProfile.componentWeights || {};
+    const weight = Number(weights[key === 'ex' ? 'ex' : group] || 0);
+    const percentageScore = hpsTotal > 0 ? (scoreTotal / hpsTotal) * 100 : null;
+    const weightedScore = percentageScore == null ? null : percentageScore * weight;
+    return { scoreTotal, hpsTotal, percentageScore, weightedScore };
+  }
+  function excelTermLayoutPayload(snapshot, termKey) {
+    const term = snapshot.terms && snapshot.terms[termKey] || defaultTerm(termKey);
+    const h = snapshot.recordHeader || {};
+    const setup = snapshot.setupProfile || {};
+    const weights = setup.componentWeights || {};
+    const rows = Array.from({ length: 88 }, () => Array(27).fill(''));
+    const put = (r, c, v) => { rows[r - 1][c - 1] = excelValue(v); };
+    put(1, 1, 'Class Record ');
+    put(2, 3, 'REGION:'); put(2, 5, h.region || ''); put(2, 15, 'DIVISION:'); put(2, 17, h.division || '');
+    put(3, 3, 'SCHOOL NAME:'); put(3, 5, h.schoolName || ''); put(3, 15, 'SCHOOL ID:'); put(3, 17, h.schoolId || ''); put(3, 22, 'SCHOOL YEAR:'); put(3, 24, h.schoolYear || '');
+    put(5, 1, `${getTermLabel(termKey).toUpperCase()} / ${CUSTOM_QUARTER_LABELS[termKey] || getTermLabel(termKey).toUpperCase()}`);
+    put(5, 4, 'GRADE:'); put(5, 6, h.gradeLevel || ''); put(5, 8, 'SECTION:'); put(5, 10, h.section || '');
+    put(5, 15, 'TEACHER:'); put(5, 17, h.teacherName || ''); put(5, 21, 'SUBJECT:'); put(5, 23, h.subject || '');
+    put(6, 1, '#'); put(6, 2, "LEARNERS' NAMES"); put(6, 3, 'SEX');
+    put(6, 4, `WRITTEN / ORAL WORKS (${excelPercentLabel(weights.ww)})`);
+    put(6, 12, `PRODUCT / PERFORMANCE TASKS (${excelPercentLabel(weights.pt)})`);
+    put(6, 18, `SUMMATIVE TESTS & TERM EXAMINATIONS (${excelPercentLabel(weights.ex)})`);
+    put(6, 24, 'Initial Grade'); put(6, 25, 'TERM GRADE'); put(6, 26, 'DESCRIPTOR');
+    ['1','2','3','4','5','Total','PS','WS'].forEach((v, i) => put(7, 4 + i, v));
+    ['1','2','3','Total','PS','WS'].forEach((v, i) => put(7, 12 + i, v));
+    ['ST1','ST2','TE','Total','PS','WS'].forEach((v, i) => put(7, 18 + i, v));
+    put(8, 3, 'HPS');
+    ['ww1','ww2','ww3','ww4','ww5'].forEach((k, i) => put(8, 4 + i, excelHpsValue(term, 'ww', k)));
+    put(8, 9, excelHpsTotal(term, 'ww', ['ww1','ww2','ww3','ww4','ww5'])); put(8, 10, '100%'); put(8, 11, excelPercentLabel(weights.ww));
+    ['pt1','pt2','pt3'].forEach((k, i) => put(8, 12 + i, excelHpsValue(term, 'pt', k)));
+    put(8, 15, excelHpsTotal(term, 'pt', ['pt1','pt2','pt3'])); put(8, 16, '100%'); put(8, 17, excelPercentLabel(weights.pt));
+    ['st1','st2','te'].forEach((k, i) => put(8, 18 + i, excelHpsValue(term, 'ex', k)));
+    put(8, 21, excelHpsTotal(term, 'ex', ['st1','st2','te'])); put(8, 22, '100%'); put(8, 23, excelPercentLabel(weights.ex));
+    const display = buildLearnerDisplayList(term.learners || []);
+    for (let i = 0; i < 80; i += 1) {
+      const rr = 9 + i;
+      put(rr, 1, i + 1);
+      const entry = display[i];
+      if (!entry) continue;
+      const row = entry.row || {};
+      const scores = row.scores || {};
+      const computed = row.computed || {};
+      put(rr, 2, row.name || ''); put(rr, 3, row.sex || '');
+      ['ww1','ww2','ww3','ww4','ww5'].forEach((k, idx) => put(rr, 4 + idx, excelScoreValue(scores, 'ww', k)));
+      const ww = excelComponentForKey(row, term, 'ww');
+      put(rr, 9, excelStaticNumber(ww.scoreTotal)); put(rr, 10, excelStaticNumber(ww.percentageScore)); put(rr, 11, excelStaticNumber(ww.weightedScore));
+      ['pt1','pt2','pt3'].forEach((k, idx) => put(rr, 12 + idx, excelScoreValue(scores, 'pt', k)));
+      const pt = excelComponentForKey(row, term, 'pt');
+      put(rr, 15, excelStaticNumber(pt.scoreTotal)); put(rr, 16, excelStaticNumber(pt.percentageScore)); put(rr, 17, excelStaticNumber(pt.weightedScore));
+      ['st1','st2','te'].forEach((k, idx) => put(rr, 18 + idx, excelScoreValue(scores, 'ex', k)));
+      const ex = excelComponentForKey(row, term, 'ex');
+      put(rr, 21, excelStaticNumber(ex.scoreTotal)); put(rr, 22, excelStaticNumber(ex.percentageScore)); put(rr, 23, excelStaticNumber(ex.weightedScore));
+      put(rr, 24, excelStaticNumber(computed.initialGrade));
+      put(rr, 25, excelValue(computed.termGrade || computed.finalDisplayedNumeric || computed.transmutedGrade || ''));
+      put(rr, 26, computed.descriptorLabel || computed.descriptorCode || computed.letterGrade || '');
+    }
+    return { rows, meta: {
+      type: 'term',
+      formatMapKey: 'term',
+      merges: ['A1:Z1','C2:D2','E2:N2','O2:P2','Q2:Y2','C3:D3','E3:N3','O3:P3','Q3:S3','V3:W3','X3:Y3','A5:C5','D5:E5','F5:G5','H5:I5','J5:N5','O5:P5','Q5:T5','U5:V5','W5:Z5','A6:A8','B6:B8','C6:C7','D6:K6','L6:Q6','R6:W6','X6:X8','Y6:Y8','Z6:Z8'],
+      cols: [3.89,28.44,8.44,5.89,13,13,13,13,5.33,7.11,4.22,6.22,13,13,13,13,13,7.66,13,13,13,13,13,12.66,14.55,14.11,13],
+      rows: { 1:19.2, 3:14.4, 5:16.2, 6:17.4, 8:14.4 },
+      freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' }
+    } };
+  }
+  function buildExcelTermSheetRows(snapshot, termKey) {
+    return excelTermLayoutPayload(snapshot, termKey);
+  }
+  function buildExcelSummarySheetRows(snapshot) {
+    const fs = snapshot.finalSummary || defaultFinalSummary();
+    const h = snapshot.recordHeader || {};
+    const visibleTerms = snapshot.visibleTerms || [];
+    const rows = Array.from({ length: 88 }, () => Array(10).fill(''));
+    const put = (r, c, v) => { rows[r - 1][c - 1] = excelValue(v); };
+    put(1, 1, 'Summary of Quarterly Grades');
+    put(3, 2, 'REGION'); put(3, 3, h.region || ''); put(3, 6, 'DIVISION:'); put(3, 8, h.division || '');
+    put(4, 2, 'SCHOOL NAME'); put(4, 3, h.schoolName || ''); put(4, 6, 'SCHOOL ID:'); put(4, 8, h.schoolId || ''); put(4, 9, 'SCHOOL YEAR:'); put(4, 10, h.schoolYear || '');
+    put(6, 1, '#'); put(6, 2, "LEARNERS' NAMES"); put(6, 3, 'SEX'); put(6, 4, 'GRADE: '); put(6, 5, h.gradeLevel || ''); put(6, 6, 'SUBJECT:'); put(6, 8, h.subject || '');
+    put(7, 4, 'SECTION:'); put(7, 5, h.section || ''); put(7, 8, 'TEACHER:'); put(7, 9, h.teacherName || '');
+    const summaryTermCols = [4,5,6,7];
+    summaryTermCols.forEach((col, idx) => {
+      const key = TERMS[idx];
+      put(8, col, visibleTerms.includes(key) ? getSummaryTermColumnLabel(key).toUpperCase() : (TERM_LABELS[key] || `TERM ${idx + 1}`).toUpperCase());
+    });
+    put(8, 8, 'FINAL GRADE'); put(8, 9, 'DESCRIPTOR'); put(8, 10, 'REMARK');
+    const display = buildLearnerDisplayList(fs.learners || []);
+    for (let i = 0; i < 80; i += 1) {
+      const rr = 9 + i;
+      put(rr, 1, i + 1);
+      const entry = display[i];
+      if (!entry) continue;
+      const row = entry.row || {};
+      const fr = row.finalResult || {};
+      put(rr, 2, row.name || ''); put(rr, 3, row.sex || '');
+      TERMS.forEach((k, idx) => {
+        const tr = row.termResults && row.termResults[k] || {};
+        put(rr, 4 + idx, tr.termGrade || tr.finalDisplayedNumeric || tr.descriptorLabel || tr.descriptorCode || '');
+      });
+      put(rr, 8, fr.finalGrade || fr.finalDisplayedNumeric || '');
+      put(rr, 9, fr.descriptorLabel || fr.descriptorCode || '');
+      put(rr, 10, fr.remarks || '');
+    }
+    const hideTerm4 = !visibleTerms.includes('term4');
+    return { rows, meta: {
+      type: 'summary',
+      formatMapKey: 'summary',
+      merges: ['A1:J1','C3:E3','H3:J3','C4:E4','A6:A8','B6:B8','C6:C8','E7:G7','H6:J6','I7:J7'],
+      cols: [3.66,31.78,10.33,18.33,13,13,18.33,15.78,17.33,16.22].map((w, idx) => ({ wch: w, hidden: hideTerm4 && idx === 6 })),
+      rows: { 1:19.2, 2:11.4, 5:7.2, 6:15.6, 7:16.2, 8:15 },
+      freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' },
+      hideTerm4
+    } };
+  }
+  function buildExcelAttendanceSheetRows(snapshot) {
+    const att = snapshot.attendance || defaultAttendance();
+    const rows = [['Attendance Summary'], [EXCEL_COPY_NOTE], [], ['#','Learner Name','Sex','Present','Absent','Tardy','Cutting','Excuse','Pending']];
+    buildLearnerDisplayList(att.rows || []).forEach(entry => {
+      const r = entry.row || {};
+      rows.push([entry.displayNo, r.name, r.sex, r.present || r.Present || 0, r.absent || r.Absent || 0, r.tardy || r.Tardy || 0, r.cutting || r.Cutting || 0, r.excuse || r.Excuse || 0, r.pending || r.Pending || 0]);
+    });
+    return rows;
+  }
+  function buildExcelConfigRows(snapshot) {
+    return [['Key','Value'], ['Export Version', snapshot.exportVersion], ['Generated At', snapshot.generatedAt], ['Visible Terms', snapshot.visibleTerms.join(',')], ['Active Tab', snapshot.activeTab], ['Record ID', snapshot.recordHeader && snapshot.recordHeader.recordId || ''], ['Note', EXCEL_COPY_NOTE]];
+  }
+  function buildExcelTransmutationRows() {
+    const rows = [['Table','Min','Max','Grade']];
+    Object.keys(TRANSMUTATION_TABLE_REGISTRY || {}).forEach(key => {
+      const item = TRANSMUTATION_TABLE_REGISTRY[key];
+      (item && item.table || []).forEach(r => rows.push([key, r[0], r[1], r[2]]));
+    });
+    return rows;
+  }
+  function buildExcelDescriptorRows() {
+    const rows = [['Table','Code','Label','Min','Max','Localized Label','Remarks','General Description','Instructional Response']];
+    [['table7',TABLE7],['table8',TABLE8],['table10',TABLE10],['table11',TABLE11]].forEach(pair => (pair[1] || []).forEach(r => rows.push([pair[0], r.code || r.descriptorCode || '', r.label || r.descriptorLabel || '', r.min == null ? '' : r.min, r.max == null ? '' : r.max, r.localizedLabel || '', r.remarks || '', r.generalDescription || '', r.instructionalResponse || ''])));
+    return rows;
+  }
+
+  // v18.55 map-driven Excel formatting: generated from cell_format_map_TermQtr_Summary.xlsx.
+  // The runtime export below applies the captured row heights, column widths, merges, styles, borders, fills, alignments, and number formats.
+  const EXCEL_FORMAT_MAP = {"term":{"cols":[{"wch":3.8867},{"wch":28.4414},{"wch":8.4414},{"wch":5.8867},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":5.332},{"wch":7.1094},{"wch":4.2188},{"wch":6.2188},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":7.6641},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":8.43},{"wch":12.6641},{"wch":14.5547},{"wch":14.1094},{"wch":0.7773}],"rows":{"1":{"hpt":19.2},"3":{"hpt":14.4},"5":{"hpt":16.2},"6":{"hpt":17.4},"8":{"hpt":14.4}},"merges":["A1:Z1","C2:D2","E2:N2","O2:P2","Q2:Y2","C3:D3","E3:N3","O3:P3","Q3:S3","V3:W3","X3:Y3","A5:C5","D5:E5","F5:G5","H5:I5","J5:N5","O5:P5","Q5:T5","U5:V5","W5:Z5","A6:A8","B6:B8","C6:C7","D6:K6","L6:Q6","R6:W6","X6:X8","Y6:Y8","Z6:Z8"],"styleDefs":{"43":{"font":{"name":"Arial","sz":15.0,"bold":true},"alignment":{"horizontal":"center","vertical":"top","wrapText":true},"numFmt":"General","protection":{"locked":true,"hidden":true}},"24":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","protection":{"locked":true,"hidden":true}},"16":{"font":{"name":"Arial","sz":10.0},"alignment":{"horizontal":"center"},"numFmt":"General","protection":{"locked":true,"hidden":true}},"54":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"General","protection":{"locked":true,"hidden":true}},"56":{"font":{"name":"Arial","sz":10.0},"alignment":{"horizontal":"left","vertical":"center","shrinkToFit":true},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"89":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"90":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"57":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"91":{"font":{"name":"Aptos Narrow","sz":10.0},"alignment":{"horizontal":"left","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"92":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"93":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"13":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"vertical":"center"},"numFmt":"General","protection":{"locked":true,"hidden":true}},"default":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","protection":{"locked":true,"hidden":false}},"63":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"94":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"67":{"font":{"name":"Arial","sz":10.0},"alignment":{"horizontal":"left","vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"55":{"font":{"name":"Calibri","sz":10.0},"numFmt":"General","protection":{"locked":true,"hidden":true}},"58":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"0;;","protection":{"locked":true,"hidden":true}},"12":{"font":{"name":"Arial","sz":10.0},"alignment":{"horizontal":"center"},"numFmt":"General","protection":{"locked":false,"hidden":false}},"11":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center"},"numFmt":"0.00","protection":{"locked":false,"hidden":false}},"10":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center"},"numFmt":"General","protection":{"locked":false,"hidden":false}},"9":{"font":{"name":"Arial","sz":10.0},"numFmt":"General","protection":{"locked":false,"hidden":false}},"79":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":false,"hidden":false}},"95":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":false,"hidden":false}},"96":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":false,"hidden":false}},"81":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"82":{"font":{"name":"Calibri","sz":10.0},"alignment":{"horizontal":"left","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"83":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"52":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"33":{"font":{"name":"Arial","sz":10.0},"alignment":{"vertical":"center"},"numFmt":"0;;","border":{"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"88":{"font":{"name":"Arial","sz":10.0},"alignment":{"vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"71":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"72":{"font":{"name":"Calibri","sz":10.0},"alignment":{"horizontal":"left"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"97":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center","wrapText":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"76":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"left","vertical":"top","wrapText":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"78":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center","wrapText":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"69":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center","wrapText":true},"numFmt":"0.00","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"98":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"7":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"6":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"2":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0.00","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"17":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0%","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"85":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0%","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"8":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0%","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"99":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"32":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center","shrinkToFit":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":false,"hidden":false}},"4":{"font":{"name":"Arial","sz":10.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center","shrinkToFit":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":false,"hidden":false}},"19":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"@","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"18":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0%","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"86":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0%","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"3":{"font":{"name":"Arial","sz":10.0,"bold":true},"fill":{"patternType":"solid","fgColor":{"rgb":"F2F2F2"}},"alignment":{"horizontal":"center","vertical":"center","shrinkToFit":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"35":{"font":{"name":"Aptos Narrow","sz":10.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"87":{"font":{"name":"Aptos Narrow","sz":10.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}}},"cellStyles":{"A1":"43","B1":"24","C1":"24","D1":"24","E1":"24","F1":"24","G1":"24","H1":"24","I1":"24","J1":"24","K1":"24","L1":"24","M1":"24","N1":"24","O1":"24","P1":"24","Q1":"24","R1":"24","S1":"24","T1":"24","U1":"24","V1":"24","W1":"24","X1":"24","Y1":"24","Z1":"24","AA1":"24","A2":"16","B2":"16","C2":"54","D2":"24","E2":"56","F2":"89","G2":"89","H2":"89","I2":"89","J2":"89","K2":"89","L2":"89","M2":"89","N2":"90","O2":"57","P2":"24","Q2":"91","R2":"92","S2":"92","T2":"92","U2":"92","V2":"92","W2":"92","X2":"92","Y2":"93","Z2":"13","AA2":"default","A3":"16","B3":"13","C3":"63","D3":"94","E3":"56","F3":"89","G3":"89","H3":"89","I3":"89","J3":"89","K3":"89","L3":"89","M3":"89","N3":"90","O3":"57","P3":"24","Q3":"67","R3":"89","S3":"90","T3":"default","U3":"55","V3":"55","W3":"58","X3":"67","Y3":"90","Z3":"13","AA3":"default","A4":"12","B4":"12","C4":"12","D4":"12","E4":"12","F4":"12","G4":"12","H4":"12","I4":"12","J4":"11","K4":"11","L4":"12","M4":"12","N4":"12","O4":"12","P4":"11","Q4":"11","R4":"11","S4":"11","T4":"12","U4":"12","V4":"11","W4":"11","X4":"11","Y4":"10","Z4":"9","AA4":"default","A5":"79","B5":"95","C5":"96","D5":"81","E5":"90","F5":"82","G5":"90","H5":"83","I5":"90","J5":"67","K5":"89","L5":"89","M5":"89","N5":"90","O5":"52","P5":"89","Q5":"33","R5":"88","S5":"88","T5":"88","U5":"71","V5":"90","W5":"72","X5":"89","Y5":"89","Z5":"90","AA5":"default","A6":"97","B6":"97","C6":"76","D6":"78","E6":"89","F6":"89","G6":"89","H6":"89","I6":"89","J6":"89","K6":"90","L6":"78","M6":"89","N6":"89","O6":"89","P6":"89","Q6":"90","R6":"78","S6":"89","T6":"89","U6":"89","V6":"89","W6":"90","X6":"69","Y6":"69","Z6":"69","AA6":"default","A7":"98","B7":"98","C7":"98","D7":"7","E7":"7","F7":"7","G7":"7","H7":"7","I7":"6","J7":"2","K7":"17","L7":"7","M7":"7","N7":"7","O7":"6","P7":"2","Q7":"85","R7":"8","S7":"8","T7":"7","U7":"6","V7":"2","W7":"17","X7":"98","Y7":"98","Z7":"98","AA7":"default","A8":"99","B8":"99","C8":"32","D8":"4","E8":"4","F8":"4","G8":"4","H8":"4","I8":"6","J8":"19","K8":"18","L8":"4","M8":"4","N8":"4","O8":"6","P8":"19","Q8":"86","R8":"79","S8":"79","T8":"4","U8":"3","V8":"19","W8":"18","X8":"99","Y8":"99","Z8":"99","AA8":"default","A9":"35","B9":"35","C9":"35","D9":"35","E9":"35","F9":"35","G9":"35","H9":"35","I9":"35","J9":"35","K9":"35","L9":"35","M9":"35","N9":"35","O9":"35","P9":"35","Q9":"87","R9":"35","S9":"35","T9":"35","U9":"35","V9":"35","W9":"35","X9":"35","Y9":"35","Z9":"35","AA9":"default","A10":"35","B10":"35","C10":"35","D10":"35","E10":"35","F10":"35","G10":"35","H10":"35","I10":"35","J10":"35","K10":"35","L10":"35","M10":"35","N10":"35","O10":"35","P10":"35","Q10":"87","R10":"35","S10":"35","T10":"35","U10":"35","V10":"35","W10":"35","X10":"35","Y10":"35","Z10":"35","AA10":"default","A11":"35","B11":"35","C11":"35","D11":"35","E11":"35","F11":"35","G11":"35","H11":"35","I11":"35","J11":"35","K11":"35","L11":"35","M11":"35","N11":"35","O11":"35","P11":"35","Q11":"87","R11":"35","S11":"35","T11":"35","U11":"35","V11":"35","W11":"35","X11":"35","Y11":"35","Z11":"35","AA11":"default","A12":"35","B12":"35","C12":"35","D12":"35","E12":"35","F12":"35","G12":"35","H12":"35","I12":"35","J12":"35","K12":"35","L12":"35","M12":"35","N12":"35","O12":"35","P12":"35","Q12":"87","R12":"35","S12":"35","T12":"35","U12":"35","V12":"35","W12":"35","X12":"35","Y12":"35","Z12":"35","AA12":"default","A13":"35","B13":"35","C13":"35","D13":"35","E13":"35","F13":"35","G13":"35","H13":"35","I13":"35","J13":"35","K13":"35","L13":"35","M13":"35","N13":"35","O13":"35","P13":"35","Q13":"87","R13":"35","S13":"35","T13":"35","U13":"35","V13":"35","W13":"35","X13":"35","Y13":"35","Z13":"35","AA13":"default","A14":"35","B14":"35","C14":"35","D14":"35","E14":"35","F14":"35","G14":"35","H14":"35","I14":"35","J14":"35","K14":"35","L14":"35","M14":"35","N14":"35","O14":"35","P14":"35","Q14":"87","R14":"35","S14":"35","T14":"35","U14":"35","V14":"35","W14":"35","X14":"35","Y14":"35","Z14":"35","AA14":"default","A15":"35","B15":"35","C15":"35","D15":"35","E15":"35","F15":"35","G15":"35","H15":"35","I15":"35","J15":"35","K15":"35","L15":"35","M15":"35","N15":"35","O15":"35","P15":"35","Q15":"87","R15":"35","S15":"35","T15":"35","U15":"35","V15":"35","W15":"35","X15":"35","Y15":"35","Z15":"35","AA15":"default","A16":"35","B16":"35","C16":"35","D16":"35","E16":"35","F16":"35","G16":"35","H16":"35","I16":"35","J16":"35","K16":"35","L16":"35","M16":"35","N16":"35","O16":"35","P16":"35","Q16":"87","R16":"35","S16":"35","T16":"35","U16":"35","V16":"35","W16":"35","X16":"35","Y16":"35","Z16":"35","AA16":"default","A17":"35","B17":"35","C17":"35","D17":"35","E17":"35","F17":"35","G17":"35","H17":"35","I17":"35","J17":"35","K17":"35","L17":"35","M17":"35","N17":"35","O17":"35","P17":"35","Q17":"87","R17":"35","S17":"35","T17":"35","U17":"35","V17":"35","W17":"35","X17":"35","Y17":"35","Z17":"35","AA17":"default","A18":"35","B18":"35","C18":"35","D18":"35","E18":"35","F18":"35","G18":"35","H18":"35","I18":"35","J18":"35","K18":"35","L18":"35","M18":"35","N18":"35","O18":"35","P18":"35","Q18":"87","R18":"35","S18":"35","T18":"35","U18":"35","V18":"35","W18":"35","X18":"35","Y18":"35","Z18":"35","AA18":"default","A19":"35","B19":"35","C19":"35","D19":"35","E19":"35","F19":"35","G19":"35","H19":"35","I19":"35","J19":"35","K19":"35","L19":"35","M19":"35","N19":"35","O19":"35","P19":"35","Q19":"87","R19":"35","S19":"35","T19":"35","U19":"35","V19":"35","W19":"35","X19":"35","Y19":"35","Z19":"35","AA19":"default","A20":"35","B20":"35","C20":"35","D20":"35","E20":"35","F20":"35","G20":"35","H20":"35","I20":"35","J20":"35","K20":"35","L20":"35","M20":"35","N20":"35","O20":"35","P20":"35","Q20":"87","R20":"35","S20":"35","T20":"35","U20":"35","V20":"35","W20":"35","X20":"35","Y20":"35","Z20":"35","AA20":"default","A21":"35","B21":"35","C21":"35","D21":"35","E21":"35","F21":"35","G21":"35","H21":"35","I21":"35","J21":"35","K21":"35","L21":"35","M21":"35","N21":"35","O21":"35","P21":"35","Q21":"87","R21":"35","S21":"35","T21":"35","U21":"35","V21":"35","W21":"35","X21":"35","Y21":"35","Z21":"35","AA21":"default","A22":"35","B22":"35","C22":"35","D22":"35","E22":"35","F22":"35","G22":"35","H22":"35","I22":"35","J22":"35","K22":"35","L22":"35","M22":"35","N22":"35","O22":"35","P22":"35","Q22":"87","R22":"35","S22":"35","T22":"35","U22":"35","V22":"35","W22":"35","X22":"35","Y22":"35","Z22":"35","AA22":"default","A23":"35","B23":"35","C23":"35","D23":"35","E23":"35","F23":"35","G23":"35","H23":"35","I23":"35","J23":"35","K23":"35","L23":"35","M23":"35","N23":"35","O23":"35","P23":"35","Q23":"87","R23":"35","S23":"35","T23":"35","U23":"35","V23":"35","W23":"35","X23":"35","Y23":"35","Z23":"35","AA23":"default","A24":"35","B24":"35","C24":"35","D24":"35","E24":"35","F24":"35","G24":"35","H24":"35","I24":"35","J24":"35","K24":"35","L24":"35","M24":"35","N24":"35","O24":"35","P24":"35","Q24":"87","R24":"35","S24":"35","T24":"35","U24":"35","V24":"35","W24":"35","X24":"35","Y24":"35","Z24":"35","AA24":"default","A25":"35","B25":"35","C25":"35","D25":"35","E25":"35","F25":"35","G25":"35","H25":"35","I25":"35","J25":"35","K25":"35","L25":"35","M25":"35","N25":"35","O25":"35","P25":"35","Q25":"87","R25":"35","S25":"35","T25":"35","U25":"35","V25":"35","W25":"35","X25":"35","Y25":"35","Z25":"35","AA25":"default","A26":"35","B26":"35","C26":"35","D26":"35","E26":"35","F26":"35","G26":"35","H26":"35","I26":"35","J26":"35","K26":"35","L26":"35","M26":"35","N26":"35","O26":"35","P26":"35","Q26":"87","R26":"35","S26":"35","T26":"35","U26":"35","V26":"35","W26":"35","X26":"35","Y26":"35","Z26":"35","AA26":"default","A27":"35","B27":"35","C27":"35","D27":"35","E27":"35","F27":"35","G27":"35","H27":"35","I27":"35","J27":"35","K27":"35","L27":"35","M27":"35","N27":"35","O27":"35","P27":"35","Q27":"87","R27":"35","S27":"35","T27":"35","U27":"35","V27":"35","W27":"35","X27":"35","Y27":"35","Z27":"35","AA27":"default","A28":"35","B28":"35","C28":"35","D28":"35","E28":"35","F28":"35","G28":"35","H28":"35","I28":"35","J28":"35","K28":"35","L28":"35","M28":"35","N28":"35","O28":"35","P28":"35","Q28":"87","R28":"35","S28":"35","T28":"35","U28":"35","V28":"35","W28":"35","X28":"35","Y28":"35","Z28":"35","AA28":"default","A29":"35","B29":"35","C29":"35","D29":"35","E29":"35","F29":"35","G29":"35","H29":"35","I29":"35","J29":"35","K29":"35","L29":"35","M29":"35","N29":"35","O29":"35","P29":"35","Q29":"87","R29":"35","S29":"35","T29":"35","U29":"35","V29":"35","W29":"35","X29":"35","Y29":"35","Z29":"35","AA29":"default","A30":"35","B30":"35","C30":"35","D30":"35","E30":"35","F30":"35","G30":"35","H30":"35","I30":"35","J30":"35","K30":"35","L30":"35","M30":"35","N30":"35","O30":"35","P30":"35","Q30":"87","R30":"35","S30":"35","T30":"35","U30":"35","V30":"35","W30":"35","X30":"35","Y30":"35","Z30":"35","AA30":"default","A31":"35","B31":"35","C31":"35","D31":"35","E31":"35","F31":"35","G31":"35","H31":"35","I31":"35","J31":"35","K31":"35","L31":"35","M31":"35","N31":"35","O31":"35","P31":"35","Q31":"87","R31":"35","S31":"35","T31":"35","U31":"35","V31":"35","W31":"35","X31":"35","Y31":"35","Z31":"35","AA31":"default","A32":"35","B32":"35","C32":"35","D32":"35","E32":"35","F32":"35","G32":"35","H32":"35","I32":"35","J32":"35","K32":"35","L32":"35","M32":"35","N32":"35","O32":"35","P32":"35","Q32":"87","R32":"35","S32":"35","T32":"35","U32":"35","V32":"35","W32":"35","X32":"35","Y32":"35","Z32":"35","AA32":"default","A33":"35","B33":"35","C33":"35","D33":"35","E33":"35","F33":"35","G33":"35","H33":"35","I33":"35","J33":"35","K33":"35","L33":"35","M33":"35","N33":"35","O33":"35","P33":"35","Q33":"87","R33":"35","S33":"35","T33":"35","U33":"35","V33":"35","W33":"35","X33":"35","Y33":"35","Z33":"35","AA33":"default","A34":"35","B34":"35","C34":"35","D34":"35","E34":"35","F34":"35","G34":"35","H34":"35","I34":"35","J34":"35","K34":"35","L34":"35","M34":"35","N34":"35","O34":"35","P34":"35","Q34":"87","R34":"35","S34":"35","T34":"35","U34":"35","V34":"35","W34":"35","X34":"35","Y34":"35","Z34":"35","AA34":"default","A35":"35","B35":"35","C35":"35","D35":"35","E35":"35","F35":"35","G35":"35","H35":"35","I35":"35","J35":"35","K35":"35","L35":"35","M35":"35","N35":"35","O35":"35","P35":"35","Q35":"87","R35":"35","S35":"35","T35":"35","U35":"35","V35":"35","W35":"35","X35":"35","Y35":"35","Z35":"35","AA35":"default","A36":"35","B36":"35","C36":"35","D36":"35","E36":"35","F36":"35","G36":"35","H36":"35","I36":"35","J36":"35","K36":"35","L36":"35","M36":"35","N36":"35","O36":"35","P36":"35","Q36":"87","R36":"35","S36":"35","T36":"35","U36":"35","V36":"35","W36":"35","X36":"35","Y36":"35","Z36":"35","AA36":"default","A37":"35","B37":"35","C37":"35","D37":"35","E37":"35","F37":"35","G37":"35","H37":"35","I37":"35","J37":"35","K37":"35","L37":"35","M37":"35","N37":"35","O37":"35","P37":"35","Q37":"87","R37":"35","S37":"35","T37":"35","U37":"35","V37":"35","W37":"35","X37":"35","Y37":"35","Z37":"35","AA37":"default","A38":"35","B38":"35","C38":"35","D38":"35","E38":"35","F38":"35","G38":"35","H38":"35","I38":"35","J38":"35","K38":"35","L38":"35","M38":"35","N38":"35","O38":"35","P38":"35","Q38":"87","R38":"35","S38":"35","T38":"35","U38":"35","V38":"35","W38":"35","X38":"35","Y38":"35","Z38":"35","AA38":"default","A39":"35","B39":"35","C39":"35","D39":"35","E39":"35","F39":"35","G39":"35","H39":"35","I39":"35","J39":"35","K39":"35","L39":"35","M39":"35","N39":"35","O39":"35","P39":"35","Q39":"87","R39":"35","S39":"35","T39":"35","U39":"35","V39":"35","W39":"35","X39":"35","Y39":"35","Z39":"35","AA39":"default","A40":"35","B40":"35","C40":"35","D40":"35","E40":"35","F40":"35","G40":"35","H40":"35","I40":"35","J40":"35","K40":"35","L40":"35","M40":"35","N40":"35","O40":"35","P40":"35","Q40":"87","R40":"35","S40":"35","T40":"35","U40":"35","V40":"35","W40":"35","X40":"35","Y40":"35","Z40":"35","AA40":"default","A41":"35","B41":"35","C41":"35","D41":"35","E41":"35","F41":"35","G41":"35","H41":"35","I41":"35","J41":"35","K41":"35","L41":"35","M41":"35","N41":"35","O41":"35","P41":"35","Q41":"87","R41":"35","S41":"35","T41":"35","U41":"35","V41":"35","W41":"35","X41":"35","Y41":"35","Z41":"35","AA41":"default","A42":"35","B42":"35","C42":"35","D42":"35","E42":"35","F42":"35","G42":"35","H42":"35","I42":"35","J42":"35","K42":"35","L42":"35","M42":"35","N42":"35","O42":"35","P42":"35","Q42":"87","R42":"35","S42":"35","T42":"35","U42":"35","V42":"35","W42":"35","X42":"35","Y42":"35","Z42":"35","AA42":"default","A43":"35","B43":"35","C43":"35","D43":"35","E43":"35","F43":"35","G43":"35","H43":"35","I43":"35","J43":"35","K43":"35","L43":"35","M43":"35","N43":"35","O43":"35","P43":"35","Q43":"87","R43":"35","S43":"35","T43":"35","U43":"35","V43":"35","W43":"35","X43":"35","Y43":"35","Z43":"35","AA43":"default","A44":"35","B44":"35","C44":"35","D44":"35","E44":"35","F44":"35","G44":"35","H44":"35","I44":"35","J44":"35","K44":"35","L44":"35","M44":"35","N44":"35","O44":"35","P44":"35","Q44":"87","R44":"35","S44":"35","T44":"35","U44":"35","V44":"35","W44":"35","X44":"35","Y44":"35","Z44":"35","AA44":"default","A45":"35","B45":"35","C45":"35","D45":"35","E45":"35","F45":"35","G45":"35","H45":"35","I45":"35","J45":"35","K45":"35","L45":"35","M45":"35","N45":"35","O45":"35","P45":"35","Q45":"87","R45":"35","S45":"35","T45":"35","U45":"35","V45":"35","W45":"35","X45":"35","Y45":"35","Z45":"35","AA45":"default","A46":"35","B46":"35","C46":"35","D46":"35","E46":"35","F46":"35","G46":"35","H46":"35","I46":"35","J46":"35","K46":"35","L46":"35","M46":"35","N46":"35","O46":"35","P46":"35","Q46":"87","R46":"35","S46":"35","T46":"35","U46":"35","V46":"35","W46":"35","X46":"35","Y46":"35","Z46":"35","AA46":"default","A47":"35","B47":"35","C47":"35","D47":"35","E47":"35","F47":"35","G47":"35","H47":"35","I47":"35","J47":"35","K47":"35","L47":"35","M47":"35","N47":"35","O47":"35","P47":"35","Q47":"87","R47":"35","S47":"35","T47":"35","U47":"35","V47":"35","W47":"35","X47":"35","Y47":"35","Z47":"35","AA47":"default","A48":"35","B48":"35","C48":"35","D48":"35","E48":"35","F48":"35","G48":"35","H48":"35","I48":"35","J48":"35","K48":"35","L48":"35","M48":"35","N48":"35","O48":"35","P48":"35","Q48":"87","R48":"35","S48":"35","T48":"35","U48":"35","V48":"35","W48":"35","X48":"35","Y48":"35","Z48":"35","AA48":"default","A49":"35","B49":"35","C49":"35","D49":"35","E49":"35","F49":"35","G49":"35","H49":"35","I49":"35","J49":"35","K49":"35","L49":"35","M49":"35","N49":"35","O49":"35","P49":"35","Q49":"87","R49":"35","S49":"35","T49":"35","U49":"35","V49":"35","W49":"35","X49":"35","Y49":"35","Z49":"35","AA49":"default","A50":"35","B50":"35","C50":"35","D50":"35","E50":"35","F50":"35","G50":"35","H50":"35","I50":"35","J50":"35","K50":"35","L50":"35","M50":"35","N50":"35","O50":"35","P50":"35","Q50":"87","R50":"35","S50":"35","T50":"35","U50":"35","V50":"35","W50":"35","X50":"35","Y50":"35","Z50":"35","AA50":"default","A51":"35","B51":"35","C51":"35","D51":"35","E51":"35","F51":"35","G51":"35","H51":"35","I51":"35","J51":"35","K51":"35","L51":"35","M51":"35","N51":"35","O51":"35","P51":"35","Q51":"87","R51":"35","S51":"35","T51":"35","U51":"35","V51":"35","W51":"35","X51":"35","Y51":"35","Z51":"35","AA51":"default","A52":"35","B52":"35","C52":"35","D52":"35","E52":"35","F52":"35","G52":"35","H52":"35","I52":"35","J52":"35","K52":"35","L52":"35","M52":"35","N52":"35","O52":"35","P52":"35","Q52":"87","R52":"35","S52":"35","T52":"35","U52":"35","V52":"35","W52":"35","X52":"35","Y52":"35","Z52":"35","AA52":"default","A53":"35","B53":"35","C53":"35","D53":"35","E53":"35","F53":"35","G53":"35","H53":"35","I53":"35","J53":"35","K53":"35","L53":"35","M53":"35","N53":"35","O53":"35","P53":"35","Q53":"87","R53":"35","S53":"35","T53":"35","U53":"35","V53":"35","W53":"35","X53":"35","Y53":"35","Z53":"35","AA53":"default","A54":"35","B54":"35","C54":"35","D54":"35","E54":"35","F54":"35","G54":"35","H54":"35","I54":"35","J54":"35","K54":"35","L54":"35","M54":"35","N54":"35","O54":"35","P54":"35","Q54":"87","R54":"35","S54":"35","T54":"35","U54":"35","V54":"35","W54":"35","X54":"35","Y54":"35","Z54":"35","AA54":"default","A55":"35","B55":"35","C55":"35","D55":"35","E55":"35","F55":"35","G55":"35","H55":"35","I55":"35","J55":"35","K55":"35","L55":"35","M55":"35","N55":"35","O55":"35","P55":"35","Q55":"87","R55":"35","S55":"35","T55":"35","U55":"35","V55":"35","W55":"35","X55":"35","Y55":"35","Z55":"35","AA55":"default","A56":"35","B56":"35","C56":"35","D56":"35","E56":"35","F56":"35","G56":"35","H56":"35","I56":"35","J56":"35","K56":"35","L56":"35","M56":"35","N56":"35","O56":"35","P56":"35","Q56":"87","R56":"35","S56":"35","T56":"35","U56":"35","V56":"35","W56":"35","X56":"35","Y56":"35","Z56":"35","AA56":"default","A57":"35","B57":"35","C57":"35","D57":"35","E57":"35","F57":"35","G57":"35","H57":"35","I57":"35","J57":"35","K57":"35","L57":"35","M57":"35","N57":"35","O57":"35","P57":"35","Q57":"87","R57":"35","S57":"35","T57":"35","U57":"35","V57":"35","W57":"35","X57":"35","Y57":"35","Z57":"35","AA57":"default","A58":"35","B58":"35","C58":"35","D58":"35","E58":"35","F58":"35","G58":"35","H58":"35","I58":"35","J58":"35","K58":"35","L58":"35","M58":"35","N58":"35","O58":"35","P58":"35","Q58":"87","R58":"35","S58":"35","T58":"35","U58":"35","V58":"35","W58":"35","X58":"35","Y58":"35","Z58":"35","AA58":"default","A59":"35","B59":"35","C59":"35","D59":"35","E59":"35","F59":"35","G59":"35","H59":"35","I59":"35","J59":"35","K59":"35","L59":"35","M59":"35","N59":"35","O59":"35","P59":"35","Q59":"87","R59":"35","S59":"35","T59":"35","U59":"35","V59":"35","W59":"35","X59":"35","Y59":"35","Z59":"35","AA59":"default","A60":"35","B60":"35","C60":"35","D60":"35","E60":"35","F60":"35","G60":"35","H60":"35","I60":"35","J60":"35","K60":"35","L60":"35","M60":"35","N60":"35","O60":"35","P60":"35","Q60":"87","R60":"35","S60":"35","T60":"35","U60":"35","V60":"35","W60":"35","X60":"35","Y60":"35","Z60":"35","AA60":"default","A61":"35","B61":"35","C61":"35","D61":"35","E61":"35","F61":"35","G61":"35","H61":"35","I61":"35","J61":"35","K61":"35","L61":"35","M61":"35","N61":"35","O61":"35","P61":"35","Q61":"87","R61":"35","S61":"35","T61":"35","U61":"35","V61":"35","W61":"35","X61":"35","Y61":"35","Z61":"35","AA61":"default","A62":"35","B62":"35","C62":"35","D62":"35","E62":"35","F62":"35","G62":"35","H62":"35","I62":"35","J62":"35","K62":"35","L62":"35","M62":"35","N62":"35","O62":"35","P62":"35","Q62":"87","R62":"35","S62":"35","T62":"35","U62":"35","V62":"35","W62":"35","X62":"35","Y62":"35","Z62":"35","AA62":"default","A63":"35","B63":"35","C63":"35","D63":"35","E63":"35","F63":"35","G63":"35","H63":"35","I63":"35","J63":"35","K63":"35","L63":"35","M63":"35","N63":"35","O63":"35","P63":"35","Q63":"87","R63":"35","S63":"35","T63":"35","U63":"35","V63":"35","W63":"35","X63":"35","Y63":"35","Z63":"35","AA63":"default","A64":"35","B64":"35","C64":"35","D64":"35","E64":"35","F64":"35","G64":"35","H64":"35","I64":"35","J64":"35","K64":"35","L64":"35","M64":"35","N64":"35","O64":"35","P64":"35","Q64":"87","R64":"35","S64":"35","T64":"35","U64":"35","V64":"35","W64":"35","X64":"35","Y64":"35","Z64":"35","AA64":"default","A65":"35","B65":"35","C65":"35","D65":"35","E65":"35","F65":"35","G65":"35","H65":"35","I65":"35","J65":"35","K65":"35","L65":"35","M65":"35","N65":"35","O65":"35","P65":"35","Q65":"87","R65":"35","S65":"35","T65":"35","U65":"35","V65":"35","W65":"35","X65":"35","Y65":"35","Z65":"35","AA65":"default","A66":"35","B66":"35","C66":"35","D66":"35","E66":"35","F66":"35","G66":"35","H66":"35","I66":"35","J66":"35","K66":"35","L66":"35","M66":"35","N66":"35","O66":"35","P66":"35","Q66":"87","R66":"35","S66":"35","T66":"35","U66":"35","V66":"35","W66":"35","X66":"35","Y66":"35","Z66":"35","AA66":"default","A67":"35","B67":"35","C67":"35","D67":"35","E67":"35","F67":"35","G67":"35","H67":"35","I67":"35","J67":"35","K67":"35","L67":"35","M67":"35","N67":"35","O67":"35","P67":"35","Q67":"87","R67":"35","S67":"35","T67":"35","U67":"35","V67":"35","W67":"35","X67":"35","Y67":"35","Z67":"35","AA67":"default","A68":"35","B68":"35","C68":"35","D68":"35","E68":"35","F68":"35","G68":"35","H68":"35","I68":"35","J68":"35","K68":"35","L68":"35","M68":"35","N68":"35","O68":"35","P68":"35","Q68":"87","R68":"35","S68":"35","T68":"35","U68":"35","V68":"35","W68":"35","X68":"35","Y68":"35","Z68":"35","AA68":"default","A69":"35","B69":"35","C69":"35","D69":"35","E69":"35","F69":"35","G69":"35","H69":"35","I69":"35","J69":"35","K69":"35","L69":"35","M69":"35","N69":"35","O69":"35","P69":"35","Q69":"87","R69":"35","S69":"35","T69":"35","U69":"35","V69":"35","W69":"35","X69":"35","Y69":"35","Z69":"35","AA69":"default","A70":"35","B70":"35","C70":"35","D70":"35","E70":"35","F70":"35","G70":"35","H70":"35","I70":"35","J70":"35","K70":"35","L70":"35","M70":"35","N70":"35","O70":"35","P70":"35","Q70":"87","R70":"35","S70":"35","T70":"35","U70":"35","V70":"35","W70":"35","X70":"35","Y70":"35","Z70":"35","AA70":"default","A71":"35","B71":"35","C71":"35","D71":"35","E71":"35","F71":"35","G71":"35","H71":"35","I71":"35","J71":"35","K71":"35","L71":"35","M71":"35","N71":"35","O71":"35","P71":"35","Q71":"87","R71":"35","S71":"35","T71":"35","U71":"35","V71":"35","W71":"35","X71":"35","Y71":"35","Z71":"35","AA71":"default","A72":"35","B72":"35","C72":"35","D72":"35","E72":"35","F72":"35","G72":"35","H72":"35","I72":"35","J72":"35","K72":"35","L72":"35","M72":"35","N72":"35","O72":"35","P72":"35","Q72":"87","R72":"35","S72":"35","T72":"35","U72":"35","V72":"35","W72":"35","X72":"35","Y72":"35","Z72":"35","AA72":"default","A73":"35","B73":"35","C73":"35","D73":"35","E73":"35","F73":"35","G73":"35","H73":"35","I73":"35","J73":"35","K73":"35","L73":"35","M73":"35","N73":"35","O73":"35","P73":"35","Q73":"87","R73":"35","S73":"35","T73":"35","U73":"35","V73":"35","W73":"35","X73":"35","Y73":"35","Z73":"35","AA73":"default","A74":"35","B74":"35","C74":"35","D74":"35","E74":"35","F74":"35","G74":"35","H74":"35","I74":"35","J74":"35","K74":"35","L74":"35","M74":"35","N74":"35","O74":"35","P74":"35","Q74":"87","R74":"35","S74":"35","T74":"35","U74":"35","V74":"35","W74":"35","X74":"35","Y74":"35","Z74":"35","AA74":"default","A75":"35","B75":"35","C75":"35","D75":"35","E75":"35","F75":"35","G75":"35","H75":"35","I75":"35","J75":"35","K75":"35","L75":"35","M75":"35","N75":"35","O75":"35","P75":"35","Q75":"87","R75":"35","S75":"35","T75":"35","U75":"35","V75":"35","W75":"35","X75":"35","Y75":"35","Z75":"35","AA75":"default","A76":"35","B76":"35","C76":"35","D76":"35","E76":"35","F76":"35","G76":"35","H76":"35","I76":"35","J76":"35","K76":"35","L76":"35","M76":"35","N76":"35","O76":"35","P76":"35","Q76":"87","R76":"35","S76":"35","T76":"35","U76":"35","V76":"35","W76":"35","X76":"35","Y76":"35","Z76":"35","AA76":"default","A77":"35","B77":"35","C77":"35","D77":"35","E77":"35","F77":"35","G77":"35","H77":"35","I77":"35","J77":"35","K77":"35","L77":"35","M77":"35","N77":"35","O77":"35","P77":"35","Q77":"87","R77":"35","S77":"35","T77":"35","U77":"35","V77":"35","W77":"35","X77":"35","Y77":"35","Z77":"35","AA77":"default","A78":"35","B78":"35","C78":"35","D78":"35","E78":"35","F78":"35","G78":"35","H78":"35","I78":"35","J78":"35","K78":"35","L78":"35","M78":"35","N78":"35","O78":"35","P78":"35","Q78":"87","R78":"35","S78":"35","T78":"35","U78":"35","V78":"35","W78":"35","X78":"35","Y78":"35","Z78":"35","AA78":"default","A79":"35","B79":"35","C79":"35","D79":"35","E79":"35","F79":"35","G79":"35","H79":"35","I79":"35","J79":"35","K79":"35","L79":"35","M79":"35","N79":"35","O79":"35","P79":"35","Q79":"87","R79":"35","S79":"35","T79":"35","U79":"35","V79":"35","W79":"35","X79":"35","Y79":"35","Z79":"35","AA79":"default","A80":"35","B80":"35","C80":"35","D80":"35","E80":"35","F80":"35","G80":"35","H80":"35","I80":"35","J80":"35","K80":"35","L80":"35","M80":"35","N80":"35","O80":"35","P80":"35","Q80":"87","R80":"35","S80":"35","T80":"35","U80":"35","V80":"35","W80":"35","X80":"35","Y80":"35","Z80":"35","AA80":"default","A81":"35","B81":"35","C81":"35","D81":"35","E81":"35","F81":"35","G81":"35","H81":"35","I81":"35","J81":"35","K81":"35","L81":"35","M81":"35","N81":"35","O81":"35","P81":"35","Q81":"87","R81":"35","S81":"35","T81":"35","U81":"35","V81":"35","W81":"35","X81":"35","Y81":"35","Z81":"35","AA81":"default","A82":"35","B82":"35","C82":"35","D82":"35","E82":"35","F82":"35","G82":"35","H82":"35","I82":"35","J82":"35","K82":"35","L82":"35","M82":"35","N82":"35","O82":"35","P82":"35","Q82":"87","R82":"35","S82":"35","T82":"35","U82":"35","V82":"35","W82":"35","X82":"35","Y82":"35","Z82":"35","AA82":"default","A83":"35","B83":"35","C83":"35","D83":"35","E83":"35","F83":"35","G83":"35","H83":"35","I83":"35","J83":"35","K83":"35","L83":"35","M83":"35","N83":"35","O83":"35","P83":"35","Q83":"87","R83":"35","S83":"35","T83":"35","U83":"35","V83":"35","W83":"35","X83":"35","Y83":"35","Z83":"35","AA83":"default","A84":"35","B84":"35","C84":"35","D84":"35","E84":"35","F84":"35","G84":"35","H84":"35","I84":"35","J84":"35","K84":"35","L84":"35","M84":"35","N84":"35","O84":"35","P84":"35","Q84":"87","R84":"35","S84":"35","T84":"35","U84":"35","V84":"35","W84":"35","X84":"35","Y84":"35","Z84":"35","AA84":"default","A85":"35","B85":"35","C85":"35","D85":"35","E85":"35","F85":"35","G85":"35","H85":"35","I85":"35","J85":"35","K85":"35","L85":"35","M85":"35","N85":"35","O85":"35","P85":"35","Q85":"87","R85":"35","S85":"35","T85":"35","U85":"35","V85":"35","W85":"35","X85":"35","Y85":"35","Z85":"35","AA85":"default","A86":"35","B86":"35","C86":"35","D86":"35","E86":"35","F86":"35","G86":"35","H86":"35","I86":"35","J86":"35","K86":"35","L86":"35","M86":"35","N86":"35","O86":"35","P86":"35","Q86":"87","R86":"35","S86":"35","T86":"35","U86":"35","V86":"35","W86":"35","X86":"35","Y86":"35","Z86":"35","AA86":"default","A87":"35","B87":"35","C87":"35","D87":"35","E87":"35","F87":"35","G87":"35","H87":"35","I87":"35","J87":"35","K87":"35","L87":"35","M87":"35","N87":"35","O87":"35","P87":"35","Q87":"87","R87":"35","S87":"35","T87":"35","U87":"35","V87":"35","W87":"35","X87":"35","Y87":"35","Z87":"35","AA87":"default","A88":"35","B88":"35","C88":"35","D88":"35","E88":"35","F88":"35","G88":"35","H88":"35","I88":"35","J88":"35","K88":"35","L88":"35","M88":"35","N88":"35","O88":"35","P88":"35","Q88":"87","R88":"35","S88":"35","T88":"35","U88":"35","V88":"35","W88":"35","X88":"35","Y88":"35","Z88":"35","AA88":"default"}},"summary":{"cols":[{"wch":3.6641},{"wch":31.7773},{"wch":10.332},{"wch":18.332},{"wch":8.43},{"wch":8.43},{"wch":18.332,"hidden":true},{"wch":15.7773},{"wch":17.332},{"wch":16.2188}],"rows":{"1":{"hpt":19.2},"2":{"hpt":11.4},"5":{"hpt":7.2},"6":{"hpt":15.6},"7":{"hpt":16.2},"8":{"hpt":15.0}},"merges":["A1:J1","C3:E3","H3:J3","C4:E4","A6:A8","B6:B8","C6:C8","H6:J6","E7:G7","I7:J7"],"styleDefs":{"43":{"font":{"name":"Arial","sz":15.0,"bold":true},"alignment":{"horizontal":"center","vertical":"top","wrapText":true},"numFmt":"General","protection":{"locked":true,"hidden":true}},"24":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","protection":{"locked":true,"hidden":true}},"20":{"font":{"name":"Arial Narrow","sz":7.0,"italic":true,"color":{"rgb":"000000"}},"alignment":{"vertical":"top","wrapText":true},"numFmt":"General","protection":{"locked":true,"hidden":true}},"21":{"font":{"name":"Arial","sz":11.0},"alignment":{"horizontal":"center"},"numFmt":"General","protection":{"locked":true,"hidden":true}},"26":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"General","protection":{"locked":true,"hidden":true}},"41":{"font":{"name":"Calibri","sz":11.0},"alignment":{"horizontal":"left"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"89":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"90":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"100":{"font":{"name":"Aptos Narrow","sz":11.0},"alignment":{"horizontal":"left"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"92":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"93":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"25":{"font":{"name":"Aptos Narrow","sz":11.0},"alignment":{"horizontal":"left"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"22":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"center"},"numFmt":"0.00","protection":{"locked":true,"hidden":true}},"44":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"45":{"font":{"name":"Arial","sz":14.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center","shrinkToFit":true},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"27":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"29":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"right"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"42":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"left"},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"98":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"30":{"font":{"name":"Arial","sz":11.0,"bold":true},"alignment":{"horizontal":"right","vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"99":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"31":{"font":{"name":"Arial","sz":12.0,"bold":true},"alignment":{"horizontal":"center","vertical":"center"},"numFmt":"0;;","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":true}},"35":{"font":{"name":"Aptos Narrow","sz":10.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}},"23":{"font":{"name":"Aptos Narrow","sz":11.0},"numFmt":"General","border":{"left":{"style":"thin","color":{"rgb":"000000"}},"right":{"style":"thin","color":{"rgb":"000000"}},"top":{"style":"thin","color":{"rgb":"000000"}},"bottom":{"style":"thin","color":{"rgb":"000000"}}},"protection":{"locked":true,"hidden":false}}},"cellStyles":{"A1":"43","B1":"24","C1":"24","D1":"24","E1":"24","F1":"24","G1":"24","H1":"24","I1":"24","J1":"24","A2":"20","B2":"20","C2":"20","D2":"20","E2":"20","F2":"20","G2":"20","H2":"20","I2":"20","J2":"20","A3":"21","B3":"26","C3":"41","D3":"89","E3":"90","F3":"26","G3":"26","H3":"100","I3":"92","J3":"93","A4":"21","B4":"26","C4":"41","D4":"89","E4":"90","F4":"26","G4":"26","H4":"25","I4":"26","J4":"25","A5":"21","B5":"21","C5":"21","D5":"21","E5":"21","F5":"21","G5":"21","H5":"22","I5":"21","J5":"21","A6":"44","B6":"44","C6":"45","D6":"27","E6":"41","F6":"29","G6":"29","H6":"42","I6":"89","J6":"90","A7":"98","B7":"98","C7":"98","D7":"30","E7":"41","F7":"89","G7":"90","H7":"29","I7":"41","J7":"90","A8":"99","B8":"99","C8":"99","D8":"31","E8":"31","F8":"31","G8":"31","H8":"31","I8":"31","J8":"31","A9":"35","B9":"23","C9":"23","D9":"23","E9":"23","F9":"23","G9":"23","H9":"23","I9":"23","J9":"23","A10":"35","B10":"23","C10":"23","D10":"23","E10":"23","F10":"23","G10":"23","H10":"23","I10":"23","J10":"23","A11":"35","B11":"23","C11":"23","D11":"23","E11":"23","F11":"23","G11":"23","H11":"23","I11":"23","J11":"23","A12":"35","B12":"23","C12":"23","D12":"23","E12":"23","F12":"23","G12":"23","H12":"23","I12":"23","J12":"23","A13":"35","B13":"23","C13":"23","D13":"23","E13":"23","F13":"23","G13":"23","H13":"23","I13":"23","J13":"23","A14":"35","B14":"23","C14":"23","D14":"23","E14":"23","F14":"23","G14":"23","H14":"23","I14":"23","J14":"23","A15":"35","B15":"23","C15":"23","D15":"23","E15":"23","F15":"23","G15":"23","H15":"23","I15":"23","J15":"23","A16":"35","B16":"23","C16":"23","D16":"23","E16":"23","F16":"23","G16":"23","H16":"23","I16":"23","J16":"23","A17":"35","B17":"23","C17":"23","D17":"23","E17":"23","F17":"23","G17":"23","H17":"23","I17":"23","J17":"23","A18":"35","B18":"23","C18":"23","D18":"23","E18":"23","F18":"23","G18":"23","H18":"23","I18":"23","J18":"23","A19":"35","B19":"23","C19":"23","D19":"23","E19":"23","F19":"23","G19":"23","H19":"23","I19":"23","J19":"23","A20":"35","B20":"23","C20":"23","D20":"23","E20":"23","F20":"23","G20":"23","H20":"23","I20":"23","J20":"23","A21":"35","B21":"23","C21":"23","D21":"23","E21":"23","F21":"23","G21":"23","H21":"23","I21":"23","J21":"23","A22":"35","B22":"23","C22":"23","D22":"23","E22":"23","F22":"23","G22":"23","H22":"23","I22":"23","J22":"23","A23":"35","B23":"23","C23":"23","D23":"23","E23":"23","F23":"23","G23":"23","H23":"23","I23":"23","J23":"23","A24":"35","B24":"23","C24":"23","D24":"23","E24":"23","F24":"23","G24":"23","H24":"23","I24":"23","J24":"23","A25":"35","B25":"23","C25":"23","D25":"23","E25":"23","F25":"23","G25":"23","H25":"23","I25":"23","J25":"23","A26":"35","B26":"23","C26":"23","D26":"23","E26":"23","F26":"23","G26":"23","H26":"23","I26":"23","J26":"23","A27":"35","B27":"23","C27":"23","D27":"23","E27":"23","F27":"23","G27":"23","H27":"23","I27":"23","J27":"23","A28":"35","B28":"23","C28":"23","D28":"23","E28":"23","F28":"23","G28":"23","H28":"23","I28":"23","J28":"23","A29":"35","B29":"23","C29":"23","D29":"23","E29":"23","F29":"23","G29":"23","H29":"23","I29":"23","J29":"23","A30":"35","B30":"23","C30":"23","D30":"23","E30":"23","F30":"23","G30":"23","H30":"23","I30":"23","J30":"23","A31":"35","B31":"23","C31":"23","D31":"23","E31":"23","F31":"23","G31":"23","H31":"23","I31":"23","J31":"23","A32":"35","B32":"23","C32":"23","D32":"23","E32":"23","F32":"23","G32":"23","H32":"23","I32":"23","J32":"23","A33":"35","B33":"23","C33":"23","D33":"23","E33":"23","F33":"23","G33":"23","H33":"23","I33":"23","J33":"23","A34":"35","B34":"23","C34":"23","D34":"23","E34":"23","F34":"23","G34":"23","H34":"23","I34":"23","J34":"23","A35":"35","B35":"23","C35":"23","D35":"23","E35":"23","F35":"23","G35":"23","H35":"23","I35":"23","J35":"23","A36":"35","B36":"23","C36":"23","D36":"23","E36":"23","F36":"23","G36":"23","H36":"23","I36":"23","J36":"23","A37":"35","B37":"23","C37":"23","D37":"23","E37":"23","F37":"23","G37":"23","H37":"23","I37":"23","J37":"23","A38":"35","B38":"23","C38":"23","D38":"23","E38":"23","F38":"23","G38":"23","H38":"23","I38":"23","J38":"23","A39":"35","B39":"23","C39":"23","D39":"23","E39":"23","F39":"23","G39":"23","H39":"23","I39":"23","J39":"23","A40":"35","B40":"23","C40":"23","D40":"23","E40":"23","F40":"23","G40":"23","H40":"23","I40":"23","J40":"23","A41":"35","B41":"23","C41":"23","D41":"23","E41":"23","F41":"23","G41":"23","H41":"23","I41":"23","J41":"23","A42":"35","B42":"23","C42":"23","D42":"23","E42":"23","F42":"23","G42":"23","H42":"23","I42":"23","J42":"23","A43":"35","B43":"23","C43":"23","D43":"23","E43":"23","F43":"23","G43":"23","H43":"23","I43":"23","J43":"23","A44":"35","B44":"23","C44":"23","D44":"23","E44":"23","F44":"23","G44":"23","H44":"23","I44":"23","J44":"23","A45":"35","B45":"23","C45":"23","D45":"23","E45":"23","F45":"23","G45":"23","H45":"23","I45":"23","J45":"23","A46":"35","B46":"23","C46":"23","D46":"23","E46":"23","F46":"23","G46":"23","H46":"23","I46":"23","J46":"23","A47":"35","B47":"23","C47":"23","D47":"23","E47":"23","F47":"23","G47":"23","H47":"23","I47":"23","J47":"23","A48":"35","B48":"23","C48":"23","D48":"23","E48":"23","F48":"23","G48":"23","H48":"23","I48":"23","J48":"23","A49":"35","B49":"23","C49":"23","D49":"23","E49":"23","F49":"23","G49":"23","H49":"23","I49":"23","J49":"23","A50":"35","B50":"23","C50":"23","D50":"23","E50":"23","F50":"23","G50":"23","H50":"23","I50":"23","J50":"23","A51":"35","B51":"23","C51":"23","D51":"23","E51":"23","F51":"23","G51":"23","H51":"23","I51":"23","J51":"23","A52":"35","B52":"23","C52":"23","D52":"23","E52":"23","F52":"23","G52":"23","H52":"23","I52":"23","J52":"23","A53":"35","B53":"23","C53":"23","D53":"23","E53":"23","F53":"23","G53":"23","H53":"23","I53":"23","J53":"23","A54":"35","B54":"23","C54":"23","D54":"23","E54":"23","F54":"23","G54":"23","H54":"23","I54":"23","J54":"23","A55":"35","B55":"23","C55":"23","D55":"23","E55":"23","F55":"23","G55":"23","H55":"23","I55":"23","J55":"23","A56":"35","B56":"23","C56":"23","D56":"23","E56":"23","F56":"23","G56":"23","H56":"23","I56":"23","J56":"23","A57":"35","B57":"23","C57":"23","D57":"23","E57":"23","F57":"23","G57":"23","H57":"23","I57":"23","J57":"23","A58":"35","B58":"23","C58":"23","D58":"23","E58":"23","F58":"23","G58":"23","H58":"23","I58":"23","J58":"23","A59":"35","B59":"23","C59":"23","D59":"23","E59":"23","F59":"23","G59":"23","H59":"23","I59":"23","J59":"23","A60":"35","B60":"23","C60":"23","D60":"23","E60":"23","F60":"23","G60":"23","H60":"23","I60":"23","J60":"23","A61":"35","B61":"23","C61":"23","D61":"23","E61":"23","F61":"23","G61":"23","H61":"23","I61":"23","J61":"23","A62":"35","B62":"23","C62":"23","D62":"23","E62":"23","F62":"23","G62":"23","H62":"23","I62":"23","J62":"23","A63":"35","B63":"23","C63":"23","D63":"23","E63":"23","F63":"23","G63":"23","H63":"23","I63":"23","J63":"23","A64":"35","B64":"23","C64":"23","D64":"23","E64":"23","F64":"23","G64":"23","H64":"23","I64":"23","J64":"23","A65":"35","B65":"23","C65":"23","D65":"23","E65":"23","F65":"23","G65":"23","H65":"23","I65":"23","J65":"23","A66":"35","B66":"23","C66":"23","D66":"23","E66":"23","F66":"23","G66":"23","H66":"23","I66":"23","J66":"23","A67":"35","B67":"23","C67":"23","D67":"23","E67":"23","F67":"23","G67":"23","H67":"23","I67":"23","J67":"23","A68":"35","B68":"23","C68":"23","D68":"23","E68":"23","F68":"23","G68":"23","H68":"23","I68":"23","J68":"23","A69":"35","B69":"23","C69":"23","D69":"23","E69":"23","F69":"23","G69":"23","H69":"23","I69":"23","J69":"23","A70":"35","B70":"23","C70":"23","D70":"23","E70":"23","F70":"23","G70":"23","H70":"23","I70":"23","J70":"23","A71":"35","B71":"23","C71":"23","D71":"23","E71":"23","F71":"23","G71":"23","H71":"23","I71":"23","J71":"23","A72":"35","B72":"23","C72":"23","D72":"23","E72":"23","F72":"23","G72":"23","H72":"23","I72":"23","J72":"23","A73":"35","B73":"23","C73":"23","D73":"23","E73":"23","F73":"23","G73":"23","H73":"23","I73":"23","J73":"23","A74":"35","B74":"23","C74":"23","D74":"23","E74":"23","F74":"23","G74":"23","H74":"23","I74":"23","J74":"23","A75":"35","B75":"23","C75":"23","D75":"23","E75":"23","F75":"23","G75":"23","H75":"23","I75":"23","J75":"23","A76":"35","B76":"23","C76":"23","D76":"23","E76":"23","F76":"23","G76":"23","H76":"23","I76":"23","J76":"23","A77":"35","B77":"23","C77":"23","D77":"23","E77":"23","F77":"23","G77":"23","H77":"23","I77":"23","J77":"23","A78":"35","B78":"23","C78":"23","D78":"23","E78":"23","F78":"23","G78":"23","H78":"23","I78":"23","J78":"23","A79":"35","B79":"23","C79":"23","D79":"23","E79":"23","F79":"23","G79":"23","H79":"23","I79":"23","J79":"23","A80":"35","B80":"23","C80":"23","D80":"23","E80":"23","F80":"23","G80":"23","H80":"23","I80":"23","J80":"23","A81":"35","B81":"23","C81":"23","D81":"23","E81":"23","F81":"23","G81":"23","H81":"23","I81":"23","J81":"23","A82":"35","B82":"23","C82":"23","D82":"23","E82":"23","F82":"23","G82":"23","H82":"23","I82":"23","J82":"23","A83":"35","B83":"23","C83":"23","D83":"23","E83":"23","F83":"23","G83":"23","H83":"23","I83":"23","J83":"23","A84":"35","B84":"23","C84":"23","D84":"23","E84":"23","F84":"23","G84":"23","H84":"23","I84":"23","J84":"23","A85":"35","B85":"23","C85":"23","D85":"23","E85":"23","F85":"23","G85":"23","H85":"23","I85":"23","J85":"23","A86":"35","B86":"23","C86":"23","D86":"23","E86":"23","F86":"23","G86":"23","H86":"23","I86":"23","J86":"23","A87":"35","B87":"23","C87":"23","D87":"23","E87":"23","F87":"23","G87":"23","H87":"23","I87":"23","J87":"23","A88":"35","B88":"23","C88":"23","D88":"23","E88":"23","F88":"23","G88":"23","H88":"23","I88":"23","J88":"23"}}};
+
+  
+  // v18.61: Derived from the MAPEH_Tn format in the captured MAPEH-aware class record.
+  // It reuses the captured summary style definitions but applies the 8-column MAPEH term-summary
+  // widths, row heights, and merges so values are not formatted with the 10-column final summary map.
+  if (EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP.summary && !EXCEL_FORMAT_MAP.mapehTermSummary) {
+    try {
+      const baseSummaryMap = EXCEL_FORMAT_MAP.summary;
+      const baseCellStyles = baseSummaryMap.cellStyles || {};
+      const mapehTermCellStyles = {};
+      Object.keys(baseCellStyles).forEach(address => {
+        const match = String(address).match(/^([A-H])(\d+)$/);
+        if (match) mapehTermCellStyles[address] = baseCellStyles[address];
+      });
+      EXCEL_FORMAT_MAP.mapehTermSummary = {
+        cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 21.1094 }, { wch: 13 }, { wch: 13 }, { wch: 17.3320 }, { wch: 16.2188 }, { wch: 0.8867 }, { wch: 0, hidden: true }],
+        rows: { '1': { hpt: 19.2 }, '2': { hpt: 11.4 }, '5': { hpt: 7.2 }, '6': { hpt: 15.6 }, '7': { hpt: 16.2 }, '8': { hpt: 31.2 } },
+        merges: ['A1:H1', 'C3:D3', 'F3:H3', 'C4:D4', 'A6:A8', 'B6:B8', 'C6:C8', 'G6:H6', 'G7:H7'],
+        styleDefs: baseSummaryMap.styleDefs || {},
+        cellStyles: mapehTermCellStyles
+      };
+    } catch (_) {}
+  }
+  function excelDecodeMerge(ref) {
+    try { return XLSX.utils.decode_range(ref); } catch (_) { return null; }
+  }
+  function excelEnsureCell(ws, address) {
+    if (!ws[address]) ws[address] = { t: 's', v: '' };
+    return ws[address];
+  }
+  function excelCellStyle(kind) {
+    const base = { font: { name: 'Arial', sz: 9 }, alignment: { vertical: 'center', wrapText: true }, border: { top: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } } } };
+    if (kind === 'title') return Object.assign({}, base, { font: { name: 'Arial', sz: 12, bold: true }, alignment: { horizontal: 'center', vertical: 'center' } });
+    if (kind === 'header') return Object.assign({}, base, { font: { name: 'Arial', sz: 8, bold: true }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, fill: { fgColor: { rgb: 'D9EAF7' } } });
+    if (kind === 'subheader') return Object.assign({}, base, { font: { name: 'Arial', sz: 8, bold: true }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, fill: { fgColor: { rgb: 'EAF3F8' } } });
+    if (kind === 'label') return Object.assign({}, base, { font: { name: 'Arial', sz: 8, bold: true }, alignment: { horizontal: 'left', vertical: 'center', wrapText: true } });
+    if (kind === 'center') return Object.assign({}, base, { alignment: { horizontal: 'center', vertical: 'center', wrapText: true } });
+    if (kind === 'name') return Object.assign({}, base, { alignment: { horizontal: 'left', vertical: 'center', wrapText: true } });
+    return base;
+  }
+  function excelApplyStyle(ws, rangeRef, kind) {
+    const range = excelDecodeMerge(rangeRef);
+    if (!range) return;
+    for (let R = range.s.r; R <= range.e.r; R += 1) {
+      for (let C = range.s.c; C <= range.e.c; C += 1) {
+        const address = XLSX.utils.encode_cell({ r: R, c: C });
+        excelEnsureCell(ws, address).s = excelCellStyle(kind);
+      }
+    }
+  }
+  function excelCloneStyleValue(value) {
+    if (!value || typeof value !== 'object') return value;
+    try { return JSON.parse(JSON.stringify(value)); } catch (_) { return value; }
+  }
+  function excelApplyFormatMap(ws, mapKey) {
+    const map = EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP[mapKey];
+    if (!map || !ws || typeof XLSX === 'undefined' || !XLSX || !XLSX.utils) return false;
+    if (Array.isArray(map.cols)) ws['!cols'] = map.cols.map(col => Object.assign({}, col));
+    if (map.rows) {
+      const outRows = [];
+      Object.keys(map.rows).forEach(k => {
+        const idx = Number(k) - 1;
+        if (idx >= 0) outRows[idx] = Object.assign({}, map.rows[k]);
+      });
+      ws['!rows'] = outRows;
+    }
+    if (Array.isArray(map.merges)) ws['!merges'] = map.merges.map(excelDecodeMerge).filter(Boolean);
+    const styleDefs = map.styleDefs || {};
+    const cellStyles = map.cellStyles || {};
+    Object.keys(cellStyles).forEach(address => {
+      const sid = cellStyles[address];
+      const style = styleDefs[sid];
+      const cell = excelEnsureCell(ws, address);
+      if (style) cell.s = excelCloneStyleValue(style);
+    });
+    return true;
+  }
+  function excelApplyTemplateStyles(ws, meta, rowCount, colCount) {
+    if (!meta) return;
+    const mapKey = meta.formatMapKey || meta.type;
+    // v18.63: A sheet-specific formatMapKey must be honored first. MAPEH_Tn uses
+    // mapKey='mapehTermSummary'; the old guard only allowed 'term' or 'summary',
+    // so the fixed XLSX merges/widths/styles were skipped and the exported sheet
+    // fell back to the generic 10-column summary styling.
+    if (meta.formatMapKey && excelApplyFormatMap(ws, mapKey)) return;
+    if ((mapKey === 'term' || mapKey === 'summary') && excelApplyFormatMap(ws, mapKey)) return;
+    if (meta.type === 'term') {
+      excelApplyStyle(ws, 'A1:Z1', 'title');
+      excelApplyStyle(ws, 'C2:Z5', 'label');
+      excelApplyStyle(ws, 'A6:Z8', 'header');
+      excelApplyStyle(ws, `A9:Z${rowCount}`, 'center');
+      excelApplyStyle(ws, `B9:B${rowCount}`, 'name');
+    } else if (meta.type === 'summary') {
+      excelApplyStyle(ws, 'A1:J1', 'title');
+      excelApplyStyle(ws, 'B3:J7', 'label');
+      excelApplyStyle(ws, 'A6:J8', 'header');
+      excelApplyStyle(ws, `A9:J${rowCount}`, 'center');
+      excelApplyStyle(ws, `B9:B${rowCount}`, 'name');
+    } else {
+      excelApplyStyle(ws, `A1:${XLSX.utils.encode_col(Math.max(0, colCount - 1))}1`, 'title');
+      if (rowCount >= 4) excelApplyStyle(ws, `A4:${XLSX.utils.encode_col(Math.max(0, colCount - 1))}4`, 'header');
+    }
+  }
+  function worksheetFromRows(payload) {
+    const rows = payload && payload.rows ? payload.rows : payload;
+    const meta = payload && payload.rows ? payload.meta : null;
+    const ws = XLSX.utils.aoa_to_sheet(rows || []);
+    const rowCount = (rows || []).length;
+    const colCount = (rows || []).reduce((m, row) => Math.max(m, (row || []).length), 0);
+    const defaultCols = Array.from({ length: Math.max(1, colCount) }, (_, idx) => ({ wch: idx === 1 ? 28 : 16 }));
+    if (meta && Array.isArray(meta.cols)) {
+      ws['!cols'] = meta.cols.map(item => typeof item === 'number' ? { wch: item } : item);
+    } else {
+      ws['!cols'] = defaultCols;
+    }
+    if (meta && Array.isArray(meta.merges)) ws['!merges'] = meta.merges.map(excelDecodeMerge).filter(Boolean);
+    if (meta && meta.rows) {
+      const outRows = [];
+      Object.keys(meta.rows).forEach(k => {
+        const idx = Number(k) - 1;
+        if (idx >= 0) outRows[idx] = { hpt: meta.rows[k] };
+      });
+      ws['!rows'] = outRows;
+    }
+    if (meta && meta.freeze) ws['!freeze'] = meta.freeze;
+    excelApplyTemplateStyles(ws, meta, rowCount, colCount);
+    if (meta && meta.type === 'summary' && ws['!cols'] && ws['!cols'][6]) ws['!cols'][6].hidden = !!meta.hideTerm4;
+    ws['!protect'] = { selectLockedCells: true, selectUnlockedCells: true };
+    return ws;
+  }
+  function appendWorkbookSheet(wb, name, rows, hidden) {
+    const safe = getExcelSheetSafeName(name, name);
+    XLSX.utils.book_append_sheet(wb, worksheetFromRows(rows), safe);
+    if (!wb.Workbook) wb.Workbook = {};
+    if (!wb.Workbook.Sheets) wb.Workbook.Sheets = [];
+    wb.Workbook.Sheets[wb.SheetNames.length - 1] = { name: safe, Hidden: hidden ? 1 : 0 };
+    return safe;
+  }
+
+  // v18.56 Phase 2 Excel writer hardening.
+  // Prefer xlsx-js-style because the normal SheetJS CE browser writer may keep cell values/merges/widths but drop .s style objects.
+  // HTML remains unchanged; this module loads the style-capable writer on demand before export.
+  const EXCEL_STYLE_ENGINE_URLS = [
+    'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js',
+    'https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.min.js'
+  ];
+  const EXCEL_DEBUG_ZIP_URLS = [
+    'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+  ];
+  function excelGlobalEngine() {
+    try { return (typeof window !== 'undefined' && window.XLSX) ? window.XLSX : (typeof XLSX !== 'undefined' ? XLSX : null); } catch (_) { return null; }
+  }
+  function excelEngineUsable(engine) {
+    return !!(engine && engine.utils && typeof engine.write === 'function' && typeof engine.utils.book_new === 'function' && typeof engine.utils.book_append_sheet === 'function');
+  }
+  function excelLoadScriptOnce(src, markerKey) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (markerKey && window[markerKey]) { resolve(window[markerKey]); return; }
+        const existing = document.querySelector(`script[data-ctm-loader="${markerKey || src}"]`);
+        if (existing) {
+          existing.addEventListener('load', () => resolve(true), { once: true });
+          existing.addEventListener('error', () => reject(new Error('script-load-failed')), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.defer = true;
+        script.setAttribute('data-ctm-loader', markerKey || src);
+        script.onload = () => { if (markerKey) window[markerKey] = true; resolve(true); };
+        script.onerror = () => reject(new Error('script-load-failed'));
+        (document.head || document.documentElement).appendChild(script);
+      } catch (err) { reject(err); }
+    });
+  }
+  async function ensureStyleCapableExcelEngine() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      const engine = excelGlobalEngine();
+      if (excelEngineUsable(engine)) return engine;
+      throw new Error('missing-xlsx');
+    }
+    if (window.CTM_CLASSRECORD_EXCEL_STYLE_ENGINE_READY && excelEngineUsable(excelGlobalEngine())) return excelGlobalEngine();
+    if (window.CTM_CLASSRECORD_DISABLE_XLSX_STYLE_LOADER) {
+      const existing = excelGlobalEngine();
+      if (excelEngineUsable(existing)) return existing;
+      throw new Error('missing-xlsx');
+    }
+    let lastErr = null;
+    for (const url of EXCEL_STYLE_ENGINE_URLS) {
+      try {
+        await excelLoadScriptOnce(url, 'CTM_CLASSRECORD_EXCEL_STYLE_ENGINE_READY');
+        const engine = excelGlobalEngine();
+        if (excelEngineUsable(engine)) return engine;
+      } catch (err) { lastErr = err; }
+    }
+    const fallback = excelGlobalEngine();
+    if (excelEngineUsable(fallback)) {
+      try { console.warn('[CTM Class Record] xlsx-js-style could not be loaded; falling back to the existing XLSX writer. Cell styles may not be preserved.', lastErr); } catch (_) {}
+      return fallback;
+    }
+    throw new Error('missing-xlsx-style');
+  }
+  function excelShouldRunXmlVerification() {
+    try {
+      if (typeof window === 'undefined') return false;
+      if (window.CTM_CLASSRECORD_EXCEL_DEBUG === true || window.CTM_CLASSRECORD_EXCEL_VERIFY_XML === true) return true;
+      if (window.location && /(?:\?|&)ctmExcelDebug=1(?:&|$)/.test(window.location.search || '')) return true;
+      if (window.localStorage && window.localStorage.getItem('ctm-classrecord-excel-debug') === '1') return true;
+    } catch (_) {}
+    return false;
+  }
+  async function excelEnsureJSZipForDebug() {
+    if (typeof window === 'undefined') throw new Error('missing-jszip');
+    if (window.JSZip) return window.JSZip;
+    let lastErr = null;
+    for (const url of EXCEL_DEBUG_ZIP_URLS) {
+      try {
+        await excelLoadScriptOnce(url, 'CTM_CLASSRECORD_JSZIP_READY');
+        if (window.JSZip) return window.JSZip;
+      } catch (err) { lastErr = err; }
+    }
+    throw lastErr || new Error('missing-jszip');
+  }
+  async function excelVerifyWorkbookXml(arrayBuffer, workbook) {
+    const result = { ok: false, checked: false, hasStylesXml: false, hasCellXfs: false, hasBorders: false, hasFonts: false, hasFills: false, sheets: [] };
+    if (!excelShouldRunXmlVerification()) return result;
+    try {
+      const JSZipCtor = await excelEnsureJSZipForDebug();
+      const zip = await JSZipCtor.loadAsync(arrayBuffer);
+      const stylesFile = zip.file('xl/styles.xml');
+      const stylesXml = stylesFile ? await stylesFile.async('string') : '';
+      result.checked = true;
+      result.hasStylesXml = !!stylesXml;
+      result.hasCellXfs = /<cellXfs[^>]*count="(?:[2-9]|[1-9]\d+)"/i.test(stylesXml);
+      result.hasBorders = /<borders[^>]*count="(?:[2-9]|[1-9]\d+)"/i.test(stylesXml) || /<border>/i.test(stylesXml);
+      result.hasFonts = /<fonts[^>]*count="(?:[2-9]|[1-9]\d+)"/i.test(stylesXml) || /<font>/i.test(stylesXml);
+      result.hasFills = /<fills[^>]*count="(?:[2-9]|[1-9]\d+)"/i.test(stylesXml) || /<fill>/i.test(stylesXml);
+      const names = Array.isArray(workbook && workbook.SheetNames) ? workbook.SheetNames : [];
+      for (let i = 0; i < names.length; i += 1) {
+        const sheetPath = `xl/worksheets/sheet${i + 1}.xml`;
+        const sheetFile = zip.file(sheetPath);
+        if (!sheetFile) continue;
+        const xml = await sheetFile.async('string');
+        result.sheets.push({
+          name: names[i],
+          path: sheetPath,
+          hasCols: /<cols[\s>]/i.test(xml) && /<col[\s>]/i.test(xml),
+          hasStyledCells: /<c\s+[^>]*\bs="\d+"/i.test(xml),
+          hasMerges: /<mergeCells[\s>]/i.test(xml),
+          styledCellCount: (xml.match(/<c\s+[^>]*\bs="\d+"/gi) || []).length
+        });
+      }
+      const visibleMapSheets = result.sheets.filter(s => /TERM|QUARTER|SUMMARY OF GRADES/i.test(s.name || ''));
+      result.ok = result.hasStylesXml && result.hasCellXfs && visibleMapSheets.length > 0 && visibleMapSheets.every(s => s.hasCols && s.hasStyledCells);
+      try { console.info('[CTM Class Record] Excel XML verification', result); } catch (_) {}
+    } catch (err) {
+      result.error = err && err.message ? err.message : String(err || 'verification failed');
+      try { console.warn('[CTM Class Record] Excel XML verification unavailable', err); } catch (_) {}
+    }
+    return result;
+  }
+  function excelDownloadArrayBuffer(arrayBuffer, filename) {
+    if (typeof Blob === 'undefined' || typeof URL === 'undefined') throw new Error('download-unavailable');
+    const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      try { URL.revokeObjectURL(link.href); } catch (_) {}
+      try { link.remove(); } catch (_) {}
+    }, 0);
+  }
+
+  function mapehTermShortLabel(termKey) {
+    const label = getSummaryTermColumnLabel(termKey);
+    const m = label.match(/(?:Quarter|Term)\s*(\d+)/i);
+    if (/quarter/i.test(label)) return m ? `Q${m[1].trim()}` : label;
+    if (/term/i.test(label)) return m ? `T${m[1].trim()}` : label;
+    return label;
+  }
+  function buildMapehConsolidatedExcelSnapshot() {
+    const bundleId = getMapehBundleId(state.recordHeader);
+    const paired = findMapehPairedRecords(bundleId);
+    const summary = computeMapehConsolidatedSummary(paired);
+    const baseHeader = clone(state.mapehVirtualBaseHeader || state.recordHeader || defaultRecordHeader());
+    const h = Object.assign(defaultRecordHeader(), baseHeader, { subject: 'MAPEH', subjectKey: 'mapeh', mapehMode: 'consolidated', mapehComponent: '', mapehBundleId: bundleId, mapehReportSubject: 'MAPEH' });
+    const componentSnapshots = {};
+    MAPEH_COMPONENTS.forEach(meta => {
+      const rec = paired[meta.key];
+      componentSnapshots[meta.key] = rec ? Object.assign({}, rec, { visibleTerms: summary.visibleTerms, termSheetNames: {} }) : null;
+      if (componentSnapshots[meta.key]) summary.visibleTerms.forEach(k => { componentSnapshots[meta.key].termSheetNames[k] = getMapehExcelComponentSheetName(meta.key, k); });
+    });
+    const baseSnapshot = buildActiveClassRecordExcelSnapshot();
+    return Object.assign(baseSnapshot, { recordHeader: h, finalSummary: defaultFinalSummary(), visibleTerms: summary.visibleTerms, termSheetNames: {}, mapeh: { isSummaryView: true, mode: 'consolidated', component: '', bundleId, reportSubject: 'MAPEH', summary, components: paired, componentSnapshots } });
+  }
+  function getMapehExcelComponentSheetName(componentKey, termKey) {
+    const prefix = componentKey === 'peHealth' ? 'PEH' : 'MA';
+    return `${prefix}_${mapehTermShortLabel(termKey)}`;
+  }
+  function getMapehExcelSummaryTermSheetName(termKey) {
+    return `MAPEH_${mapehTermShortLabel(termKey)}`;
+  }
+
+  function buildExcelMapehTermSummarySheetRows(snapshot, termKey) {
+    const summary = snapshot && snapshot.mapeh && snapshot.mapeh.summary || computeMapehConsolidatedSummary(getMapehBundleId(state.recordHeader));
+    const h = snapshot.recordHeader || {};
+    const label = getSummaryTermColumnLabel(termKey).toUpperCase();
+    // v18.61: Keep the MAPEH_Tn sheet on the captured 8-column MAPEH-aware template.
+    // The previous build split component labels across rows 8-9 and then applied the 10-column
+    // Summary-of-Grades format map, shifting learners one row down and misaligning styles/merges.
+    const rows = [
+      ['Summary of Quarterly Grades'],
+      [],
+      ['', 'REGION', '', '', 'DIVISION:', '', '', ''],
+      ['', 'SCHOOL NAME', '', '', 'SCHOOL ID:', '', 'SCHOOL YEAR:', h.schoolYear || ''],
+      [],
+      ['#', "LEARNERS' NAMES", 'SEX', 'GRADE: ', h.gradeLevel || '', 'SUBJECT:', 'MAPEH', ''],
+      ['', '', '', 'SECTION:', h.section || h.className || '', 'TEACHER:', h.teacherName || '', ''],
+      ['', '', '', `MUSIC & ARTS
+${label}`, `PE & HEALTH
+${label}`, `MAPEH
+${label} GRADE`, 'DESCRIPTOR', 'REMARK']
+    ];
+    buildLearnerDisplayList(summary.learners || []).forEach(entry => {
+      const r = entry.row || {};
+      const t = r.terms && r.terms[termKey] || {};
+      rows.push([
+        entry.displayNo,
+        r.name || '',
+        r.sex || '',
+        t.musicArtsGrade == null ? '' : t.musicArtsGrade,
+        t.peHealthGrade == null ? '' : t.peHealthGrade,
+        t.mapehGrade == null ? '' : t.mapehGrade,
+        t.complete ? (r.descriptorLabel || r.descriptorCode || '') : '',
+        t.complete ? (t.mapehGrade >= PASSING_GRADE ? 'Passed' : 'Failed') : 'Incomplete'
+      ]);
+    });
+    while (rows.length < 88) rows.push([rows.length - 7, '', '', '', '', '', '', '']);
+    return { rows, meta: { type: 'summary', formatMapKey: 'mapehTermSummary', hideTerm4: false, cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 21.1094 }, { wch: 13 }, { wch: 13 }, { wch: 17.3320 }, { wch: 16.2188 }], freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' } } };
+  }
+  function buildExcelMapehSummarySheetRows(snapshot) {
+    const summary = snapshot && snapshot.mapeh && snapshot.mapeh.summary || computeMapehConsolidatedSummary(getMapehBundleId(state.recordHeader));
+    const h = snapshot.recordHeader || {};
+    const visibleTerms = summary.visibleTerms || [];
+    const termHeaders = [];
+    visibleTerms.forEach(k => termHeaders.push(getSummaryTermColumnLabel(k).toUpperCase()));
+    const showTerm4 = visibleTerms.includes('term4');
+    if (!showTerm4) termHeaders.push('TERM 4');
+    termHeaders.push('FINAL GRADE', 'DESCRIPTOR', 'REMARK');
+    // v18.61: Match the captured Summary of Grades template exactly:
+    // metadata remains in D/H blocks on rows 6-7, term/final headers stay on row 8,
+    // and learner data starts at row 9. This prevents the exported view from shifting
+    // data into the header area when MAPEH is exported as a consolidated workbook.
+    const rows = [
+      ['Summary of Quarterly Grades'],
+      [],
+      ['', 'REGION', '', '', '', 'DIVISION:', 'DIVISION:', '', '', ''],
+      ['', 'SCHOOL NAME', '', '', '', 'SCHOOL ID:', 'SCHOOL ID:', '', 'SCHOOL YEAR:', h.schoolYear || ''],
+      [],
+      ['#', "LEARNERS' NAMES", 'SEX', 'GRADE: ', h.gradeLevel || '', '', '', 'SUBJECT:', 'MAPEH', ''],
+      ['', '', '', 'SECTION:', h.section || h.className || '', '', '', 'TEACHER:', h.teacherName || '', ''],
+      ['', '', '', termHeaders[0] || 'TERM 1', termHeaders[1] || 'TERM 2', termHeaders[2] || 'TERM 3', termHeaders[3] || 'TERM 4', termHeaders[4] || 'FINAL GRADE', termHeaders[5] || 'DESCRIPTOR', termHeaders[6] || 'REMARK']
+    ];
+    buildLearnerDisplayList(summary.learners || []).forEach(entry => {
+      const r = entry.row || {};
+      const row = [entry.displayNo, r.name || '', r.sex || ''];
+      visibleTerms.forEach(k => {
+        const t = r.terms && r.terms[k] || {};
+        row.push(t.mapehGrade == null ? '' : t.mapehGrade);
+      });
+      if (!showTerm4) row.push('');
+      row.push(r.finalMapehGrade == null ? '' : r.finalMapehGrade, r.descriptorLabel || r.descriptorCode || '', r.remarks || '');
+      rows.push(row);
+    });
+    while (rows.length < 88) rows.push([rows.length - 7, '', '', '', '', '', '', '', '', '']);
+    rows.push([], ['Class Average', summary.classSummary.classAverage == null ? '' : summary.classSummary.classAverage, 'Passing Count', summary.classSummary.passingCount, 'Non-Passing Count', summary.classSummary.nonPassingCount, 'Incomplete Count', summary.classSummary.incompleteCount, 'Learner Count', summary.classSummary.learnerCount]);
+    (summary.warnings || []).forEach(w => rows.push(['Warning', w]));
+    return { rows, meta: { type: 'summary', hideTerm4: !showTerm4, cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 18.3320 }, { wch: 13 }, { wch: 13 }, { wch: 18.3320 }, { wch: 15.7773 }, { wch: 17.3320 }, { wch: 16.2188 }], freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' } } };
+  }
+
+  async function exportMapehConsolidatedWorkbook(options = {}) {
+    const engine = await ensureStyleCapableExcelEngine();
+    if (!excelEngineUsable(engine)) throw new Error('missing-xlsx');
+    const snapshot = options.snapshot || buildMapehConsolidatedExcelSnapshot();
+    const wb = engine.utils.book_new();
+    appendWorkbookSheet(wb, 'COVER', buildExcelCoverSheetRows(snapshot), false);
+    appendWorkbookSheet(wb, 'POLICY SETUP', buildExcelPolicySheetRows(snapshot), false);
+    (snapshot.visibleTerms || []).forEach(k => {
+      MAPEH_COMPONENTS.forEach(meta => {
+        const comp = snapshot.mapeh.componentSnapshots && snapshot.mapeh.componentSnapshots[meta.key];
+        if (!comp) return;
+        const compSnap = Object.assign({}, comp, { recordHeader: comp.recordHeader || {}, setupProfile: comp.setupProfile || snapshot.setupProfile, terms: (snapshot.visibleTerms || []).reduce((a, termKey) => { a[termKey] = comp[termKey] || defaultTerm(termKey); return a; }, {}), visibleTerms: snapshot.visibleTerms, termSheetNames: comp.termSheetNames || {} });
+        appendWorkbookSheet(wb, getMapehExcelComponentSheetName(meta.key, k), buildExcelTermSheetRows(compSnap, k), false);
+      });
+      appendWorkbookSheet(wb, getMapehExcelSummaryTermSheetName(k), buildExcelMapehTermSummarySheetRows(snapshot, k), false);
+    });
+    appendWorkbookSheet(wb, 'Summary of Grades', buildExcelMapehSummarySheetRows(snapshot), false);
+    appendWorkbookSheet(wb, 'ATTENDANCE SUMMARY', buildExcelAttendanceSheetRows(snapshot), false);
+    if (!wb.Workbook) wb.Workbook = {};
+    const activeIndex = wb.SheetNames.indexOf('Summary of Grades');
+    wb.Workbook.Views = [{ activeTab: activeIndex >= 0 ? activeIndex : 0, firstSheet: activeIndex >= 0 ? activeIndex : 0 }];
+    const gradeSection = sanitizeExcelFileName(`${snapshot.recordHeader.gradeLevel || ''}-${snapshot.recordHeader.section || snapshot.recordHeader.className || state.className || ''}`).replace(/\s+/g, '');
+    const sy = sanitizeExcelFileName(snapshot.recordHeader.schoolYear || 'SchoolYear').replace(/\s+/g, '');
+    const filename = `ClassRecord_${gradeSection}_MAPEH_Summary_${sy}.xlsx`;
+    const output = engine.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true, compression: true, bookSST: false });
+    const verification = await excelVerifyWorkbookXml(output, wb);
+    excelDownloadArrayBuffer(output, filename);
+    return verification;
+  }
+
+
+  async function exportActiveClassRecordToExcel(options = {}) {
+    if (shouldExportMapehConsolidatedWorkbook()) return exportMapehConsolidatedWorkbook(options);
+    const engine = await ensureStyleCapableExcelEngine();
+    if (!excelEngineUsable(engine)) throw new Error('missing-xlsx');
+    const snapshot = options.snapshot || buildActiveClassRecordExcelSnapshot();
+    const wb = engine.utils.book_new();
+    const sheetOrder = [];
+    sheetOrder.push(appendWorkbookSheet(wb, 'COVER', buildExcelCoverSheetRows(snapshot), false));
+    sheetOrder.push(appendWorkbookSheet(wb, 'POLICY SETUP', buildExcelPolicySheetRows(snapshot), false));
+    (snapshot.visibleTerms || []).forEach(k => sheetOrder.push(appendWorkbookSheet(wb, snapshot.termSheetNames[k], buildExcelTermSheetRows(snapshot, k), false)));
+    sheetOrder.push(appendWorkbookSheet(wb, 'SUMMARY OF GRADES', buildExcelSummarySheetRows(snapshot), false));
+    sheetOrder.push(appendWorkbookSheet(wb, 'ATTENDANCE SUMMARY', buildExcelAttendanceSheetRows(snapshot), false));
+    appendWorkbookSheet(wb, '__CONFIG', buildExcelConfigRows(snapshot), true);
+    appendWorkbookSheet(wb, '__TRANSMUTATION', buildExcelTransmutationRows(), true);
+    appendWorkbookSheet(wb, '__DESCRIPTORS', buildExcelDescriptorRows(), true);
+    const activeSheet = getExcelActiveSheetFromCurrentTab(snapshot);
+    const activeIndex = wb.SheetNames.indexOf(activeSheet);
+    if (!wb.Workbook) wb.Workbook = {};
+    wb.Workbook.Views = [{ activeTab: activeIndex >= 0 ? activeIndex : 0, firstSheet: activeIndex >= 0 ? activeIndex : 0 }];
+    const gradeSection = sanitizeExcelFileName(`${snapshot.recordHeader.gradeLevel || ''}-${snapshot.recordHeader.section || snapshot.recordHeader.className || state.className || ''}`).replace(/\s+/g, '');
+    const subject = sanitizeExcelFileName(snapshot.recordHeader.subject || 'Subject').replace(/\s+/g, '');
+    const sy = sanitizeExcelFileName(snapshot.recordHeader.schoolYear || 'SchoolYear').replace(/\s+/g, '');
+    const filename = `ClassRecord_${gradeSection}_${subject}_${sy}.xlsx`;
+    const output = engine.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true, compression: true, bookSST: false });
+    const verification = await excelVerifyWorkbookXml(output, wb);
+    excelDownloadArrayBuffer(output, filename);
+    return verification;
+  }
+  async function handleViewExcelClick() {
+    if (!hasExcelExportableData()) {
+      flash('Nothing to view in Excel yet. Please save or encode Class Record data first.', 'warning');
+      updateExcelButtonState();
+      return;
+    }
+    const btn = $id('crBtnViewExcel');
+    if (btn) btn.disabled = true;
+    try {
+      flash('Preparing styled Excel workbook...', 'info');
+      const isMapehSummaryExport = shouldExportMapehConsolidatedWorkbook();
+      const verification = isMapehSummaryExport
+        ? await exportMapehConsolidatedWorkbook({ snapshot: buildMapehConsolidatedExcelSnapshot() })
+        : await exportActiveClassRecordToExcel({ snapshot: buildActiveClassRecordExcelSnapshot() });
+      if (verification && verification.checked && !verification.ok) {
+        flash('Excel workbook generated, but XML verification found incomplete style/width records. Check the browser console for details.', 'warning');
+      } else {
+        flash('Excel workbook generated using mapped Class Record formatting.', 'success');
+      }
+    } catch (err) {
+      const msg = err && (err.message === 'missing-xlsx' || err.message === 'missing-xlsx-style')
+        ? 'Excel export engine is not available. Please check the XLSX/xlsx-js-style dependency.'
+        : 'Unable to generate Excel workbook. Please try again.';
+      flash(msg, 'error');
+      try { console.error('[CTM Class Record] Excel export failed', err); } catch (_) {}
+    } finally {
+      updateExcelButtonState();
+    }
+  }
+
   function promptImportCsv() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,text/csv'; input.addEventListener('change', () => { const file = input.files && input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { importCsvText(String(reader.result || '')); } catch (err) { flash(err && err.message ? err.message : 'Unable to import CSV.', 'error'); } }; reader.readAsText(file); }); input.click(); }
 
   function bindUi() { bindTabsCollapseUi(); if (!dom.tabs) { try { dom.tabs = Array.from(document.querySelectorAll('.ctm-cr-tab')); } catch(_) { dom.tabs = []; } } $id('crBtnClose').addEventListener('click', close); dom.tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab))); Object.keys(dom.headerInputs).forEach(k => { if (k === 'keyStage' || !dom.headerInputs[k]) return; const el = dom.headerInputs[k]; const handler = () => { if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; markHeaderSettingsDirty(); state.recordHeader[k] = (k === 'semester') ? getSemesterLabel(el.value) : (k === 'g12Sy2026System' ? normalizeG12Sy2026System(el.value) : (k === 'g12DescriptorSource' ? normalizeG12DescriptorSource(el.value) : (k === 'modifiedTerm' ? normalizeModifiedTerm(el.value) : el.value))); if (k === 'subject') state.recordHeader.subjectKey = slugify(el.value); if (k === 'subject' || k === 'subjectGroup' || k === 'gradeLevel' || k === 'schoolYear' || k === 'section') normalizeMapehHeader(state.recordHeader); if (k === 'gradeLevel' || k === 'schoolYear' || k === 'g12Sy2026System' || k === 'g12DescriptorSource' || k === 'modifiedTerm') {
@@ -4965,7 +5979,7 @@ function importCsvText(csvText) {
       localStorage.setItem(indexKey(), JSON.stringify(cleanIndexList(loadIndex(), currentKey)));
       triggerNewRecordReset({ showFlash: false });
       flash('Saved school-year Class Record deleted. A fresh blank draft is ready.', 'success');
-    }); $id('crBtnImportCsv').addEventListener('click', promptImportCsv); $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', onComputationDetailsClick); document.addEventListener('keydown', onComputationDetailsKeydown); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
+    }); if ($id('crBtnImportCsv')) $id('crBtnImportCsv').addEventListener('click', promptImportCsv); if ($id('crBtnViewExcel')) $id('crBtnViewExcel').addEventListener('click', handleViewExcelClick); if ($id('crBtnExportCsv')) $id('crBtnExportCsv').addEventListener('click', exportCsv); window.addEventListener('ctm:shared-header-sync', e => { const detail = e && e.detail; if (!detail || !detail.field) return; if ((detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || { [detail.field]: detail.value }, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); window.addEventListener('ctm:shared-header-sync-all', e => { const detail = e && e.detail; if (!detail || (detail.sourceId || '').indexOf('cr') === 0) return; if (hasSavedClassRecordLoaded() && !canEditHeaderSettings()) return; if (applySharedHeaderData(detail.data || {}, { forceEmptyOnly: false, rerender: false })) { if (hasSavedClassRecordLoaded()) markHeaderSettingsDirty(); recompute(); render(); } }); document.addEventListener('click', onComputationDetailsClick); document.addEventListener('keydown', onComputationDetailsKeydown); document.addEventListener('click', e => { const launcher = e.target && e.target.closest && e.target.closest('#btnOpenClassRecord'); if (!launcher) return; e.preventDefault(); open(); }); }
 
   function hasLoadedHostClass() {
     const loadedId = text(window.currentClassId || '').trim();

@@ -1,3 +1,8 @@
+<!-- v18.60 companion: Summary tab on eligible MAPEH component records now displays and exports consolidated paired MAPEH Summary; HTML IDs/data hooks unchanged. -->
+<!-- v18.59 companion: MAPEH consolidated Summary export aligns with MA_Tn / PEH_Tn / MAPEH_Tn plus combined Summary of Grades; HTML IDs/data hooks unchanged. -->
+<!-- v18.57 companion: MAPEH-aware Summary and consolidated View in Excel are implemented in JS; HTML IDs/data hooks unchanged. -->
+<!-- v18.54 companion: Summary auto-refresh and Summary detailed computations are implemented in JS; HTML IDs/data hooks unchanged. -->
+<!-- v18.53 companion: View in Excel export button added to the always-visible record manager action row. -->
 <!-- v18.52 companion: Detailed Computations toggle fix is in JS/CSS; HTML IDs/data hooks unchanged. -->
 <!-- v18.51 companion: MAPEH bundle delete fix is in JS; HTML IDs/data hooks unchanged. -->
 <!-- v18.50 MAPEH paired-component companion: JS now uses Music and Arts plus PE and Health paired records while preserving existing HTML IDs/data hooks. -->
@@ -2700,7 +2705,7 @@
     </div>
 
   <div class="ctm-cr-manager section-lite">
-<div id="crHideOnAttendance" class="ctm-cr-hide-on-attendance">
+<div id="crRecordManagerAlwaysVisible" class="ctm-cr-record-manager-always-visible">
 <!-- Start of hide this at Attendance tab -->  
    <div>
 	<div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
@@ -2718,6 +2723,7 @@
 	  </div>
 	  <div style="display: flex; gap: 8px; width: 100%;">
 		<button class="primary" id="crBtnImportCsv" style="flex: 1; white-space: nowrap;" disabled>Import CSV</button>
+		<button class="primary" id="crBtnViewExcel" type="button" style="flex: 1; white-space: nowrap;" disabled>View in Excel</button>
 		<button class="primary" id="crBtnExportCsv" style="flex: 1; white-space: nowrap;" disabled>Export CSV</button>
 	  </div>
    </div>
