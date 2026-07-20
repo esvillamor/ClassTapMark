@@ -1,4 +1,4 @@
-/* v18.63 MAPEH_Tn View in Excel format-map activation fix: MAPEH_T1/T2/T3 now actually apply the fixed XLSX 8-column merge/style map instead of falling back to the generic summary styling. */
+/* v18.65 Summary table descriptor narrative fix: Summary rows now materialize General Description and Instructional Response for Table 10/11 final results; v18.64 G12 descriptor render fix: learner cards and Summary table materialize Table 10/11 descriptor text; v18.63 MAPEH_Tn View in Excel format-map activation fix: MAPEH_T1/T2/T3 now actually apply the fixed XLSX 8-column merge/style map instead of falling back to the generic summary styling. */
 /* v18.62 MAPEH View in Excel fixed-xlsx conformance: MAPEH_T1/T2/T3 and Summary of Grades now use the fixed workbook row starts, merges, widths, and 3-term Term 4 hiding. */
 /* v18.61 MAPEH consolidated View in Excel layout fix: Summary of Grades and MAPEH_Tn now align to the captured MAPEH-aware class record template; fixes shifted headers/learner rows and term-summary formatting. */
 /* v18.60 MAPEH Summary-tab trigger fix: opening the Summary tab on any eligible MAPEH component now renders/exports the consolidated paired MAPEH Summary workbook. */
@@ -39,7 +39,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.63-mapeh-tn-fixed-xlsx-format-map'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.65-summary-descriptor-narrative-fix'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -52,7 +52,7 @@
   // UI-only: hide General Description / Instructional Response columns in the Summary table
   // for Grade 12 SY 2026-2027 when Three Term or Modified Three Term is selected.
   // Data is still computed, stored, CSV-compatible, and available in term/learner detail views.
-  const HIDE_SUMMARY_DESC_RESPONSE_FOR_G12_THREE_TERM = true;
+  const HIDE_SUMMARY_DESC_RESPONSE_FOR_G12_THREE_TERM = false;
   const PASSING_GRADE = 75;
   const TERMS = ['term1', 'term2', 'term3', 'term4'];
   // v18.50 MAPEH paired component bundle + consolidated summary
@@ -578,6 +578,69 @@ function pushRecordHeaderToSharedSchoolForms(reason = 'class-record') {
   function transitionYearKey(sy) { const normalized = normalizeSchoolYearRange(sy); if (KS1_TRANSITION[normalized]) return normalized; const m = normalized.match(/^(\d{4})-(\d{4})$/); return m && Number(m[1]) >= 2028 ? '2028-2029+' : normalized; }
 function getDescriptorProfile(id) { return id === 'table7' ? TABLE7 : id === 'table8' ? TABLE8 : id === 'table10' ? TABLE10 : TABLE11; }
 function numericDescriptor(grade, tableId = 'table11') { const table = tableId === 'table10' ? TABLE10 : TABLE11; return table.find(r => grade >= r.min && grade <= r.max) || null; }
+function numericDescriptorByCodeOrLabel(codeOrLabel, tableId = 'table11') {
+  const key = tableId === 'table10' ? 'table10' : 'table11';
+  const wanted = text(codeOrLabel).trim().toUpperCase();
+  if (!wanted) return null;
+  const table = key === 'table10' ? TABLE10 : TABLE11;
+  return table.find(row => {
+    const code = text(row && row.descriptorCode).trim().toUpperCase();
+    const label = text(row && row.descriptorLabel).trim().toUpperCase();
+    return wanted === code || wanted === label;
+  }) || null;
+}
+function descriptorNarrativeFallback(desc, tableId) {
+  if (!desc) return { generalDescription: '', instructionalResponse: '' };
+  const key = tableId === 'table10' ? 'table10' : (tableId === 'table11' ? 'table11' : '');
+  if (key === 'table11') return {
+    generalDescription: text(desc.generalDescription || ''),
+    instructionalResponse: text(desc.instructionalResponse || '')
+  };
+  if (key !== 'table10') return { generalDescription: '', instructionalResponse: '' };
+  const label = text(desc.descriptorLabel || desc.descriptorCode).trim();
+  const range = Number.isFinite(Number(desc.min)) && Number.isFinite(Number(desc.max)) ? `${desc.min}-${desc.max}` : '';
+  const code = text(desc.descriptorCode).trim().toUpperCase();
+  const generalMap = {
+    O: 'Performance is Outstanding and consistently exceeds the expected standard for the grading period.',
+    VS: 'Performance is Very Satisfactory and consistently meets the expected standard for the grading period.',
+    S: 'Performance is Satisfactory and meets the expected standard for the grading period.',
+    FS: 'Performance is Fairly Satisfactory and meets the minimum expected standard for the grading period.',
+    DNME: 'Performance Did Not Meet Expectations and needs additional support to reach the expected standard.'
+  };
+  const responseMap = {
+    O: 'Provide enrichment, extension, and leadership opportunities to sustain advanced performance.',
+    VS: 'Sustain performance through continued practice, deeper application, and independent work.',
+    S: 'Provide guided practice and feedback to strengthen consistency and mastery.',
+    FS: 'Provide focused reinforcement and monitoring to improve accuracy and confidence.',
+    DNME: 'Provide remediation, intervention, and close monitoring until the minimum standard is met.'
+  };
+  return {
+    generalDescription: generalMap[code] || (label ? `${label}${range ? ` (${range})` : ''}.` : ''),
+    instructionalResponse: responseMap[code] || ''
+  };
+}
+function applyNumericDescriptorFields(target, desc, tableId, gradeValue) {
+  if (!target || !desc) return target;
+  const support = descriptorNarrativeFallback(desc, tableId);
+  target.tableUsed = tableId || target.tableUsed || '';
+  target.letterGrade = desc.descriptorCode || '';
+  target.descriptorCode = desc.descriptorCode || '';
+  target.descriptorLabel = `${desc.descriptorLabel || desc.descriptorCode || ''}`;
+  target.generalDescription = support.generalDescription || '';
+  target.instructionalResponse = support.instructionalResponse || '';
+  const n = num(gradeValue);
+  target.remarks = text(desc.remarks || (n != null ? (n >= PASSING_GRADE ? 'Passed' : 'Failed') : target.remarks || ''));
+  return target;
+}
+function ensureDescriptorFieldsForDisplay(result, tableId) {
+  const key = tableId || (result && result.tableUsed) || '';
+  if (!result || !isNumericTable(key)) return result || {};
+  const grade = num(result.finalDisplayedNumeric != null ? result.finalDisplayedNumeric : result.termGrade);
+  const desc = grade != null ? numericDescriptor(grade, key) : numericDescriptorByCodeOrLabel(result.descriptorCode || result.letterGrade || result.descriptorLabel, key);
+  if (!desc) return result;
+  const out = Object.assign({}, result);
+  return applyNumericDescriptorFields(out, desc, key, grade != null ? grade : out.termGrade);
+}
 function transmute(initial, options = {}) { const table = options && options.table === 'do8' ? DO8_APPENDIX_B_TRANSMUTATION_TABLE : NUMERIC_TRANSMUTATION_TABLE; for (const row of table) if (initial >= row[0] && initial <= row[1]) return row[2]; return roundWhole(initial); }
 function descriptiveInstruction(code) { return ({ A:'Provide enrichment opportunities and deeper application tasks.', B:'Sustain grade-level work and increase independence.', C:'Provide guided practice to strengthen confidence and consistency.', D:'Provide targeted support and regular practice.', E:'Provide intensive support and close guidance.' })[code] || ''; }
 function usesDescriptiveNoNumeric(setup) { return !!(setup && (setup.resultTableResolved === 'table7' || setup.resultTableResolved === 'table8')); }
@@ -1369,14 +1432,8 @@ function computeLearnerTerm(row, term) {
   row.computed.generalDescription = '';
   row.computed.instructionalResponse = '';
   if (desc) {
-    row.computed.letterGrade = desc.descriptorCode || '';
-    row.computed.descriptorCode = desc.descriptorCode || '';
-    row.computed.descriptorLabel = `${desc.descriptorLabel}`;
-    if (!legacyMode || table === 'table11') {
-      row.computed.generalDescription = desc.generalDescription || '';
-      row.computed.instructionalResponse = desc.instructionalResponse || '';
-    }
-    row.computed.remarks = legacyMode ? text(desc.remarks || (displayed >= PASSING_GRADE ? 'Passed' : 'Failed')) : text(row.computed.remarks || '');
+    applyNumericDescriptorFields(row.computed, desc, table, displayed);
+    if (!legacyMode) row.computed.remarks = text(row.computed.remarks || '');
   }
   row.computed.interventionFlag = displayed != null && displayed < PASSING_GRADE;
   if (legacyMode && !desc) row.computed.remarks = displayed != null && displayed >= PASSING_GRADE ? 'Passed' : displayed != null ? 'Failed' : '';
@@ -1406,22 +1463,16 @@ function recomputeFinal() {
       const fg = summaryAverageFromReported(reportedGrades, 60);
       const desc = fg == null ? null : numericDescriptor(fg, final.applicableTable);
       out.semesterGrade = fg;
+      out.finalResult.tableUsed = final.applicableTable;
       out.finalResult.finalDisplayedNumeric = fg;
       out.finalResult.termGrade = fg;
-      const isLegacyFinal = final.applicableTable === 'table10';
       out.finalResult.teacherNotes = concatNotesForVisibleTerms(rowsByKey, row => row && row.computed && row.computed.teacherNotes);
       out.finalResult.remarks = '';
       out.finalResult.interventionNotes = concatNotesForVisibleTerms(rowsByKey, row => row && row.computed && row.computed.interventionNotes);
       if (desc) {
-        out.finalResult.letterGrade = desc.descriptorCode || '';
-        out.finalResult.descriptorCode = desc.descriptorCode || '';
-        out.finalResult.descriptorLabel = `${desc.descriptorLabel}`;
-        if (final.applicableTable === 'table11') {
-          out.finalResult.generalDescription = desc.generalDescription;
-          out.finalResult.instructionalResponse = desc.instructionalResponse;
-        }
+        applyNumericDescriptorFields(out.finalResult, desc, final.applicableTable, fg);
       }
-      if (fg != null) {
+      if (fg != null && !out.finalResult.remarks) {
         out.finalResult.remarks = text((desc && desc.remarks) || (fg >= PASSING_GRADE ? 'Passed' : 'Failed'));
       }
       out.finalResult.interventionFlag = fg != null && fg < PASSING_GRADE;
@@ -3517,6 +3568,7 @@ function termStats(termKey) {
   }
 
   function summaryDescriptorText(result) {
+    result = ensureDescriptorFieldsForDisplay(result || {}, result && result.tableUsed);
     return text(result && result.descriptorLabel).trim()
       || text(result && result.descriptorCode).trim()
       || text(result && result.letterGrade).trim()
@@ -3536,6 +3588,7 @@ function termStats(termKey) {
 
   function renderAchievementMeter(result, options = {}) {
     const tableKey = options.tableKey || (result && (result.tableUsed || result.applicableTable)) || '';
+    result = ensureDescriptorFieldsForDisplay(result || {}, tableKey);
     const config = getAchievementMeterConfig(tableKey);
     const compact = !!options.compact;
     const activeCode = resolveAchievementMeterActiveCode(result, config);
@@ -4428,6 +4481,15 @@ function renderFinal() {
     if (!finalResult.generalDescription && source.generalDescription) finalResult.generalDescription = source.generalDescription;
     if (!finalResult.instructionalResponse && source.instructionalResponse) finalResult.instructionalResponse = source.instructionalResponse;
     if (!finalResult.tableUsed && source.tableUsed) finalResult.tableUsed = source.tableUsed;
+    // v18.65: Some saved/final summary rows only carry the numeric grade plus
+    // descriptor code/label. Rehydrate the Table 10 / Table 11 narrative fields
+    // at render time so the Summary table cells do not stay blank, without
+    // changing saved data, CSV shape, or computation logic.
+    const finalNarrativeTable = finalResult.tableUsed || source.tableUsed || (finalSummary && finalSummary.applicableTable) || (state.setupProfile && state.setupProfile.resultTableResolved) || '';
+    if (isNumericTable(finalNarrativeTable)) {
+      const finalWithNarratives = ensureDescriptorFieldsForDisplay(finalResult, finalNarrativeTable);
+      Object.assign(finalResult, finalWithNarratives || {});
+    }
     const learnerId = text(source.learnerId || source.studentId || source.id || source.name);
     return Object.assign({}, source, {
       learnerId,
