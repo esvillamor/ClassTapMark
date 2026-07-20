@@ -24,3 +24,9 @@ Last updated: January 2026
 10. Governing Law. This EULA is governed by the laws applicable in your jurisdiction unless otherwise agreed in writing.
 
 For further queries contact: esv.tnt010@gmail.com
+
+Copyright (c) 2026 Eric Villamor. All rights reserved.
+
+ClassTapMark is proprietary software. No part of this codebase may be copied,
+modified, distributed, hosted, sublicensed, or used in another project without
+written permission from the author.
