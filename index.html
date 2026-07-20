@@ -1413,6 +1413,24 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
   }
 }
 
+
+/* ===================== CTM Locked Copyright Footer ===================== */
+.ctm-copyright-footer{
+  display:none;
+  max-width:1200px;
+  margin:.65rem auto 0;
+  padding:.28rem .65rem;
+  text-align:center;
+  color:rgba(255,255,255,.84);
+  font-size:clamp(9px, 1.65vw, 10.5px);
+  line-height:1.25;
+  letter-spacing:.01em;
+  text-shadow:0 1px 2px rgba(0,0,0,.18);
+}
+body.locked .ctm-copyright-footer{ display:block; }
+body:not(.locked) .ctm-copyright-footer{ display:none !important; }
+.ctm-copyright-footer p{ margin:.15rem 0; }
+.ctm-copyright-footer strong{ font-weight:700; }
 </style>
 
 <script>
@@ -1906,6 +1924,11 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
          Outside the Philippines or DepEd? If ClassTapMark fits your needs. Customization is available upon request.</div>
   </div>
 
+
+<footer id="ctmCopyrightFooter" class="ctm-copyright-footer" aria-label="ClassTapMark copyright notice">
+  <p><strong>Copyright (c) 2026 Eric Villamor. All rights reserved.</strong></p>
+  <p>ClassTapMark is proprietary software. No part of this codebase may be copied, modified, distributed, hosted, sublicensed, or used in another project without written permission from the author.</p>
+</footer>
 <!-- SF1 Modal (Setup + Roster) -->
 <div id="sf1ExportModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none">
   <div class="modal-content" style="max-width: 920px;">
@@ -2509,9 +2532,9 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
       <button id="helpCloseBtn" class="danger" style="padding:.35rem .7rem" aria-label="Close help">✕</button>
     </div>
 
-    <div class="meta">
+    <!--<div class="meta">
       Version: <strong>v1.2</strong> · Storage: <strong>Browser localStorage</strong> · Works offline · SF2‑Ready
-    </div>
+    </div> -->
 
     <div class="content">
       <h3>Overview</h3>
@@ -2591,6 +2614,11 @@ GradeSheets,SF5A,SF5B,SF9,SF10,etc.
 		   <a href="mailto:esv.tnt010@gmail.com?subject=ClassTapMarkesv.tnt010@gmail.com">esv.tnt010@gmail.com</a></p>
       </div>
     </div>
+	<footer id="ctmCopyrightFooter" class="ctm-copyright-footer" aria-label="ClassTapMark copyright notice" style="color: black;">>
+  <p><strong>Copyright (c) 2026 Eric Villamor. All rights reserved.</strong></p>
+  <p>ClassTapMark is proprietary software. No part of this codebase may be copied, modified, distributed, hosted, sublicensed, or used in another project without written permission from the author.</p>
+</footer>
+	
     <div style="display:flex; gap:.6rem; justify-content:flex-end; margin-top:.75rem;">
       <button class="edit" id="helpPrintBtn">Print</button>
       <button class="primary" id="helpCloseBtn2">Close</button>
