@@ -5,7 +5,7 @@
   const PASSING_GRADE = 75;
   const STORAGE_PREFIX = 'gradesheet:';
   const LEGACY_STORAGE_PREFIX = 'gradesheet::';
-  const VERSION = 'CTM-GRADESHEET-MAPEH-BUNDLE-AWARE-2026-07-15';
+  const VERSION = 'CTM-GRADESHEET-STRICT-OFFICIAL-SUMMARY-2026-07-20';
   const Q_KEYS = ['q1','q2','q3','q4'];
   const T_TO_Q = {t1:'q1',t2:'q2',t3:'q3'};
   const state = {htmlInjected:false,classId:'',className:'',roster:[],activeTab:'overview',academicStructure:'quarter',showArchived:'active',subjects:[],grades:{},selectedLearnerId:'',selectedSubjectId:'',saveTimer:0};
@@ -56,12 +56,24 @@
   function gradeFor(lid,sid,q){ return toWholeGrade(((state.grades[lid]||{})[sid]||{})[q]); }
   function subjectFg(lid,s){ return averageWhole(visiblePeriodsForSubject(s).map(p=>gradeFor(lid,s.id,p.key))); }
   function termFg(lid,q){ return averageWhole(activeSubjects().filter(s=>isVisibleIn(s,q)).map(s=>gradeFor(lid,s.id,q))); }
-  function learnerFgs(lid){ return state.academicStructure==='modifiedThreeTerm' ? ['q1','q2','q3'].map(q=>termFg(lid,q)).filter(Number.isInteger) : activeSubjects().map(s=>subjectFg(lid,s)).filter(Number.isInteger); }
-  function learnerGa(lid){ return averageWhole(learnerFgs(lid)); }
+  // CTM FIX 2026-07-20: Strict official summary computation.
+  // GA, Descriptor, Promotion, Rank, and Academic Award must remain blank until
+  // all required active/visible subject or term grades for the learner are complete.
+  // This prevents partial entries from producing premature promotion, ranking, or honors.
+  function summarySubjects(){ return activeSubjects().filter(s=>visiblePeriodsForSubject(s).length>0); }
+  function subjectIsComplete(lid,s){ const per=visiblePeriodsForSubject(s); return per.length>0 && per.every(p=>Number.isInteger(gradeFor(lid,s.id,p.key))); }
+  function subjectFgStrict(lid,s){ return subjectIsComplete(lid,s) ? subjectFg(lid,s) : null; }
+  function summaryTermKeys(){ return ['q1','q2','q3'].filter(q=>activeSubjects().some(s=>isVisibleIn(s,q))); }
+  function termIsComplete(lid,q){ const subs=activeSubjects().filter(s=>isVisibleIn(s,q)); return subs.length>0 && subs.every(s=>Number.isInteger(gradeFor(lid,s.id,q))); }
+  function termFgStrict(lid,q){ return termIsComplete(lid,q) ? termFg(lid,q) : null; }
+  function requiredFgs(lid){ return state.academicStructure==='modifiedThreeTerm' ? summaryTermKeys().map(q=>termFgStrict(lid,q)) : summarySubjects().map(s=>subjectFgStrict(lid,s)); }
+  function learnerIsComplete(lid){ const fgs=requiredFgs(lid); return fgs.length>0 && fgs.every(Number.isInteger); }
+  function learnerFgs(lid){ return learnerIsComplete(lid) ? requiredFgs(lid) : []; }
+  function learnerGa(lid){ return learnerIsComplete(lid) ? averageWhole(requiredFgs(lid)) : null; }
   function promotion(ga,fgs){ if(!Number.isInteger(ga)) return ''; const fc=(fgs||[]).filter(v=>Number.isInteger(v)&&v<PASSING_GRADE).length; if(ga<PASSING_GRADE||fc>=2) return 'RETAINED'; if(fc>=1&&ga>=PASSING_GRADE) return 'REMEDIAL CLASS'; return 'PROMOTED'; }
   function award(ga,fgs){ if(!Number.isInteger(ga)||!(fgs||[]).length||fgs.some(v=>!Number.isInteger(v)||v<PASSING_GRADE)) return ''; if(ga>=98) return 'WITH HIGHEST HONORS'; if(ga>=95) return 'WITH HIGH HONORS'; if(ga>=90) return 'WITH HONORS'; return ''; }
-  function computedRows(){ const r=state.roster.map((l,i)=>{ const fgs=learnerFgs(l.learnerId), ga=learnerGa(l.learnerId); return {learner:l,index:i+1,name:l.name,sex:l.sex,fgs,ga,descriptor:descriptor(ga),promotion:promotion(ga,fgs),award:award(ga,fgs),rank:''}; }); computeCompetitionRanks(r); return r; }
-  function computeCompetitionRanks(rows){ const v=rows.filter(r=>Number.isInteger(r.ga)).sort((a,b)=>b.ga!==a.ga?b.ga-a.ga:String(a.name||'').localeCompare(String(b.name||''))); let pg=null,pr=0; v.forEach((r,i)=>{ if(r.ga===pg) r.rank=pr; else {r.rank=i+1; pr=r.rank; pg=r.ga;} }); }
+  function computedRows(){ const r=state.roster.map((l,i)=>{ const complete=learnerIsComplete(l.learnerId), fgs=complete?requiredFgs(l.learnerId):[], ga=complete?averageWhole(fgs):null; return {learner:l,index:i+1,name:l.name,sex:l.sex,complete,fgs,ga,descriptor:complete?descriptor(ga):'',promotion:complete?promotion(ga,fgs):'',award:complete?award(ga,fgs):'',rank:''}; }); computeCompetitionRanks(r); return r; }
+  function computeCompetitionRanks(rows){ const v=rows.filter(r=>r.complete&&Number.isInteger(r.ga)).sort((a,b)=>b.ga!==a.ga?b.ga-a.ga:String(a.name||'').localeCompare(String(b.name||''))); let pg=null,pr=0; v.forEach((r,i)=>{ if(r.ga===pg) r.rank=pr; else {r.rank=i+1; pr=r.rank; pg=r.ga;} }); }
 
   function gsNorm(v){ return text(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' '); }
   function gsSlug(v){ return text(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
@@ -479,7 +491,7 @@
   }
   function applyRuntimeUiTweaks(){ ensureGradeSheetRuntimeStyles(); const navMarkup={gsBtnFirstLearner:'<span class="ctm-gs-nav-icon" aria-hidden="true">⏮️</span><span class="ctm-gs-nav-text">First</span>',gsBtnPrevLearner:'<span class="ctm-gs-nav-icon" aria-hidden="true">◀️</span><span class="ctm-gs-nav-text">Previous</span>',gsBtnNextLearner:'<span class="ctm-gs-nav-text">Next</span><span class="ctm-gs-nav-icon" aria-hidden="true">▶️</span>',gsBtnLastLearner:'<span class="ctm-gs-nav-text">Last</span><span class="ctm-gs-nav-icon" aria-hidden="true">⏭️</span>'}; Object.entries(navMarkup).forEach(([id,markup])=>{ const b=dom[id]; if(b&&!b.querySelector('.ctm-gs-nav-text')) b.innerHTML=markup; }); const s=state.subjects.find(x=>x.id===state.selectedSubjectId); const isArchived=!!(s&&s.archived), archiveLabel=isArchived?'↩️ Restore Subject':'📦 Archive Subject', archivePlain=isArchived?'Restore Subject':'Archive Subject'; if(dom.gsBtnArchiveSubject){dom.gsBtnArchiveSubject.textContent=archiveLabel;dom.gsBtnArchiveSubject.title=archivePlain;dom.gsBtnArchiveSubject.setAttribute('aria-label',archivePlain);} if(dom.gsBtnDeleteSubject){dom.gsBtnDeleteSubject.textContent='🗑️ Delete Permanently';dom.gsBtnDeleteSubject.title='Delete Permanently';dom.gsBtnDeleteSubject.setAttribute('aria-label','Delete Permanently');} const t=document.querySelector('#gsPanelSubjects .ctm-gs-card-title .ctm-gs-mini'); if(t)t.textContent='Manage subjects/teachers/source/order/archive/delete'; document.querySelectorAll('#gradeSheetModal [title="Archive/Delete Subject"],#gradeSheetModal [aria-label="Archive/Delete Subject"]').forEach(el=>{el.setAttribute('title','Archive Subject');el.setAttribute('aria-label','Archive Subject');}); }
   async function ensureInjected(){ if(state.htmlInjected&&$id('gradeSheetModal')) return; let html=''; try{const res=await fetch(MODULE_HTML_PATH,{cache:'no-store'}); if(res.ok) html=await res.text();}catch(_){} if(!html) throw new Error('Unable to load gradesheet.html'); let host=$id('gradeSheetHost'); if(!host){host=document.createElement('div');host.id='gradeSheetHost';document.body.appendChild(host);} host.innerHTML=html; state.htmlInjected=true; cacheDom(); bindUi(); ensureGradeSheetRuntimeStyles(); }
-  function cacheDom(){ ['gradeSheetModal','gsBtnClose','gsTopClass','gsTopLayout','gsTopCount','gsAcademicStructure','gsAcademicStructureField','gsShowArchived','gsSaveStatus','gsBtnRefreshRoster','gsBtnClearGrades','gsTable','gsLearnerPicker','gsBtnFirstLearner','gsBtnPrevLearner','gsBtnNextLearner','gsBtnLastLearner','gsLearnerGradeGrid','gsLearnerSummary','gsLearnerTitle','gsSubjectPicker','gsSubjectName','gsTeacherName','gsSourceType','gsLinkedRecord','gsLinkedColumn','gsSubjectStatus','gsSubjectOrder','gsTermVisibility','gsBtnAddSubject','gsBtnSaveSubject','gsBtnArchiveSubject','gsBtnDeleteSubject','gsBtnMoveLeft','gsBtnMoveRight','gsSubjectList'].forEach(id=>dom[id]=$id(id)); }
+  function cacheDom(){ ['gradeSheetModal','gsBtnClose','gsTopClass','gsTopLayout','gsTopCount','gsAcademicStructure','gsAcademicStructureField','gsShowArchived','gsSaveStatus','gsBtnRefreshRoster','gsBtnClearGrades','gsBtnViewExcel','gsTable','gsLearnerPicker','gsBtnFirstLearner','gsBtnPrevLearner','gsBtnNextLearner','gsBtnLastLearner','gsLearnerGradeGrid','gsLearnerSummary','gsLearnerTitle','gsSubjectPicker','gsSubjectName','gsTeacherName','gsSourceType','gsLinkedRecord','gsLinkedColumn','gsSubjectStatus','gsSubjectOrder','gsTermVisibility','gsBtnAddSubject','gsBtnSaveSubject','gsBtnArchiveSubject','gsBtnDeleteSubject','gsBtnMoveLeft','gsBtnMoveRight','gsSubjectList'].forEach(id=>dom[id]=$id(id)); }
   function readSavedGradeSheetData(key){
     if(!key) return null;
     try{ return JSON.parse(localStorage.getItem(key)||'null'); }catch(_){ return null; }
@@ -522,6 +534,242 @@
   function renderTable(){ const out=state.academicStructure==='modifiedThreeTerm' ? renderModifiedTable() : renderNormalTable(); scheduleStickyAdjust(); return out; }
   function renderNormalTable(){ const subs=activeSubjects(), rows=computedRows(); let h1='<tr><th class="gs-col-no" rowspan="4">#</th><th class="gs-col-name" rowspan="4">Learner</th><th class="gs-col-sex" rowspan="4">Sex</th>'; subs.forEach(s=>h1+=`<th colspan="${visiblePeriodsForSubject(s).length+2}">${actionButtons(s)}</th>`); h1+='<th class="gs-summary gs-ga" rowspan="4">GA</th><th class="gs-summary" rowspan="4">Descriptor</th><th class="gs-summary" rowspan="4">Promotion</th><th class="gs-summary" rowspan="4">Rank</th><th class="gs-summary" rowspan="4">Academic Award</th></tr>'; let h2='<tr>',h3='<tr>',h4='<tr>'; subs.forEach(s=>{ const per=visiblePeriodsForSubject(s); h2+=`<th class="gs-subj" colspan="${per.length+2}" title="${esc(s.name)}">${esc(s.name)} ${s.sourceType==='linked'?'🔗':''}</th>`; h3+=`<th class="gs-teacher" colspan="${per.length+2}" title="${esc(s.teacher)}">${esc(s.teacher||'—')}</th>`; per.forEach(p=>h4+=`<th class="gs-period">${esc(p.label)}</th>`); h4+='<th class="gs-fg">FG</th><th class="gs-remarks">Remarks</th>'; }); h2+='</tr>';h3+='</tr>';h4+='</tr>'; let body=''; rows.forEach(r=>{ body+=`<tr data-learner-id="${esc(r.learner.learnerId)}" class="${r.learner.learnerId===state.selectedLearnerId?'is-selected':''}"><td class="gs-col-no">${r.index}</td><td class="gs-col-name" title="${esc(r.name)}">${esc(r.name)}</td><td class="gs-col-sex">${esc(r.sex)}</td>`; subs.forEach(s=>{ visiblePeriodsForSubject(s).forEach(p=>{ const v=gradeFor(r.learner.learnerId,s.id,p.key); body+=`<td class="gs-grade-cell" data-learner-id="${esc(r.learner.learnerId)}" data-subject-id="${esc(s.id)}" data-period="${p.key}">${v??''}${s.sourceType==='linked'?'<span class="gs-link">🔗</span>':''}</td>`; }); const fg=subjectFg(r.learner.learnerId,s); body+=`<td class="gs-fg">${fg??''}</td><td class="gs-remarks">${esc(remarks(fg))}</td>`; }); body+=summaryCells(r)+'</tr>'; }); if(dom.gsTable) dom.gsTable.innerHTML=`<thead>${h1}${h2}${h3}${h4}</thead><tbody>${body||'<tr><td colspan="8">No learners found. Load a class or refresh roster.</td></tr>'}</tbody>`; }
   function renderModifiedTable(){ const rows=computedRows(), terms=[{key:'q1',label:'Term 1'},{key:'q2',label:'Term 2'},{key:'q3',label:'Term 3'}]; let h1='<tr><th class="gs-col-no" rowspan="4">#</th><th class="gs-col-name" rowspan="4">Learner</th><th class="gs-col-sex" rowspan="4">Sex</th>'; terms.forEach(t=>h1+=`<th colspan="${activeSubjects().filter(s=>isVisibleIn(s,t.key)).length+2}">${t.label}</th>`); h1+='<th class="gs-summary gs-ga" rowspan="4">GA</th><th class="gs-summary" rowspan="4">Descriptor</th><th class="gs-summary" rowspan="4">Promotion</th><th class="gs-summary" rowspan="4">Rank</th><th class="gs-summary" rowspan="4">Academic Award</th></tr>'; let h2='<tr>',h3='<tr>',h4='<tr>'; terms.forEach(t=>{ const subs=activeSubjects().filter(s=>isVisibleIn(s,t.key)); h2+=`<th colspan="${subs.length+2}" class="gs-subj">${t.label} group</th>`; h3+=subs.map(s=>`<th class="gs-subj" title="${esc(s.name)}">${esc(s.name)} ${s.sourceType==='linked'?'🔗':''}</th>`).join('')+'<th class="gs-fg" rowspan="2">FG</th><th class="gs-remarks" rowspan="2">Remarks</th>'; h4+=subs.map(s=>`<th class="gs-teacher" title="${esc(s.teacher)}">${esc(s.teacher||'—')}</th>`).join(''); }); h2+='</tr>';h3+='</tr>';h4+='</tr>'; let body=''; rows.forEach(r=>{ body+=`<tr data-learner-id="${esc(r.learner.learnerId)}" class="${r.learner.learnerId===state.selectedLearnerId?'is-selected':''}"><td class="gs-col-no">${r.index}</td><td class="gs-col-name" title="${esc(r.name)}">${esc(r.name)}</td><td class="gs-col-sex">${esc(r.sex)}</td>`; terms.forEach(t=>{ const subs=activeSubjects().filter(s=>isVisibleIn(s,t.key)); subs.forEach(s=>{ const v=gradeFor(r.learner.learnerId,s.id,t.key); body+=`<td class="gs-grade-cell" data-learner-id="${esc(r.learner.learnerId)}" data-subject-id="${esc(s.id)}" data-period="${t.key}">${v??''}${s.sourceType==='linked'?'<span class="gs-link">🔗</span>':''}</td>`; }); const fg=termFg(r.learner.learnerId,t.key); body+=`<td class="gs-fg">${fg??''}</td><td class="gs-remarks">${esc(remarks(fg))}</td>`; }); body+=summaryCells(r)+'</tr>'; }); if(dom.gsTable) dom.gsTable.innerHTML=`<thead>${h1}${h2}${h3}${h4}</thead><tbody>${body||'<tr><td colspan="8">No learners found. Load a class or refresh roster.</td></tr>'}</tbody>`; }
+
+  function ensureXlsxLibrary(){
+    if(window.XLSX) return Promise.resolve(window.XLSX);
+    if(window.__CTMGradeSheetXlsxPromise) return window.__CTMGradeSheetXlsxPromise;
+    window.__CTMGradeSheetXlsxPromise = new Promise((resolve,reject)=>{
+      const localSrc='libs/xlsx.full.min.js';
+      const existing=Array.from(document.scripts||[]).find(s=>String(s.src||'').includes(localSrc)||String(s.src||'').includes('xlsx.full.min.js'));
+      const script=existing||document.createElement('script');
+      const done=()=>window.XLSX?resolve(window.XLSX):reject(new Error('SheetJS XLSX library did not initialize.'));
+      if(existing){
+        script.addEventListener('load',done,{once:true});
+        script.addEventListener('error',()=>reject(new Error('Unable to load SheetJS XLSX library.')),{once:true});
+        if(window.XLSX) resolve(window.XLSX);
+        return;
+      }
+      script.src=localSrc;
+      script.async=true;
+      script.onload=done;
+      script.onerror=()=>reject(new Error('Unable to load libs/xlsx.full.min.js. Please add SheetJS at that path or load it before Grade Sheet.'));
+      (document.head||document.documentElement).appendChild(script);
+    });
+    return window.__CTMGradeSheetXlsxPromise;
+  }
+  function safeSheetName(name,used){
+    used=used||new Set();
+    let base=text(name).replace(/[:\\/?*\[\]]/g,' ').replace(/\s+/g,' ').trim()||'Sheet';
+    base=base.slice(0,31).trim()||'Sheet';
+    let s=base,n=1;
+    while(used.has(s.toLowerCase())){
+      const suffix=` (${++n})`;
+      s=(base.slice(0,31-suffix.length).trim()||'Sheet')+suffix;
+    }
+    used.add(s.toLowerCase());
+    return s;
+  }
+  function numberOrBlank(v){ return Number.isInteger(v) ? v : ''; }
+  function excelSubjectList(){ return activeSubjects().filter(s=>visiblePeriodsForSubject(s).length>0); }
+  function excelTermTitle(p){
+    const label=text(p&&p.label)||'';
+    if(state.academicStructure==='threeTerm'||state.academicStructure==='modifiedThreeTerm') return label.replace(/^T(\d)$/i,'TERM $1').toUpperCase();
+    const m=label.match(/Q(\d)/i);
+    return m ? `QUARTER ${m[1]}` : label.toUpperCase();
+  }
+  function excelTermShort(p){ return text(p&&p.label)||text(p&&p.key).toUpperCase(); }
+  function exportSummaryCaption(p){
+    const label=excelTermShort(p);
+    return (state.academicStructure==='threeTerm'||state.academicStructure==='modifiedThreeTerm') ? `${label} FG` : `${label} GA`;
+  }
+  function mergeRange(srow,scol,erow,ecol){ return {s:{r:srow,c:scol},e:{r:erow,c:ecol}}; }
+  function aoaSet(aoa,r,c,v){ while(aoa.length<=r) aoa.push([]); aoa[r][c]=v; }
+  function computeRanksByGrade(rows,gradeKey){
+    const ranked=(rows||[]).filter(r=>Number.isInteger(r&&r[gradeKey])).sort((a,b)=>b[gradeKey]!==a[gradeKey]?b[gradeKey]-a[gradeKey]:String(a.name||'').localeCompare(String(b.name||'')));
+    let prev=null,rank=0;
+    ranked.forEach((r,i)=>{ if(r[gradeKey]===prev) r.rank=rank; else {rank=i+1; r.rank=rank; prev=r[gradeKey];} });
+    return rows;
+  }
+  function exportGradeValue(lid,sid,q){ return numberOrBlank(gradeFor(lid,sid,q)); }
+  function buildPeriodSheetModel(period){
+    const subs=excelSubjectList().filter(s=>isVisibleIn(s,period.key));
+    const aoa=[[],[],[],[]], merges=[];
+    merges.push(mergeRange(0,0,2,0),mergeRange(0,1,2,1));
+    aoaSet(aoa,0,2,'Term:');
+    aoaSet(aoa,1,2,'Subject:');
+    aoaSet(aoa,2,2,'Teacher:');
+    aoa[3]=['#','Learner','Sex'];
+    let c=3;
+    if(subs.length){
+      aoaSet(aoa,0,c,excelTermTitle(period));
+      merges.push(mergeRange(0,c,0,c+(subs.length*2)-1));
+    }
+    subs.forEach(s=>{
+      aoaSet(aoa,1,c,text(s.name)||`Subject ${s.order||''}`);
+      aoaSet(aoa,2,c,text(s.teacher)||'Name of Teacher');
+      merges.push(mergeRange(1,c,1,c+1),mergeRange(2,c,2,c+1));
+      aoaSet(aoa,3,c,'FG');
+      aoaSet(aoa,3,c+1,'Remarks');
+      c+=2;
+    });
+    [['fg',exportSummaryCaption(period)],['desc','Descriptor'],['rank','Rank']].forEach((x,i)=>{ aoaSet(aoa,0,c+i,x[1]); merges.push(mergeRange(0,c+i,3,c+i)); });
+    // CTM FIX 2026-07-20B: Period export uses strict period completion.
+    // The period/term FG or GA, Descriptor, and Rank stay blank until every
+    // active subject visible in this period has a valid whole-number grade.
+    const rows=state.roster.map((l,i)=>{
+      const vals=subs.map(s=>gradeFor(l.learnerId,s.id,period.key));
+      const complete=subs.length>0 && vals.every(Number.isInteger);
+      const ga=complete ? averageWhole(vals) : null;
+      return {learner:l,index:i+1,name:l.name,sex:l.sex,complete,ga,rank:''};
+    });
+    computeRanksByGrade(rows.filter(r=>r.complete),'ga');
+    rows.forEach(r=>{
+      const row=[r.index,r.name||'',r.sex||''];
+      subs.forEach(s=>{ const v=gradeFor(r.learner.learnerId,s.id,period.key); row.push(numberOrBlank(v),remarks(v)); });
+      row.push(r.complete?numberOrBlank(r.ga):'',r.complete?descriptor(r.ga):'',r.complete?(r.rank||''):'');
+      aoa.push(row);
+    });
+    return {aoa,merges,summaryStart:c,headerRows:4};
+  }
+  function buildCombinedSheetModel(){ return state.academicStructure==='modifiedThreeTerm' ? buildCombinedModifiedThreeTermModel() : buildCombinedNormalModel(); }
+  function buildCombinedNormalModel(){
+    const subs=excelSubjectList(), aoa=[[],[],[],[]], merges=[], lm=labelMap();
+    merges.push(mergeRange(0,0,2,0),mergeRange(0,1,2,1));
+    aoaSet(aoa,0,2,'Grading System:');
+    aoaSet(aoa,1,2,'Subject:');
+    aoaSet(aoa,2,2,'Teacher:');
+    aoa[3]=['#','Learner','Sex'];
+    let c=3;
+    subs.forEach(s=>{
+      const per=visiblePeriodsForSubject(s);
+      const span=per.length+2;
+      aoaSet(aoa,0,c,structureLabel());
+      aoaSet(aoa,1,c,text(s.name)||`Subject ${s.order||''}`);
+      aoaSet(aoa,2,c,text(s.teacher)||'Name of Teacher');
+      if(span>1){ merges.push(mergeRange(0,c,0,c+span-1),mergeRange(1,c,1,c+span-1),mergeRange(2,c,2,c+span-1)); }
+      per.forEach(p=>aoaSet(aoa,3,c++,lm[p.key]||p.label||p.key.toUpperCase()));
+      aoaSet(aoa,3,c++,'FG');
+      aoaSet(aoa,3,c++,'Remarks');
+    });
+    ['GA','Descriptor','Promotion','Rank','Academic Award'].forEach((v,i)=>{ aoaSet(aoa,0,c+i,v); merges.push(mergeRange(0,c+i,3,c+i)); });
+    const rows=computedRows();
+    rows.forEach(r=>{
+      const row=[r.index,r.name||'',r.sex||''];
+      subs.forEach(s=>{
+        visiblePeriodsForSubject(s).forEach(p=>row.push(exportGradeValue(r.learner.learnerId,s.id,p.key)));
+        const fg=subjectFg(r.learner.learnerId,s);
+        row.push(numberOrBlank(fg),remarks(fg));
+      });
+      row.push(numberOrBlank(r.ga),r.descriptor||'',r.promotion||'',r.rank||'',r.award||'');
+      aoa.push(row);
+    });
+    return {aoa,merges,summaryStart:c,headerRows:4};
+  }
+  function buildCombinedModifiedThreeTermModel(){
+    const terms=periods(), aoa=[[],[],[],[]], merges=[];
+    merges.push(mergeRange(0,0,2,0),mergeRange(0,1,2,1));
+    aoaSet(aoa,0,2,'Term:');
+    aoaSet(aoa,1,2,'Subject:');
+    aoaSet(aoa,2,2,'Teacher:');
+    aoa[3]=['#','Learner','Sex'];
+    let c=3;
+    terms.forEach(t=>{
+      const subs=excelSubjectList().filter(s=>isVisibleIn(s,t.key));
+      const termStart=c;
+      subs.forEach(s=>{
+        aoaSet(aoa,1,c,text(s.name)||`Subject ${s.order||''}`);
+        aoaSet(aoa,2,c,text(s.teacher)||'Name of Teacher');
+        merges.push(mergeRange(1,c,1,c+1),mergeRange(2,c,2,c+1));
+        aoaSet(aoa,3,c,'FG');
+        aoaSet(aoa,3,c+1,'Remarks');
+        c+=2;
+      });
+      if(c>termStart){ aoaSet(aoa,0,termStart,excelTermTitle(t)); merges.push(mergeRange(0,termStart,0,c-1)); }
+    });
+    ['GA','Descriptor','Promotion','Rank','Academic Award'].forEach((v,i)=>{ aoaSet(aoa,0,c+i,v); merges.push(mergeRange(0,c+i,3,c+i)); });
+    const rows=computedRows();
+    rows.forEach(r=>{
+      const row=[r.index,r.name||'',r.sex||''];
+      terms.forEach(t=>{
+        const subs=excelSubjectList().filter(s=>isVisibleIn(s,t.key));
+        subs.forEach(s=>{ const v=gradeFor(r.learner.learnerId,s.id,t.key); row.push(numberOrBlank(v),remarks(v)); });
+      });
+      row.push(numberOrBlank(r.ga),r.descriptor||'',r.promotion||'',r.rank||'',r.award||'');
+      aoa.push(row);
+    });
+    return {aoa,merges,summaryStart:c,headerRows:4};
+  }
+  function styleExcelWorksheet(ws,model){
+    if(!ws||!model||!model.aoa||!model.aoa.length) return;
+    const aoa=model.aoa, lastRow=aoa.length, lastCol=Math.max(...aoa.map(r=>(r||[]).length));
+    ws['!merges']=model.merges||[];
+    ws['!views']=[{state:'frozen',xSplit:3,ySplit:4,topLeftCell:'D5',activePane:'bottomRight'}];
+    const xutils=(window.XLSX&&window.XLSX.utils)||{};
+    ws['!autofilter']={ref:`A4:${xutils.encode_col(lastCol-1)}${lastRow}`};
+    ws['!rows']=[{hpt:22},{hpt:36},{hpt:30},{hpt:22}].concat(Array(Math.max(0,lastRow-4)).fill({hpt:20}));
+    ws['!cols']=Array.from({length:lastCol},(_,i)=>{
+      if(i===0) return {wch:5};
+      if(i===1) return {wch:30};
+      if(i===2) return {wch:9};
+      const max=aoa.reduce((m,row)=>Math.max(m,String((row&&row[i])??'').length),0);
+      return {wch:Math.max(8,Math.min(i>=model.summaryStart?22:18,max+2))};
+    });
+    const border={top:{style:'thin',color:{rgb:'B7B7B7'}},bottom:{style:'thin',color:{rgb:'B7B7B7'}},left:{style:'thin',color:{rgb:'B7B7B7'}},right:{style:'thin',color:{rgb:'B7B7B7'}}};
+    const headerFill={patternType:'solid',fgColor:{rgb:'D9EAF7'}};
+    const labelFill={patternType:'solid',fgColor:{rgb:'EAF3F8'}};
+    const summaryFill={patternType:'solid',fgColor:{rgb:'FFF2CC'}};
+    const center={horizontal:'center',vertical:'center',wrapText:true};
+    const left={horizontal:'left',vertical:'center',wrapText:true};
+    for(let r=0;r<lastRow;r++){
+      for(let c=0;c<lastCol;c++){
+        const addr=xutils.encode_cell({r,c});
+        const cell=ws[addr];
+        if(!cell) continue;
+        cell.s=cell.s||{};
+        cell.s.border=border;
+        cell.s.alignment=(c===1&&r>=4)?left:center;
+        if(r<4){
+          cell.s.font={bold:true,color:{rgb:'1F2937'}};
+          cell.s.fill=c>=model.summaryStart?summaryFill:(c===2?labelFill:headerFill);
+        }else if(c>=model.summaryStart){
+          cell.s.fill={patternType:'solid',fgColor:{rgb:'FFFDF2'}};
+          if(c===model.summaryStart) cell.s.font={bold:true};
+        }
+      }
+    }
+  }
+  function safeFilePart(v){ return (text(v)||'class').replace(/[\\/:*?"<>|\[\]]/g,'-').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'class'; }
+  async function exportGradeSheetToExcel(){
+    try{
+      captureSubjectFormIfDirty();
+      ensureDataShape();
+      syncLinkedGrades({silent:true});
+      const subs=excelSubjectList();
+      if(!subs.length){ alert('Please add at least one active subject before exporting to Excel.'); flash('Excel export cancelled'); return; }
+      if(!state.roster.length){ alert('No learners found. Please load or refresh the roster before exporting.'); flash('Excel export cancelled'); return; }
+      const XLSXLib=await ensureXlsxLibrary();
+      const wb=XLSXLib.utils.book_new();
+      const used=new Set();
+      periods().forEach(p=>{
+        const model=buildPeriodSheetModel(p);
+        const ws=XLSXLib.utils.aoa_to_sheet(model.aoa);
+        styleExcelWorksheet(ws,model);
+        XLSXLib.utils.book_append_sheet(wb,ws,safeSheetName(excelTermShort(p),used));
+      });
+      const allModel=buildCombinedSheetModel();
+      const allWs=XLSXLib.utils.aoa_to_sheet(allModel.aoa);
+      styleExcelWorksheet(allWs,allModel);
+      XLSXLib.utils.book_append_sheet(wb,allWs,safeSheetName('All Columns',used));
+      const d=new Date(), yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+      const fileName=`GradeSheet-${safeFilePart(state.className||state.classId)}-${yyyy}-${mm}-${dd}.xlsx`;
+      XLSXLib.writeFile(wb,fileName);
+      flash('Excel export ready');
+    }catch(err){
+      console.error(err);
+      alert((err&&err.message)||'Unable to export Grade Sheet to Excel.');
+      flash('Excel export failed');
+    }
+  }
   function renderLearnerPicker(){ if(!dom.gsLearnerPicker) return; const rows=learnerPickerDisplayRows(); dom.gsLearnerPicker.innerHTML=rows.map(x=>`<option value="${esc(x.learner.learnerId)}">${esc(x.label)}</option>`).join('')||'<option value="">No learners</option>'; dom.gsLearnerPicker.value=state.selectedLearnerId||''; }
   function inputHtml(l,s,q,label){ const v=gradeFor(l.learnerId,s.id,q), inputId=`gsGrade_${gsSlug(l.learnerId)}_${gsSlug(s.id)}_${gsSlug(q)}`; return `<div class="ctm-gs-field"><label for="${esc(inputId)}">${esc(label)}</label><input id="${esc(inputId)}" inputmode="numeric" pattern="[0-9]*" data-gs-grade-input="1" data-subject-id="${esc(s.id)}" data-period="${q}" value="${v??''}" ${s.sourceType==='linked'?'readonly title="Linked values are read-only"':''}></div>`; }
   function renderLearnerCard(){ const l=state.roster.find(x=>x.learnerId===state.selectedLearnerId); if(dom.gsLearnerTitle) dom.gsLearnerTitle.textContent=l?`Learner Grade Encoding: ${l.name}`:'Learner Grade Encoding'; if(!l){ if(dom.gsLearnerGradeGrid) dom.gsLearnerGradeGrid.innerHTML='<div class="ctm-gs-mini">No learner selected.</div>'; renderLearnerSummary(null); return; } let html=''; if(state.academicStructure==='modifiedThreeTerm'){ [{key:'q1',label:'Term 1'},{key:'q2',label:'Term 2'},{key:'q3',label:'Term 3'}].forEach(t=>{ html+=`<div class="ctm-gs-subject-grade-card" data-gs-term-card="${t.key}"><div class="ctm-gs-subject-grade-title">${t.label}</div><div class="ctm-gs-period-grid">`; activeSubjects().filter(s=>isVisibleIn(s,t.key)).forEach(s=>html+=inputHtml(l,s,t.key,s.name)); const fg=termFg(l.learnerId,t.key), termFgId=`gsTermFg_${gsSlug(l.learnerId)}_${gsSlug(t.key)}`, termRemarksId=`gsTermRemarks_${gsSlug(l.learnerId)}_${gsSlug(t.key)}`; html+=`<div class="ctm-gs-field"><label for="${esc(termFgId)}">FG</label><input id="${esc(termFgId)}" data-gs-term-fg-for="${t.key}" value="${fg??''}" readonly></div><div class="ctm-gs-field"><label for="${esc(termRemarksId)}">Remarks</label><input id="${esc(termRemarksId)}" data-gs-term-remarks-for="${t.key}" value="${esc(remarks(fg))}" readonly></div></div></div>`; }); } else { activeSubjects().forEach(s=>{ html+=`<div class="ctm-gs-subject-grade-card" data-gs-subject-card="${esc(s.id)}"><div class="ctm-gs-subject-grade-title" title="${esc(s.name)}">${esc(s.name)} ${s.sourceType==='linked'?'🔗':''}</div><div class="ctm-gs-period-grid">`; visiblePeriodsForSubject(s).forEach(p=>html+=inputHtml(l,s,p.key,p.label)); const fg=subjectFg(l.learnerId,s), fgId=`gsFg_${gsSlug(l.learnerId)}_${gsSlug(s.id)}`, remarksId=`gsRemarks_${gsSlug(l.learnerId)}_${gsSlug(s.id)}`; html+=`<div class="ctm-gs-field"><label for="${esc(fgId)}">FG</label><input id="${esc(fgId)}" data-gs-fg-for="${esc(s.id)}" value="${fg??''}" readonly></div><div class="ctm-gs-field"><label for="${esc(remarksId)}">Remarks</label><input id="${esc(remarksId)}" data-gs-remarks-for="${esc(s.id)}" value="${esc(remarks(fg))}" readonly></div></div></div>`; }); } if(dom.gsLearnerGradeGrid) dom.gsLearnerGradeGrid.innerHTML=html; renderLearnerSummary(l); }
@@ -595,11 +843,11 @@
     },{passive:true});
     ['pointercancel','lostpointercapture'].forEach(evt=>card.addEventListener(evt,()=>{swipe=null;},{passive:true}));
   }
-  function bindUi(){ const modal=$id('gradeSheetModal'); if(!modal||modal.dataset.gsBound==='1') return; modal.dataset.gsBound='1'; bindLearnerSwipe(); dom.gsBtnClose&&dom.gsBtnClose.addEventListener('click',close); modal.addEventListener('click',e=>{ const tab=e.target.closest('.ctm-gs-tab'); if(tab) switchTab(tab.dataset.gsTab); const act=e.target.closest('[data-gs-action]'); if(act){ const id=act.dataset.subjectId; if(id) state.selectedSubjectId=id; const a=act.dataset.gsAction; if(a==='add') addSubject(); if(a==='left') moveSubject(-1); if(a==='right') moveSubject(1); if(a==='archive') archiveSubject(); if(a==='delete') deleteSubjectPermanently(); return; } const tr=e.target.closest('tbody tr[data-learner-id]'); if(tr){ state.selectedLearnerId=tr.dataset.learnerId; if(e.target.matches('[data-period]')){ renderLearnerPicker(); renderLearnerCard(); switchTab('learner'); setTimeout(()=>{ const inp=modal.querySelector(`[data-gs-grade-input][data-subject-id="${CSS.escape(e.target.dataset.subjectId)}"][data-period="${CSS.escape(e.target.dataset.period)}"]`); if(inp) inp.focus(); },0); } else selectLearner(tr.dataset.learnerId); } const item=e.target.closest('.ctm-gs-subject-item'); if(item){ state.selectedSubjectId=item.dataset.subjectId; renderSubjectSetup(); } }); modal.addEventListener('input',e=>{ const inp=e.target.closest('[data-gs-grade-input]'); if(inp){ if(inp.readOnly) return; const old=inp.value, clean=String(old).replace(/\D/g,'').slice(0,3); const final=clean===''?'':String(Math.max(0,Math.min(100,Number(clean)))); if(old!==final){ inp.value=final; try{inp.setSelectionRange(final.length,final.length)}catch(_){}} setGradeState(state.selectedLearnerId,inp.dataset.subjectId,inp.dataset.period,inp.value); updateComputed(state.selectedLearnerId,inp.dataset.subjectId,inp.dataset.period); schedulePersist(); } }); modal.addEventListener('blur',e=>{ const inp=e.target.closest&&e.target.closest('[data-gs-grade-input]'); if(inp&&!inp.readOnly){ const v=toWholeGrade(inp.value); inp.value=v==null?'':v; saveGrade(inp.dataset.subjectId,inp.dataset.period,inp.value); } },true); dom.gsAcademicStructure&&dom.gsAcademicStructure.addEventListener('change',e=>{ state.academicStructure=e.target.value; render(); schedulePersist(); }); dom.gsShowArchived&&dom.gsShowArchived.addEventListener('change',e=>{ state.showArchived=e.target.value; render(); schedulePersist(); }); dom.gsLearnerPicker&&dom.gsLearnerPicker.addEventListener('change',e=>selectLearner(e.target.value)); dom.gsBtnFirstLearner&&dom.gsBtnFirstLearner.addEventListener('click',()=>jumpLearnerToEdge('first')); dom.gsBtnPrevLearner&&dom.gsBtnPrevLearner.addEventListener('click',()=>jumpLearner(-1)); dom.gsBtnNextLearner&&dom.gsBtnNextLearner.addEventListener('click',()=>jumpLearner(1)); dom.gsBtnLastLearner&&dom.gsBtnLastLearner.addEventListener('click',()=>jumpLearnerToEdge('last')); dom.gsBtnRefreshRoster&&dom.gsBtnRefreshRoster.addEventListener('click',()=>{state.roster=readHostRoster();ensureDataShape();syncLinkedGrades({silent:false});render();schedulePersist();}); dom.gsBtnClearGrades&&dom.gsBtnClearGrades.addEventListener('click',()=>{if(confirm('Clear all Grade Sheet grades for this class? Subjects will remain.')){state.grades={};ensureDataShape();render();schedulePersist();}}); dom.gsSubjectPicker&&dom.gsSubjectPicker.addEventListener('change',e=>{state.selectedSubjectId=e.target.value;renderSubjectSetup();}); dom.gsBtnAddSubject&&dom.gsBtnAddSubject.addEventListener('click',addSubject); dom.gsBtnSaveSubject&&dom.gsBtnSaveSubject.addEventListener('click',saveSubject); dom.gsBtnArchiveSubject&&dom.gsBtnArchiveSubject.addEventListener('click',archiveSubject); dom.gsBtnDeleteSubject&&dom.gsBtnDeleteSubject.addEventListener('click',deleteSubjectPermanently); dom.gsBtnMoveLeft&&dom.gsBtnMoveLeft.addEventListener('click',()=>moveSubject(-1)); dom.gsBtnMoveRight&&dom.gsBtnMoveRight.addEventListener('click',()=>moveSubject(1)); document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modal.style.display!=='none') close(); }); }
+  function bindUi(){ const modal=$id('gradeSheetModal'); if(!modal||modal.dataset.gsBound==='1') return; modal.dataset.gsBound='1'; bindLearnerSwipe(); dom.gsBtnClose&&dom.gsBtnClose.addEventListener('click',close); dom.gsBtnViewExcel&&dom.gsBtnViewExcel.addEventListener('click',exportGradeSheetToExcel); modal.addEventListener('click',e=>{ const tab=e.target.closest('.ctm-gs-tab'); if(tab) switchTab(tab.dataset.gsTab); const act=e.target.closest('[data-gs-action]'); if(act){ const id=act.dataset.subjectId; if(id) state.selectedSubjectId=id; const a=act.dataset.gsAction; if(a==='add') addSubject(); if(a==='left') moveSubject(-1); if(a==='right') moveSubject(1); if(a==='archive') archiveSubject(); if(a==='delete') deleteSubjectPermanently(); return; } const tr=e.target.closest('tbody tr[data-learner-id]'); if(tr){ state.selectedLearnerId=tr.dataset.learnerId; if(e.target.matches('[data-period]')){ renderLearnerPicker(); renderLearnerCard(); switchTab('learner'); setTimeout(()=>{ const inp=modal.querySelector(`[data-gs-grade-input][data-subject-id="${CSS.escape(e.target.dataset.subjectId)}"][data-period="${CSS.escape(e.target.dataset.period)}"]`); if(inp) inp.focus(); },0); } else selectLearner(tr.dataset.learnerId); } const item=e.target.closest('.ctm-gs-subject-item'); if(item){ state.selectedSubjectId=item.dataset.subjectId; renderSubjectSetup(); } }); modal.addEventListener('input',e=>{ const inp=e.target.closest('[data-gs-grade-input]'); if(inp){ if(inp.readOnly) return; const old=inp.value, clean=String(old).replace(/\D/g,'').slice(0,3); const final=clean===''?'':String(Math.max(0,Math.min(100,Number(clean)))); if(old!==final){ inp.value=final; try{inp.setSelectionRange(final.length,final.length)}catch(_){}} setGradeState(state.selectedLearnerId,inp.dataset.subjectId,inp.dataset.period,inp.value); updateComputed(state.selectedLearnerId,inp.dataset.subjectId,inp.dataset.period); schedulePersist(); } }); modal.addEventListener('blur',e=>{ const inp=e.target.closest&&e.target.closest('[data-gs-grade-input]'); if(inp&&!inp.readOnly){ const v=toWholeGrade(inp.value); inp.value=v==null?'':v; saveGrade(inp.dataset.subjectId,inp.dataset.period,inp.value); } },true); dom.gsAcademicStructure&&dom.gsAcademicStructure.addEventListener('change',e=>{ state.academicStructure=e.target.value; render(); schedulePersist(); }); dom.gsShowArchived&&dom.gsShowArchived.addEventListener('change',e=>{ state.showArchived=e.target.value; render(); schedulePersist(); }); dom.gsLearnerPicker&&dom.gsLearnerPicker.addEventListener('change',e=>selectLearner(e.target.value)); dom.gsBtnFirstLearner&&dom.gsBtnFirstLearner.addEventListener('click',()=>jumpLearnerToEdge('first')); dom.gsBtnPrevLearner&&dom.gsBtnPrevLearner.addEventListener('click',()=>jumpLearner(-1)); dom.gsBtnNextLearner&&dom.gsBtnNextLearner.addEventListener('click',()=>jumpLearner(1)); dom.gsBtnLastLearner&&dom.gsBtnLastLearner.addEventListener('click',()=>jumpLearnerToEdge('last')); dom.gsBtnRefreshRoster&&dom.gsBtnRefreshRoster.addEventListener('click',()=>{state.roster=readHostRoster();ensureDataShape();syncLinkedGrades({silent:false});render();schedulePersist();}); dom.gsBtnClearGrades&&dom.gsBtnClearGrades.addEventListener('click',()=>{if(confirm('Clear all Grade Sheet grades for this class? Subjects will remain.')){state.grades={};ensureDataShape();render();schedulePersist();}}); dom.gsSubjectPicker&&dom.gsSubjectPicker.addEventListener('change',e=>{state.selectedSubjectId=e.target.value;renderSubjectSetup();}); dom.gsBtnAddSubject&&dom.gsBtnAddSubject.addEventListener('click',addSubject); dom.gsBtnSaveSubject&&dom.gsBtnSaveSubject.addEventListener('click',saveSubject); dom.gsBtnArchiveSubject&&dom.gsBtnArchiveSubject.addEventListener('click',archiveSubject); dom.gsBtnDeleteSubject&&dom.gsBtnDeleteSubject.addEventListener('click',deleteSubjectPermanently); dom.gsBtnMoveLeft&&dom.gsBtnMoveLeft.addEventListener('click',()=>moveSubject(-1)); dom.gsBtnMoveRight&&dom.gsBtnMoveRight.addEventListener('click',()=>moveSubject(1)); document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modal.style.display!=='none') close(); }); }
   async function open(){ await ensureInjected(); if(!load()){ alert('Please load a class first before opening Grade Sheet.'); return; } render(); const modal=$id('gradeSheetModal'); if(modal){ modal.style.display='block'; modal.setAttribute('aria-hidden','false'); try{modal.inert=false;}catch(_){} scheduleStickyAdjust();} }
   function close(){ const modal=$id('gradeSheetModal'); clearTimeout(state.saveTimer); captureSubjectFormIfDirty(); persist(); if(modal){ if(window.CTMModalA11y&&typeof window.CTMModalA11y.prepareForHide==='function') window.CTMModalA11y.prepareForHide(modal); modal.style.display='none'; modal.setAttribute('aria-hidden','true'); try{modal.inert=true;}catch(_){}} }
   function bindGradeSheetButtonFallback(){ const btn=$id('btnOpenGradeSheet'); if(!btn||btn.dataset.gsFallbackBound==='1') return; if(window.CTMKGradeSheet&&typeof window.CTMKGradeSheet.open==='function') return; btn.dataset.gsFallbackBound='1'; btn.addEventListener('click',open); }
   function init(){ /* Grade Sheet routing is owned by kGradeSheet.js when present. Keep a safe fallback for builds that include only the regular Grade Sheet module. */ setTimeout(bindGradeSheetButtonFallback,0); if(!window.__CTMGradeSheetFlushBound){ window.__CTMGradeSheetFlushBound=true; window.addEventListener('beforeunload',()=>{clearTimeout(state.saveTimer);captureSubjectFormIfDirty();persist();}); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){clearTimeout(state.saveTimer);captureSubjectFormIfDirty();persist();} }); } }
-  window.CTMGradeSheet={init,open,close,refresh(){if(load()){syncLinkedGrades({silent:true});render();}},syncLinkedGrades,_debugSnapshot:()=>snapshot(),_debugState:state,toWholeGrade,averageWhole,computeCompetitionRanks};
+  window.CTMGradeSheet={init,open,close,refresh(){if(load()){syncLinkedGrades({silent:true});render();}},syncLinkedGrades,_debugSnapshot:()=>snapshot(),_debugState:state,toWholeGrade,averageWhole,computeCompetitionRanks,learnerIsComplete,requiredFgs};
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
 })();

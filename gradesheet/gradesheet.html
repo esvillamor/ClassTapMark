@@ -146,10 +146,19 @@
           <div class="ctm-gs-field" id="gsAcademicStructureField"><label for="gsAcademicStructure">Academic Structure</label><select id="gsAcademicStructure"><option value="quarter">Quarter: Q1 Q2 Q3 Q4</option><option value="firstSemester">First Semester: Q1 Q2</option><option value="secondSemester">Second Semester: Q3 Q4</option><option value="threeTerm">Three Term: T1 T2 T3</option><option value="modifiedThreeTerm">Modified Three Term: Term 1 Term 2 Term 3</option></select></div>
           <div class="ctm-gs-field"><label for="gsShowArchived">Subject Visibility</label><select id="gsShowArchived"><option value="active">Active subjects only</option><option value="all">Show archived too</option></select></div>
           <div class="ctm-gs-field"><div class="ctm-gs-field-title">Storage</div><div class="ctm-gs-mini"><span class="ctm-gs-chip" id="gsSaveStatus">Ready</span></div></div>
-          <div class="ctm-gs-actions"><button type="button" class="ctm-gs-btn edit" id="gsBtnRefreshRoster">Refresh Roster</button><button type="button" class="ctm-gs-btn danger" id="gsBtnClearGrades">Clear Grades</button></div>
+          
+		  <div class="ctm-gs-actions">
+		  <button type="button" class="ctm-gs-btn edit" id="gsBtnRefreshRoster">Refresh Roster</button><button type="button" class="ctm-gs-btn danger" id="gsBtnClearGrades">Clear Grades</button></div>
         </div>
       </section>
-      <section id="gsPanelOverview" class="ctm-gs-panel active"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span>Dynamic Grade Sheet</span><!--<span class="ctm-gs-mini">Frozen: top 4 header rows + # / Learner only</span>--></div><div class="ctm-gs-table-scroll"><table id="gsTable" class="ctm-gs-table" aria-label="Grade Sheet table"></table></div></div></section>
+      <section id="gsPanelOverview" class="ctm-gs-panel active"><div class="ctm-gs-card"><div class="ctm-gs-card-title">
+	  
+	  <span>Dynamic Grade Sheet
+	  <button type="button" class="ctm-gs-btn edit" id="gsBtnViewExcel">View in Excel</button>
+	  </span><!--<span class="ctm-gs-mini">Frozen: top 4 header rows + # / Learner only</span>--></div>
+	  <div class="ctm-gs-table-scroll"><table id="gsTable" class="ctm-gs-table" aria-label="Grade Sheet table"></table></div></div>
+	  
+	  </section>
       <section id="gsPanelLearner" class="ctm-gs-panel"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span id="gsLearnerTitle">Learner Grade Encoding</span><span class="ctm-gs-mini">Whole-number grades only</span></div><div class="ctm-gs-grid"><div class="ctm-gs-field"><label for="gsLearnerPicker">Learner</label><select id="gsLearnerPicker"></select></div><div class="ctm-gs-actions ctm-gs-learner-nav" aria-label="Learner navigation"><button type="button" class="ctm-gs-btn edit" id="gsBtnFirstLearner" title="First learner" aria-label="First learner"><span class="ctm-gs-nav-icon" aria-hidden="true">⏮️</span><span class="ctm-gs-nav-text">First</span></button><button type="button" class="ctm-gs-btn edit" id="gsBtnPrevLearner" title="Previous learner" aria-label="Previous learner"><span class="ctm-gs-nav-icon" aria-hidden="true">◀️</span><span class="ctm-gs-nav-text">Previous</span></button><button type="button" class="ctm-gs-btn edit" id="gsBtnNextLearner" title="Next learner" aria-label="Next learner"><span class="ctm-gs-nav-text">Next</span><span class="ctm-gs-nav-icon" aria-hidden="true">▶️</span></button><button type="button" class="ctm-gs-btn edit" id="gsBtnLastLearner" title="Last learner" aria-label="Last learner"><span class="ctm-gs-nav-text">Last</span><span class="ctm-gs-nav-icon" aria-hidden="true">⏭️</span></button></div></div><div id="gsLearnerGradeGrid" class="ctm-gs-grade-grid" style="margin-top:7px"></div><div id="gsLearnerSummary" class="ctm-gs-summary-grid" style="margin-top:7px"></div></div></section>
       <section id="gsPanelSubjects" class="ctm-gs-panel"><div class="ctm-gs-card"><div class="ctm-gs-card-title"><span>Subject Setup Panel</span>
 	  
