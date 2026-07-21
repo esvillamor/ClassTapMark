@@ -1,19 +1,36 @@
 /* ClassTapMark service worker - fixed offline shell
-   - Pre-caches the real app shell files used by index.html
-   - Keeps missing optional files from breaking install
-   - Caches CDN libraries needed by XLSX/PDF/compression
-   - Uses network-first only for rental-switch.js, with an offline fallback
+- Pre-caches the real app shell files used by index.html
+- Keeps missing optional files from breaking install
+- Caches CDN libraries needed by XLSX/PDF/compression/Excel export
+- Uses network-first only for rental-switch.js, with an offline fallback
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v7-2026-07-21';
-const DYNAMIC_CACHE = 'ctm-dynamic-v7-2026-07-21';
+const CACHE_NAME = 'ClassTapMark-cache-v8-2026-07-21';
+const DYNAMIC_CACHE = 'ctm-dynamic-v8-2026-07-21';
 
+// CDN libraries used by ClassTapMark modules.
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const CDN_PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const CDN_LZ = 'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js';
 
+// Class Record styled Excel export dependencies.
+const CDN_XLSX_STYLE_JSDELIVR = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js';
+const CDN_XLSX_STYLE_UNPKG = 'https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.min.js';
+const CDN_JSZIP_JSDELIVR = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+const CDN_JSZIP_CLOUDFLARE = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+
 const SCOPE = self.registration.scope;
 const ABS = (p) => new URL(p, SCOPE).toString();
+
+const CDN_PRECACHE = [
+  CDN_XLSX,
+  CDN_PDFLIB,
+  CDN_LZ,
+  CDN_XLSX_STYLE_JSDELIVR,
+  CDN_XLSX_STYLE_UNPKG,
+  CDN_JSZIP_JSDELIVR,
+  CDN_JSZIP_CLOUDFLARE
+];
 
 // Keep this list very small and guaranteed to exist. If any item here 404s, SW install fails.
 const REQUIRED_PRECACHE = [
@@ -30,15 +47,11 @@ const OPTIONAL_PRECACHE = [
   ABS('./icon384x384.png'),
   ABS('./icon512x512.png'),
 
-  // Same-origin pages/assets used by ClassTapMark
-
-  // Grade Sheet module shell (index.html loads gradesheet/gradesheet.js; it fetches gradesheet/gradesheet.html)
-  ABS('./gradesheet/gradesheet.js'),
-  ABS('./gradesheet/gradesheet.html'),
-  ABS('./kgradesheet/kGradeSheet.js'),
-  ABS('./kgradesheet/kGradeSheet.html'),
+  // Same-origin pages/assets used by ClassTapMark.
   ABS('./support.html'),
   ABS('./free-rental.html'),
+
+  // School Form modules.
   ABS('./SF1.js'),
   ABS('./SF2.js'),
   ABS('./SF3.js'),
@@ -46,20 +59,29 @@ const OPTIONAL_PRECACHE = [
   ABS('./SF1pdf.js'),
   ABS('./SF3pdf.js'),
   ABS('./SF8pdf.js'),
+
+  // Grade Sheet module shell.
+  ABS('./gradesheet/gradesheet.js'),
+  ABS('./gradesheet/gradesheet.html'),
+  ABS('./kgradesheet/kGradeSheet.js'),
+  ABS('./kgradesheet/kGradeSheet.html'),
+
+  // Class Record module shell.
   ABS('./classrecord/classrecord-modal.js'),
   ABS('./classrecord/classrecord-modal.html'),
 
+  // Optional local library copies. Missing files are ignored.
+  ABS('./libs/xlsx.full.min.js'),
+  ABS('./libs/xlsx-js-style.min.js'),
+  ABS('./libs/jszip.min.js'),
 
-  // Support QR images
+  // Support QR images.
   ABS('./image/wise-qr.png'),
   ABS('./image/gcash-qr.png'),
   ABS('./image/maya-qr.jpg'),
   ABS('./image/maribank-qr.png'),
 
-  // CDN libraries used by index.html
-  CDN_XLSX,
-  CDN_PDFLIB,
-  CDN_LZ
+  ...CDN_PRECACHE
 ];
 
 async function addAllRequired(cache, urls) {
@@ -75,7 +97,9 @@ async function addAllOptional(cache, urls) {
     try {
       const res = await fetch(url, { cache: 'reload' });
       if (res && res.ok) await cache.put(url, res.clone());
-    } catch (_) {}
+    } catch (_) {
+      // Optional files and external libraries must not break SW installation.
+    }
   }));
 }
 
@@ -143,7 +167,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // The rental switch should remain network-first so you can turn rental access on/off online.
+  // The rental switch should remain network-first so rental access can be turned on/off online.
   if (url.pathname.endsWith('/rental-switch.js')) {
     const fallback =
       "window.CTM_FREE_RENTAL_ON=false;\n" +
@@ -157,38 +181,47 @@ self.addEventListener('fetch', (event) => {
   }
 
   // CDN libraries: serve cached immediately, refresh when online.
-  if (req.url === CDN_XLSX || req.url === CDN_PDFLIB || req.url === CDN_LZ) {
+  if (CDN_PRECACHE.includes(req.url)) {
     event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
     return;
   }
 
+  // Local library copies: cache-first for offline export support.
+  if (
+    url.pathname.endsWith('/libs/xlsx.full.min.js') ||
+    url.pathname.endsWith('/libs/xlsx-js-style.min.js') ||
+    url.pathname.endsWith('/libs/jszip.min.js')
+  ) {
+    event.respondWith(cacheFirst(req, CACHE_NAME).catch(() => new Response('', { status: 504 })));
+    return;
+  }
 
-// Grade Sheet modules: show cached version offline, refresh when online.
-// This prevents stale Grade Sheet files after index.html changes while still supporting offline use.
-if (
-  url.pathname.endsWith('/gradesheet/gradesheet.js') ||
-  url.pathname.endsWith('/gradesheet/gradesheet.html') ||
-  url.pathname.endsWith('/kgradesheet/kGradeSheet.js') ||
-  url.pathname.endsWith('/kgradesheet/kGradeSheet.html') ||
-  url.pathname.endsWith('/classrecord/classrecord-modal.js') ||
-  url.pathname.endsWith('/classrecord/classrecord-modal.html')
-) {
-  event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
-  return;
-}
+  // Grade Sheet, Kinder Grade Sheet, and Class Record modules:
+  // show cached version offline, refresh when online.
+  if (
+    url.pathname.endsWith('/gradesheet/gradesheet.js') ||
+    url.pathname.endsWith('/gradesheet/gradesheet.html') ||
+    url.pathname.endsWith('/kgradesheet/kGradeSheet.js') ||
+    url.pathname.endsWith('/kgradesheet/kGradeSheet.html') ||
+    url.pathname.endsWith('/classrecord/classrecord-modal.js') ||
+    url.pathname.endsWith('/classrecord/classrecord-modal.html')
+  ) {
+    event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
+    return;
+  }
 
-  // Special handling for support.html (NO index.html fallback!)
-if (url.pathname.endsWith('/support.html')) {
-  event.respondWith(cacheFirst(req, CACHE_NAME).catch(() =>
-    new Response('Support page not available offline yet.', {
-      status: 503,
-      headers: { 'Content-Type': 'text/plain' }
-    })
-  ));
-  return;
-}
+  // Special handling for support.html. Do not fallback to index.html.
+  if (url.pathname.endsWith('/support.html')) {
+    event.respondWith(cacheFirst(req, CACHE_NAME).catch(() =>
+      new Response('Support page not available offline yet.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      })
+    ));
+    return;
+  }
 
-// App navigations: get latest online, fallback to cached index.html offline.
+  // App navigations: get latest online, fallback to cached index.html offline.
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       try {
@@ -201,8 +234,11 @@ if (url.pathname.endsWith('/support.html')) {
       } catch (_) {
         const cache = await caches.open(CACHE_NAME);
         return (await cache.match(ABS('./index.html'))) ||
-               (await cache.match(ABS('./'))) ||
-               new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' }});
+          (await cache.match(ABS('./'))) ||
+          new Response('Offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+          });
       }
     })());
     return;
