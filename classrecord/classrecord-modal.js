@@ -1,4 +1,6 @@
-/* v18.65 Summary table descriptor narrative fix: Summary rows now materialize General Description and Instructional Response for Table 10/11 final results; v18.64 G12 descriptor render fix: learner cards and Summary table materialize Table 10/11 descriptor text; v18.63 MAPEH_Tn View in Excel format-map activation fix: MAPEH_T1/T2/T3 now actually apply the fixed XLSX 8-column merge/style map instead of falling back to the generic summary styling. */
+/* v18.70 MAPEH Excel export screenshot conformance: MAPEH_Tn value-cell borders/alignment fixed; consolidated Summary of Grades now places Division at G3:J3 and School ID at G4:H4 for hidden-G layout, with F-width and H6 right-alignment fixes. */
+/* v18.69 MAPEH Excel export screenshot conformance fix: MA/PEH School Year label style, MAPEH_Tn E-column header labels, Summary of Grades title/division placement; v18.68 Summary of Grades subject merge uses H6 label + I6:J6 value; MAPEH_Tn descriptors are term-grade based; Excel numbering stays sex-reset and blank template rows are unnumbered; headers align to corrected workbook. */
+/* v18.67 MAPEH consolidated Excel header-fill fix: MAPEH_T1/T2/T3 and Summary of Grades now populate Region, Division, School Name, and School ID from the base or paired component headers; v18.66 MAPEH Summary duplicate warning UI fix; v18.65 Summary table descriptor narrative fix: Summary rows now materialize General Description and Instructional Response for Table 10/11 final results; v18.64 G12 descriptor render fix: learner cards and Summary table materialize Table 10/11 descriptor text; v18.63 MAPEH_Tn View in Excel format-map activation fix: MAPEH_T1/T2/T3 now actually apply the fixed XLSX 8-column merge/style map instead of falling back to the generic summary styling. */
 /* v18.62 MAPEH View in Excel fixed-xlsx conformance: MAPEH_T1/T2/T3 and Summary of Grades now use the fixed workbook row starts, merges, widths, and 3-term Term 4 hiding. */
 /* v18.61 MAPEH consolidated View in Excel layout fix: Summary of Grades and MAPEH_Tn now align to the captured MAPEH-aware class record template; fixes shifted headers/learner rows and term-summary formatting. */
 /* v18.60 MAPEH Summary-tab trigger fix: opening the Summary tab on any eligible MAPEH component now renders/exports the consolidated paired MAPEH Summary workbook. */
@@ -39,7 +41,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.65-summary-descriptor-narrative-fix'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.69-mapeh-excel-screenshot-conformance'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -4873,7 +4875,42 @@ function renderFinal() {
       const t = selected.terms[k] || {};
       return `<tr><td>${esc(t.label || getSummaryTermColumnLabel(k))}</td><td>${fmt(t.musicArtsGrade)}</td><td>${fmt(t.peHealthGrade)}</td><td>${fmt(t.mapehGrade)}</td><td>${t.complete ? 'Complete' : esc('Incomplete' + (t.missing && t.missing.length ? ': Missing ' + t.missing.join(', ') : ''))}</td></tr>`;
     }).join('');
-    return `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div><div class="ctm-cr-grid ctm-cr-grid-4 ctm-cr-summary-selected-grid"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Learner</div><div class="ctm-cr-strong">${esc(selected.name)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Sex</div><div class="ctm-cr-strong">${esc(selected.sex)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Music & Arts Final</div><div class="ctm-cr-strong">${fmt(selected.componentFinals && selected.componentFinals.musicArts)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">PE & Health Final</div><div class="ctm-cr-strong">${fmt(selected.componentFinals && selected.componentFinals.peHealth)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Final MAPEH</div><div class="ctm-cr-strong">${fmt(selected.finalMapehGrade)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Descriptor</div><div class="ctm-cr-strong">${esc(selected.descriptorLabel || selected.descriptorCode || '—')}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Remarks</div><div class="ctm-cr-strong">${esc(selected.remarks)}</div></div></div><div class="table-scroll ctm-cr-table-scroll" style="margin-top:.75rem;"><table class="ctm-cr-table"><thead><tr><th>Term / Quarter</th><th>Music & Arts</th><th>PE & Health</th><th>MAPEH</th><th>Status</th></tr></thead><tbody>${termRows}</tbody></table></div>`;
+    return `<div class="ctm-cr-panel-title" style="margin-top:1rem;">Selected Learner: ${esc(selected.name)}</div>
+	<div class="ctm-cr-grid ctm-cr-grid-4 ctm-cr-summary-selected-grid">
+	<!--
+	<div class="ctm-cr-card">	
+	 <div class="ctm-cr-mini-label">Learner</div>
+	 <div class="ctm-cr-strong">${esc(selected.name)}</div>
+	</div>
+	<div class="ctm-cr-card">
+	 <div class="ctm-cr-mini-label">Sex</div>
+	 <div class="ctm-cr-strong">${esc(selected.sex)}</div>
+	</div>
+	-->
+	 <div class="ctm-cr-card">
+	 <div class="ctm-cr-mini-label">Music & Arts Final</div>
+	 <div class="ctm-cr-strong">${fmt(selected.componentFinals && selected.componentFinals.musicArts)}</div>
+	</div>
+	<div class="ctm-cr-card">
+	 <div class="ctm-cr-mini-label">PE & Health Final</div>
+	 <div class="ctm-cr-strong">${fmt(selected.componentFinals && selected.componentFinals.peHealth)}</div>
+	</div>
+	<div class="ctm-cr-card">
+	<div class="ctm-cr-mini-label">Final MAPEH</div>
+	 <div class="ctm-cr-strong">${fmt(selected.finalMapehGrade)}</div>
+	</div>
+	<div class="ctm-cr-card">
+	 <div class="ctm-cr-mini-label">Descriptor</div>
+	 <div class="ctm-cr-strong">${esc(selected.descriptorLabel || selected.descriptorCode || '—')}</div>
+	</div>
+	<div class="ctm-cr-card">
+	 <div class="ctm-cr-mini-label">Remarks</div>
+	 <div class="ctm-cr-strong">${esc(selected.remarks)}</div>
+	</div>
+	</div>
+	
+	<div class="table-scroll ctm-cr-table-scroll" style="margin-top:.75rem;">
+		<table class="ctm-cr-table"><thead><tr><th>Term</th><th>Music & Arts</th><th>PE & Health</th><th>MAPEH</th><th>Status</th></tr></thead><tbody>${termRows}</tbody></table></div>`;
   }
   function renderMapehSummary(summary) { return renderMapehConsolidatedSummary(summary); }
   function renderMapehConsolidatedSummary(summary) {
@@ -4890,7 +4927,7 @@ function renderFinal() {
       }).join('');
       return `<tr data-mapeh-summary-learner="${esc(r.learnerId)}" aria-selected="${text(r.learnerId)===text(state.mapehSummarySelectedLearnerId) ? 'true' : 'false'}"><td>${idx+1}</td><td>${esc(r.name)}</td><td>${esc(r.sex)}</td>${termCells}<td>${fmt(r.finalMapehGrade)}</td><td>${esc(r.descriptorLabel || r.descriptorCode || '—')}</td><td>${esc(r.remarks)}</td></tr>`;
     }).join('') || `<tr><td colspan="${6+visibleTerms.length}">No learners found.</td></tr>`;
-    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warnings}<div class="ctm-cr-disclaimer">MAPEH Summary combines Music & Arts and PE & Health. Missing paired component grades are not treated as zero and are marked Incomplete.</div><div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Descriptor</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4 ctm-cr-summary-top-grid" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Incomplete Count</div><div class="ctm-cr-strong">${summary.classSummary.incompleteCount}</div></div><div class="ctm-cr-card ctm-cr-summary-row2-half"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH paired average</div></div><div class="ctm-cr-card ctm-cr-summary-row2-half"><div class="ctm-cr-mini-label">Learner Count</div><div class="ctm-cr-strong">${summary.classSummary.learnerCount}</div></div></div>${selected ? renderMapehSelectedLearnerDetail(selected.learnerId, summary) : ''}`;
+    panel.innerHTML = `<div class="ctm-cr-panel-title">MAPEH Summary (Read-only)</div>${warnings}<div class="table-scroll ctm-cr-table-scroll ctm-cr-final-scroll"><table id="crFinalTable" class="ctm-cr-table"><thead><tr><th>#</th><th>Learner</th><th>Sex</th>${headTerms}<th>Final MAPEH</th><th>Descriptor</th><th>Remarks</th></tr></thead><tbody>${body}</tbody></table></div><div class="ctm-cr-grid ctm-cr-grid-4 ctm-cr-summary-top-grid" style="margin-top:.75rem;"><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Class Average</div><div class="ctm-cr-strong">${fmt(summary.classSummary.classAverage)}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.passingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Non-Passing Count</div><div class="ctm-cr-strong">${summary.classSummary.nonPassingCount}</div></div><div class="ctm-cr-card"><div class="ctm-cr-mini-label">Incomplete Count</div><div class="ctm-cr-strong">${summary.classSummary.incompleteCount}</div></div><div class="ctm-cr-card ctm-cr-summary-row2-half"><div class="ctm-cr-mini-label">Table Used</div><div class="ctm-cr-strong">MAPEH paired average</div></div><div class="ctm-cr-card ctm-cr-summary-row2-half"><div class="ctm-cr-mini-label">Learner Count</div><div class="ctm-cr-strong">${summary.classSummary.learnerCount}</div></div></div>${selected ? renderMapehSelectedLearnerDetail(selected.learnerId, summary) : ''}`;
     panel.querySelectorAll('[data-mapeh-summary-learner]').forEach(row => row.addEventListener('click', () => { state.mapehSummarySelectedLearnerId = row.getAttribute('data-mapeh-summary-learner') || ''; renderMapehConsolidatedSummary(summary); }));
   }
   function shouldUseMapehConsolidatedSummaryMode() {
@@ -5373,8 +5410,8 @@ function importCsvText(csvText) {
     put(1, 1, 'Class Record ');
     put(2, 3, 'REGION:'); put(2, 5, h.region || ''); put(2, 15, 'DIVISION:'); put(2, 17, h.division || '');
     put(3, 3, 'SCHOOL NAME:'); put(3, 5, h.schoolName || ''); put(3, 15, 'SCHOOL ID:'); put(3, 17, h.schoolId || ''); put(3, 22, 'SCHOOL YEAR:'); put(3, 24, h.schoolYear || '');
-    put(5, 1, `${getTermLabel(termKey).toUpperCase()} / ${CUSTOM_QUARTER_LABELS[termKey] || getTermLabel(termKey).toUpperCase()}`);
-    put(5, 4, 'GRADE:'); put(5, 6, h.gradeLevel || ''); put(5, 8, 'SECTION:'); put(5, 10, h.section || '');
+    put(5, 1, getTermLabel(termKey).toUpperCase());
+    put(5, 4, 'GRADE LEVEL:'); put(5, 6, h.gradeLevel || ''); put(5, 8, 'SECTION:'); put(5, 10, h.section || '');
     put(5, 15, 'TEACHER:'); put(5, 17, h.teacherName || ''); put(5, 21, 'SUBJECT:'); put(5, 23, h.subject || '');
     put(6, 1, '#'); put(6, 2, "LEARNERS' NAMES"); put(6, 3, 'SEX');
     put(6, 4, `WRITTEN / ORAL WORKS (${excelPercentLabel(weights.ww)})`);
@@ -5394,8 +5431,8 @@ function importCsvText(csvText) {
     const display = buildLearnerDisplayList(term.learners || []);
     for (let i = 0; i < 80; i += 1) {
       const rr = 9 + i;
-      put(rr, 1, i + 1);
       const entry = display[i];
+      put(rr, 1, entry ? entry.displayNo : '');
       if (!entry) continue;
       const row = entry.row || {};
       const scores = row.scores || {};
@@ -5432,10 +5469,10 @@ function importCsvText(csvText) {
     const visibleTerms = snapshot.visibleTerms || [];
     const rows = Array.from({ length: 88 }, () => Array(10).fill(''));
     const put = (r, c, v) => { rows[r - 1][c - 1] = excelValue(v); };
-    put(1, 1, 'Summary of Quarterly Grades');
+    put(1, 1, 'Summary of Grades');
     put(3, 2, 'REGION'); put(3, 3, h.region || ''); put(3, 6, 'DIVISION:'); put(3, 8, h.division || '');
     put(4, 2, 'SCHOOL NAME'); put(4, 3, h.schoolName || ''); put(4, 6, 'SCHOOL ID:'); put(4, 8, h.schoolId || ''); put(4, 9, 'SCHOOL YEAR:'); put(4, 10, h.schoolYear || '');
-    put(6, 1, '#'); put(6, 2, "LEARNERS' NAMES"); put(6, 3, 'SEX'); put(6, 4, 'GRADE: '); put(6, 5, h.gradeLevel || ''); put(6, 6, 'SUBJECT:'); put(6, 8, h.subject || '');
+    put(6, 1, '#'); put(6, 2, "LEARNERS' NAMES"); put(6, 3, 'SEX'); put(6, 4, 'GRADE: '); put(6, 5, h.gradeLevel || ''); put(6, 8, 'SUBJECT:'); put(6, 9, h.subject || '');
     put(7, 4, 'SECTION:'); put(7, 5, h.section || ''); put(7, 8, 'TEACHER:'); put(7, 9, h.teacherName || '');
     const summaryTermCols = [4,5,6,7];
     summaryTermCols.forEach((col, idx) => {
@@ -5446,8 +5483,8 @@ function importCsvText(csvText) {
     const display = buildLearnerDisplayList(fs.learners || []);
     for (let i = 0; i < 80; i += 1) {
       const rr = 9 + i;
-      put(rr, 1, i + 1);
       const entry = display[i];
+      put(rr, 1, entry ? entry.displayNo : '');
       if (!entry) continue;
       const row = entry.row || {};
       const fr = row.finalResult || {};
@@ -5464,7 +5501,7 @@ function importCsvText(csvText) {
     return { rows, meta: {
       type: 'summary',
       formatMapKey: 'summary',
-      merges: ['A1:J1','C3:E3','H3:J3','C4:E4','A6:A8','B6:B8','C6:C8','E7:G7','H6:J6','I7:J7'],
+      merges: ['A1:J1','C3:E3','H3:J3','C4:E4','A6:A8','B6:B8','C6:C8','E6:G6','E7:G7','I6:J6','I7:J7'],
       cols: [3.66,31.78,10.33,18.33,13,13,18.33,15.78,17.33,16.22].map((w, idx) => ({ wch: w, hidden: hideTerm4 && idx === 6 })),
       rows: { 1:19.2, 2:11.4, 5:7.2, 6:15.6, 7:16.2, 8:15 },
       freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' },
@@ -5505,6 +5542,12 @@ function importCsvText(csvText) {
   // v18.61: Derived from the MAPEH_Tn format in the captured MAPEH-aware class record.
   // It reuses the captured summary style definitions but applies the 8-column MAPEH term-summary
   // widths, row heights, and merges so values are not formatted with the 10-column final summary map.
+  // v18.68: Correct Summary of Grades header merges so H6 remains the SUBJECT label and I6:J6 contains the subject value.
+  if (EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP.summary && Array.isArray(EXCEL_FORMAT_MAP.summary.merges)) {
+    EXCEL_FORMAT_MAP.summary.merges = EXCEL_FORMAT_MAP.summary.merges.filter(ref => ref !== 'H6:J6');
+    if (!EXCEL_FORMAT_MAP.summary.merges.includes('E6:G6')) EXCEL_FORMAT_MAP.summary.merges.push('E6:G6');
+    if (!EXCEL_FORMAT_MAP.summary.merges.includes('I6:J6')) EXCEL_FORMAT_MAP.summary.merges.push('I6:J6');
+  }
   if (EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP.summary && !EXCEL_FORMAT_MAP.mapehTermSummary) {
     try {
       const baseSummaryMap = EXCEL_FORMAT_MAP.summary;
@@ -5516,10 +5559,49 @@ function importCsvText(csvText) {
       });
       EXCEL_FORMAT_MAP.mapehTermSummary = {
         cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 21.1094 }, { wch: 13 }, { wch: 13 }, { wch: 17.3320 }, { wch: 16.2188 }, { wch: 0.8867 }, { wch: 0, hidden: true }],
-        rows: { '1': { hpt: 19.2 }, '2': { hpt: 11.4 }, '5': { hpt: 7.2 }, '6': { hpt: 15.6 }, '7': { hpt: 16.2 }, '8': { hpt: 31.2 } },
-        merges: ['A1:H1', 'C3:D3', 'F3:H3', 'C4:D4', 'A6:A8', 'B6:B8', 'C6:C8', 'G6:H6', 'G7:H7'],
+        rows: { '1': { hpt: 19.2 }, '2': { hpt: 11.4 }, '5': { hpt: 7.2 }, '6': { hpt: 15.6 }, '7': { hpt: 16.2 }, '8': { hpt: 15.0 } },
+        merges: ['A1:H1', 'C3:D3', 'F3:H3', 'C4:D4', 'A6:C6', 'A7:A8', 'B7:B8', 'C7:C8', 'G7:H7'],
         styleDefs: baseSummaryMap.styleDefs || {},
         cellStyles: mapehTermCellStyles
+      };
+    } catch (_) {}
+  }
+  // v18.69: Screenshot conformance for exported MAPEH workbook headers.
+  // 1) MA_Tn/PEH_Tn component sheets: V3 is the merged SCHOOL YEAR label cell.
+  //    Since only the top-left cell controls a merged range style, force V3 to the
+  //    existing bold/right/center label style so the caption matches the template.
+  // 2) MAPEH_Tn summary sheets: E3/E4 are standalone label cells for DIVISION and
+  //    SCHOOL ID. They must be bold and right-aligned without inheriting the final
+  //    summary value-cell borders that made the header look shifted/unfilled.
+  if (EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP.term && EXCEL_FORMAT_MAP.term.cellStyles) {
+    EXCEL_FORMAT_MAP.term.cellStyles.V3 = '54';
+    EXCEL_FORMAT_MAP.term.cellStyles.W3 = '54';
+  }
+  if (EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP.mapehTermSummary) {
+    EXCEL_FORMAT_MAP.mapehTermSummary.cols = [
+      { wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 21.1094 },
+      { wch: 14.75 }, { wch: 13 }, { wch: 17.3320 }, { wch: 16.2188 }
+    ];
+    EXCEL_FORMAT_MAP.mapehTermSummary.cellStyles = Object.assign({}, EXCEL_FORMAT_MAP.mapehTermSummary.cellStyles || {}, {
+      E3: '26', E4: '26'
+    });
+  }
+  // v18.70: MAPEH consolidated final Summary uses a hidden-G worksheet layout.
+  // Put merged Division/School ID values on G3/G4, keep column F wide enough for
+  // label text, and preserve the corrected H6 SUBJECT label merge.
+  if (EXCEL_FORMAT_MAP && EXCEL_FORMAT_MAP.summary && !EXCEL_FORMAT_MAP.mapehFinalSummary) {
+    try {
+      const baseSummaryMap = EXCEL_FORMAT_MAP.summary;
+      EXCEL_FORMAT_MAP.mapehFinalSummary = {
+        cols: [
+          { wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 18.3320 },
+          { wch: 13 }, { wch: 13.5 }, { wch: 18.3320 }, { wch: 15.7773 },
+          { wch: 17.3320 }, { wch: 16.2188 }
+        ],
+        rows: baseSummaryMap.rows || {},
+        merges: ['A1:J1','C3:E3','G3:J3','C4:E4','G4:H4','A6:A8','B6:B8','C6:C8','E6:G6','E7:G7','I6:J6','I7:J7'],
+        styleDefs: baseSummaryMap.styleDefs || {},
+        cellStyles: Object.assign({}, baseSummaryMap.cellStyles || {}, { H6: '32' })
       };
     } catch (_) {}
   }
@@ -5603,6 +5685,58 @@ function importCsvText(csvText) {
       if (rowCount >= 4) excelApplyStyle(ws, `A4:${XLSX.utils.encode_col(Math.max(0, colCount - 1))}4`, 'header');
     }
   }
+  function excelThinBorderStyle() {
+    return { top: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } } };
+  }
+  function excelScreenshotCellStyle(options = {}) {
+    const align = options.align || 'center';
+    return {
+      font: { name: 'Arial', sz: 10, bold: !!options.bold },
+      alignment: { horizontal: align, vertical: 'center', wrapText: !!options.wrapText, shrinkToFit: options.shrinkToFit !== false },
+      border: excelThinBorderStyle(),
+      numFmt: options.numFmt || 'General',
+      protection: { locked: true, hidden: false }
+    };
+  }
+  function excelApplyCellStyleRange(ws, rangeRef, style) {
+    const range = excelDecodeMerge(rangeRef);
+    if (!range) return;
+    for (let R = range.s.r; R <= range.e.r; R += 1) {
+      for (let C = range.s.c; C <= range.e.c; C += 1) {
+        const address = XLSX.utils.encode_cell({ r: R, c: C });
+        excelEnsureCell(ws, address).s = excelCloneStyleValue(style);
+      }
+    }
+  }
+  function excelApplyMapehScreenshotFixes(ws, meta) {
+    if (!ws || !meta) return;
+    const centeredValue = excelScreenshotCellStyle({ align: 'center', bold: false });
+    const leftValue = excelScreenshotCellStyle({ align: 'left', bold: false });
+    const rightLabel = excelScreenshotCellStyle({ align: 'right', bold: true });
+    if (meta.formatMapKey === 'mapehTermSummary') {
+      // MAPEH_Tn: value cells must be bordered, non-bold, and aligned like the screenshot.
+      excelApplyCellStyleRange(ws, 'C3:D3', centeredValue);
+      excelApplyCellStyleRange(ws, 'C4:D4', leftValue);
+      excelApplyCellStyleRange(ws, 'F3:H3', centeredValue);
+      excelApplyCellStyleRange(ws, 'F4:F4', centeredValue);
+      excelApplyCellStyleRange(ws, 'H4:H4', centeredValue);
+      excelApplyCellStyleRange(ws, 'B3:B4', rightLabel);
+      excelApplyCellStyleRange(ws, 'E3:E4', rightLabel);
+      excelApplyCellStyleRange(ws, 'G4:G4', rightLabel);
+    }
+    if (meta.formatMapKey === 'mapehFinalSummary') {
+      // Summary of Grades: hidden-G layout means values live at G3 and G4.
+      excelApplyCellStyleRange(ws, 'C3:E3', centeredValue);
+      excelApplyCellStyleRange(ws, 'C4:E4', leftValue);
+      excelApplyCellStyleRange(ws, 'G3:J3', centeredValue);
+      excelApplyCellStyleRange(ws, 'G4:H4', centeredValue);
+      excelApplyCellStyleRange(ws, 'B3:B4', rightLabel);
+      excelApplyCellStyleRange(ws, 'F3:F4', rightLabel);
+      excelApplyCellStyleRange(ws, 'I4:I4', rightLabel);
+      excelApplyCellStyleRange(ws, 'H6:H6', rightLabel);
+    }
+  }
+
   function worksheetFromRows(payload) {
     const rows = payload && payload.rows ? payload.rows : payload;
     const meta = payload && payload.rows ? payload.meta : null;
@@ -5626,6 +5760,7 @@ function importCsvText(csvText) {
     }
     if (meta && meta.freeze) ws['!freeze'] = meta.freeze;
     excelApplyTemplateStyles(ws, meta, rowCount, colCount);
+    excelApplyMapehScreenshotFixes(ws, meta);
     if (meta && meta.type === 'summary' && ws['!cols'] && ws['!cols'][6]) ws['!cols'][6].hidden = !!meta.hideTerm4;
     ws['!protect'] = { selectLockedCells: true, selectUnlockedCells: true };
     return ws;
@@ -5790,6 +5925,18 @@ function importCsvText(csvText) {
     const paired = findMapehPairedRecords(bundleId);
     const summary = computeMapehConsolidatedSummary(paired);
     const baseHeader = clone(state.mapehVirtualBaseHeader || state.recordHeader || defaultRecordHeader());
+    // v18.67: The virtual consolidated Summary can be opened from a read-only MAPEH
+    // view whose header is thinner than the saved component records. Backfill the
+    // official header fields from any paired component before building MAPEH_Tn and
+    // Summary of Grades sheets so Region/Division/School Name/School ID do not export blank.
+    const headerFillKeys = ['region','division','district','schoolName','schoolId','schoolYear','gradeLevel','section','className','semester','teacherName','subjectGroup'];
+    MAPEH_COMPONENTS.forEach(meta => {
+      const sourceHeader = paired && paired[meta.key] && paired[meta.key].recordHeader || null;
+      if (!sourceHeader) return;
+      headerFillKeys.forEach(key => {
+        if (!text(baseHeader[key]).trim() && text(sourceHeader[key]).trim()) baseHeader[key] = sourceHeader[key];
+      });
+    });
     const h = Object.assign(defaultRecordHeader(), baseHeader, { subject: 'MAPEH', subjectKey: 'mapeh', mapehMode: 'consolidated', mapehComponent: '', mapehBundleId: bundleId, mapehReportSubject: 'MAPEH' });
     const componentSnapshots = {};
     MAPEH_COMPONENTS.forEach(meta => {
@@ -5816,21 +5963,19 @@ function importCsvText(csvText) {
     // The previous build split component labels across rows 8-9 and then applied the 10-column
     // Summary-of-Grades format map, shifting learners one row down and misaligning styles/merges.
     const rows = [
-      ['Summary of Quarterly Grades'],
+      ['Summary of Grades'],
       [],
-      ['', 'REGION', '', '', 'DIVISION:', '', '', ''],
-      ['', 'SCHOOL NAME', '', '', 'SCHOOL ID:', '', 'SCHOOL YEAR:', h.schoolYear || ''],
+      ['', 'REGION:', h.region || '', '', 'DIVISION:', h.division || '', '', ''],
+      ['', 'SCHOOL NAME:', h.schoolName || '', '', 'SCHOOL ID:', h.schoolId || '', 'SCHOOL YEAR:', h.schoolYear || ''],
       [],
-      ['#', "LEARNERS' NAMES", 'SEX', 'GRADE: ', h.gradeLevel || '', 'SUBJECT:', 'MAPEH', ''],
-      ['', '', '', 'SECTION:', h.section || h.className || '', 'TEACHER:', h.teacherName || '', ''],
-      ['', '', '', `MUSIC & ARTS
-${label}`, `PE & HEALTH
-${label}`, `MAPEH
-${label} GRADE`, 'DESCRIPTOR', 'REMARK']
+      [label, '', '', 'GRADE LEVEL: ', h.gradeLevel || '', 'SUBJECT:', 'MAPEH', label],
+      ['#', "LEARNERS' NAMES", 'SEX', 'SECTION:', h.section || h.className || '', 'TEACHER:', h.teacherName || '', ''],
+      ['', '', '', 'MUSIC & ARTS', 'PE & HEALTH', 'MAPEH', 'DESCRIPTOR', 'REMARK']
     ];
     buildLearnerDisplayList(summary.learners || []).forEach(entry => {
       const r = entry.row || {};
       const t = r.terms && r.terms[termKey] || {};
+      const termDescriptor = t.complete && t.mapehGrade != null ? numericDescriptor(Number(t.mapehGrade), 'table11') : null;
       rows.push([
         entry.displayNo,
         r.name || '',
@@ -5838,11 +5983,11 @@ ${label} GRADE`, 'DESCRIPTOR', 'REMARK']
         t.musicArtsGrade == null ? '' : t.musicArtsGrade,
         t.peHealthGrade == null ? '' : t.peHealthGrade,
         t.mapehGrade == null ? '' : t.mapehGrade,
-        t.complete ? (r.descriptorLabel || r.descriptorCode || '') : '',
+        t.complete ? (termDescriptor && (termDescriptor.descriptorLabel || termDescriptor.descriptorCode) || '') : '',
         t.complete ? (t.mapehGrade >= PASSING_GRADE ? 'Passed' : 'Failed') : 'Incomplete'
       ]);
     });
-    while (rows.length < 88) rows.push([rows.length - 7, '', '', '', '', '', '', '']);
+    while (rows.length < 88) rows.push(['', '', '', '', '', '', '', '']);
     return { rows, meta: { type: 'summary', formatMapKey: 'mapehTermSummary', hideTerm4: false, cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 21.1094 }, { wch: 13 }, { wch: 13 }, { wch: 17.3320 }, { wch: 16.2188 }], freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' } } };
   }
   function buildExcelMapehSummarySheetRows(snapshot) {
@@ -5859,10 +6004,10 @@ ${label} GRADE`, 'DESCRIPTOR', 'REMARK']
     // and learner data starts at row 9. This prevents the exported view from shifting
     // data into the header area when MAPEH is exported as a consolidated workbook.
     const rows = [
-      ['Summary of Quarterly Grades'],
+      ['Summary of Grades'],
       [],
-      ['', 'REGION', '', '', '', 'DIVISION:', 'DIVISION:', '', '', ''],
-      ['', 'SCHOOL NAME', '', '', '', 'SCHOOL ID:', 'SCHOOL ID:', '', 'SCHOOL YEAR:', h.schoolYear || ''],
+      ['', 'REGION', h.region || '', '', '', 'DIVISION:', h.division || '', '', '', ''],
+      ['', 'SCHOOL NAME', h.schoolName || '', '', '', 'SCHOOL ID:', h.schoolId || '', 'SCHOOL YEAR:', h.schoolYear || ''],
       [],
       ['#', "LEARNERS' NAMES", 'SEX', 'GRADE: ', h.gradeLevel || '', '', '', 'SUBJECT:', 'MAPEH', ''],
       ['', '', '', 'SECTION:', h.section || h.className || '', '', '', 'TEACHER:', h.teacherName || '', ''],
@@ -5879,10 +6024,10 @@ ${label} GRADE`, 'DESCRIPTOR', 'REMARK']
       row.push(r.finalMapehGrade == null ? '' : r.finalMapehGrade, r.descriptorLabel || r.descriptorCode || '', r.remarks || '');
       rows.push(row);
     });
-    while (rows.length < 88) rows.push([rows.length - 7, '', '', '', '', '', '', '', '', '']);
+    while (rows.length < 88) rows.push(['', '', '', '', '', '', '', '', '', '']);
     rows.push([], ['Class Average', summary.classSummary.classAverage == null ? '' : summary.classSummary.classAverage, 'Passing Count', summary.classSummary.passingCount, 'Non-Passing Count', summary.classSummary.nonPassingCount, 'Incomplete Count', summary.classSummary.incompleteCount, 'Learner Count', summary.classSummary.learnerCount]);
     (summary.warnings || []).forEach(w => rows.push(['Warning', w]));
-    return { rows, meta: { type: 'summary', hideTerm4: !showTerm4, cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 18.3320 }, { wch: 13 }, { wch: 13 }, { wch: 18.3320 }, { wch: 15.7773 }, { wch: 17.3320 }, { wch: 16.2188 }], freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' } } };
+    return { rows, meta: { type: 'summary', formatMapKey: 'mapehFinalSummary', hideTerm4: !showTerm4, cols: [{ wch: 3.6641 }, { wch: 31.7773 }, { wch: 10.3320 }, { wch: 18.3320 }, { wch: 13 }, { wch: 13.5 }, { wch: 18.3320 }, { wch: 15.7773 }, { wch: 17.3320 }, { wch: 16.2188 }], freeze: { xSplit: 3, ySplit: 8, topLeftCell: 'D9', activePane: 'bottomRight', state: 'frozen' } } };
   }
 
   async function exportMapehConsolidatedWorkbook(options = {}) {
