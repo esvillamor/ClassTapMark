@@ -5,8 +5,8 @@
 - Uses network-first only for rental-switch.js, with an offline fallback
 */
 
-const CACHE_NAME = 'ClassTapMark-cache-v8-2026-07-21';
-const DYNAMIC_CACHE = 'ctm-dynamic-v8-2026-07-21';
+const CACHE_NAME = 'ClassTapMark-cache-v9-2026-07-22';
+const DYNAMIC_CACHE = 'ctm-dynamic-v9-2026-07-22';
 
 // CDN libraries used by ClassTapMark modules.
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
@@ -74,6 +74,8 @@ const OPTIONAL_PRECACHE = [
   ABS('./libs/xlsx.full.min.js'),
   ABS('./libs/xlsx-js-style.min.js'),
   ABS('./libs/jszip.min.js'),
+  ABS('./libs/pdf-lib.min.js'),
+  ABS('./libs/lz-string.min.js'),
 
   // Support QR images.
   ABS('./image/wise-qr.png'),
@@ -190,7 +192,9 @@ self.addEventListener('fetch', (event) => {
   if (
     url.pathname.endsWith('/libs/xlsx.full.min.js') ||
     url.pathname.endsWith('/libs/xlsx-js-style.min.js') ||
-    url.pathname.endsWith('/libs/jszip.min.js')
+    url.pathname.endsWith('/libs/jszip.min.js') ||
+    url.pathname.endsWith('/libs/pdf-lib.min.js') ||
+    url.pathname.endsWith('/libs/lz-string.min.js')
   ) {
     event.respondWith(cacheFirst(req, CACHE_NAME).catch(() => new Response('', { status: 504 })));
     return;
