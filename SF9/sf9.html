@@ -1,0 +1,201 @@
+<div id="sf9Modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none">
+  
+<style id="sf9-full-topbar-bleed-fix">
+  /* SF9 full top-area bleed fix: match the Class Record full-width modal behavior. */
+  #sf9Modal {
+    z-index: 3000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #sf9Modal .sf9-modal-content {
+    position: relative;
+    width: 100vw;
+    max-width: 100vw !important;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    overflow: auto;
+    overflow-x: hidden;
+    background: #ffffff;
+    box-sizing: border-box;
+  }
+
+  #sf9Modal .sf9-head {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-bottom: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 10px 8px 8px 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  #sf9Modal .sf9-head-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+  }
+
+  #sf9Modal .sf9-head h2 {
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  #sf9Modal #sf9ClassInfo {
+    margin-top: 2px;
+    line-height: 1.25;
+  }
+
+  #sf9Modal .sf9-close-x {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    align-self: flex-start;
+  }
+
+  #sf9Modal .sf9-tabs {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  #sf9Modal .sf9-panel {
+    box-sizing: border-box;
+    padding: .55rem .65rem;
+  }
+
+  @media (max-width: 760px) {
+    #sf9Modal .sf9-modal-content { padding: 0 !important; }
+    #sf9Modal .sf9-panel { padding: .45rem; }
+  }
+
+  @media (max-width: 480px) {
+    #sf9Modal .sf9-head { padding-top: max(8px, env(safe-area-inset-top)); }
+  }
+</style>
+<div class="modal-content sf9-modal-content">
+    <div class="sf9-head">
+      <div class="sf9-head-main">
+        <div>
+          <h2>SF9 - Learner's Performance Report</h2>
+          <div id="sf9ClassInfo" class="sf9-muted">No class loaded</div>
+        </div>
+        <button id="sf9BtnClose" type="button" class="danger sf9-close-x" aria-label="Close SF9" title="Close">✕</button>
+      </div>
+
+      <div class="sf9-tabs" role="tablist" aria-label="SF9 Tabs">
+        <button id="sf9TabSetup" type="button" class="sf9-tab active" data-sf9-tab="setup">Setup</button>
+        <button id="sf9TabPreview" type="button" class="sf9-tab" data-sf9-tab="preview">Learner Preview</button>
+        <button id="sf9TabBatch" type="button" class="sf9-tab" data-sf9-tab="batch">Batch Export</button>
+      </div>
+    </div>
+
+    <section id="sf9PanelSetup" class="sf9-panel active">
+      <div id="sf9SetupSummary"></div>
+
+      <div class="sf9-grid">
+        <label>
+          <span>Adviser</span>
+          <input id="sf9Adviser" type="text" placeholder="Adviser">
+        </label>
+        <label>
+          <span>School Head</span>
+          <input id="sf9SchoolHead" type="text" placeholder="School Head">
+        </label>
+        <label>
+          <span>Region</span>
+          <input id="sf9Region" type="text" placeholder="Region">
+        </label>
+        <label>
+          <span>Division</span>
+          <input id="sf9Division" type="text" placeholder="Division">
+        </label>
+        <label>
+          <span>School</span>
+          <input id="sf9School" type="text" placeholder="School Name">
+        </label>
+        <label>
+          <span>District</span>
+          <input id="sf9District" type="text" placeholder="District">
+        </label>
+        <label class="sf9-grid-wide">
+          <span>School Address / Contact Details</span>
+          <textarea id="sf9SchoolAddress" rows="2" placeholder="School Address, Tel. No.&#10;Supports Multiline"></textarea>
+        </label>
+      </div>
+
+      <label class="sf9-check">
+        <input id="sf9ShowAwardsBox" type="checkbox">
+        <span>Show Awards and Recognition box</span>
+      </label>
+
+      <label class="sf9-check">
+        <input id="sf9ShowPerfectAttendance" type="checkbox">
+        <span>Show optional Perfect Attendance recognition if qualified</span>
+      </label>
+
+      <label class="sf9-check">
+        <input id="sf9ShowConductAward" type="checkbox">
+        <span>Show Conduct Awardee recognition when all observed values are AO</span>
+      </label>
+
+      <label class="sf9-check">
+        <input id="sf9ShowLegacyCoreValues" type="checkbox">
+        <span>Show Report on Learner's Observed Values section</span>
+      </label>
+
+      <label class="sf9-check">
+        <input id="sf9ShowDebugNotes" type="checkbox">
+        <span>Show debug notes in print output</span>
+      </label>
+
+      <button id="sf9BtnSaveSettings" type="button" class="primary">Save SF9 Settings</button>
+    </section>
+
+    <section id="sf9PanelPreview" class="sf9-panel">
+      <div class="sf9-toolbar">
+        <select id="sf9LearnerPicker"></select>
+        <button id="sf9BtnRefresh" type="button" class="edit">Refresh</button>
+        <button id="sf9BtnPrintSelected" type="button" class="primary">Print Selected Learner</button>
+      </div>
+
+      <div id="sf9TransitionNote" class="sf9-note" hidden></div>
+
+      <div class="sf9-comments-editor">
+        <h3>Teacher's Comments / Remarks</h3>
+        <div id="sf9CommentsFields" class="sf9-comments-fields">
+          <textarea id="sf9CommentT1" data-sf9-comment-period="q1" placeholder="Term 1 comments"></textarea>
+          <textarea id="sf9CommentT2" data-sf9-comment-period="q2" placeholder="Term 2 comments"></textarea>
+          <textarea id="sf9CommentT3" data-sf9-comment-period="q3" placeholder="Term 3 comments"></textarea>
+        </div>
+        <div id="sf9CoreValuesEditor" class="sf9-core-values-editor"></div>
+        <button id="sf9BtnSaveComments" type="button" class="primary">Save Comments / Observed Values</button>
+      </div>
+
+      <div id="sf9PrintArea"></div>
+    </section>
+
+    <section id="sf9PanelBatch" class="sf9-panel">
+      <div id="sf9BatchSummary"></div>
+      <button id="sf9BtnPrintAll" type="button" class="primary">Print All Learners</button>
+      <p class="sf9-muted">SF9 uses the current GradeSheet and Attendance data. Update GradeSheet and Attendance first before final printing.</p>
+    </section>
+  </div>
+</div>
