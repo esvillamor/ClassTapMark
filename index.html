@@ -1867,9 +1867,9 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
 	 <br />
 	 
 	 <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:space-between; width:100%; margin:0; padding:0;">
-		<button class="primary" id="btnOpenGradeSheet" style="flex:1;" title="List of all Final Grades, General Average, Promotion, Rank and Academic Awards">Grade Sheet</button>
+		<button class="primary" id="btnOpenSF9" style="flex:1;" title="Learner's Performance Report">SF 9</button>
 		<button class="primary" style="flex:1;" disabled>SF 5</button>
-		<button class="primary" style="flex:1;" disabled>SF 9</button>
+		<button class="primary" id="btnOpenGradeSheet" style="flex:1;" title="List of all Final Grades, General Average, Promotion, Rank and Academic Awards">Grade Sheet</button>
 		<button class="primary" style="flex:1;" disabled>SF 10</button>
 		<button class="primary"
         style="flex:1;"
@@ -7186,11 +7186,13 @@ document.addEventListener('click', function (e) {
   <script src="SF1pdf.js"></script>
   <script src="SF3pdf.js"></script>  
   <script src="SF8pdf.js"></script>
+  <script src="SF9/sf9.js"></script>
   <script src="classrecord/classrecord-modal.js"></script>
   <script src="gradesheet/gradesheet.js"></script>
   <script src="kgradesheet/kGradeSheet.js"></script>
   <div id="kGradeSheetHost"></div>
   <div id="classRecordHost"></div>
+  <div id="sf9Host"></div>
 
   <script>
   /* =====================================================================
