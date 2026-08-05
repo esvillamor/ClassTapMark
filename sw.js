@@ -4,9 +4,8 @@
 - Caches CDN libraries needed by XLSX/PDF/compression/Excel export
 - Uses network-first only for rental-switch.js, with an offline fallback
 */
-
-const CACHE_NAME = 'ClassTapMark-cache-v10-2026-07-27';
-const DYNAMIC_CACHE = 'ctm-dynamic-v10-2026-07-27';
+const CACHE_NAME = 'ClassTapMark-cache-v11-2026-08-05';
+const DYNAMIC_CACHE = 'ctm-dynamic-v11-2026-08-05';
 
 // CDN libraries used by ClassTapMark modules.
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
@@ -61,7 +60,7 @@ const OPTIONAL_PRECACHE = [
   ABS('./SF8pdf.js'),
   ABS('./SF9/sf9.js'),
   ABS('./SF9/sf9.html'),
-  
+
   // Grade Sheet module shell.
   ABS('./gradesheet/gradesheet.js'),
   ABS('./gradesheet/gradesheet.html'),
@@ -71,6 +70,9 @@ const OPTIONAL_PRECACHE = [
   // Class Record module shell.
   ABS('./classrecord/classrecord-modal.js'),
   ABS('./classrecord/classrecord-modal.html'),
+
+  // Awards module.
+  ABS('./Awards/awards.js'),
 
   // Optional local library copies. Missing files are ignored.
   ABS('./libs/xlsx.full.min.js'),
@@ -202,21 +204,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Grade Sheet, Kinder Grade Sheet, and Class Record modules:
+  // Grade Sheet, Kinder Grade Sheet, Awards, SF9, and Class Record modules:
   // show cached version offline, refresh when online.
-if (
-  url.pathname.endsWith('/SF9/sf9.js') ||
-  url.pathname.endsWith('/SF9/sf9.html') ||
-  url.pathname.endsWith('/gradesheet/gradesheet.js') ||
-  url.pathname.endsWith('/gradesheet/gradesheet.html') ||
-  url.pathname.endsWith('/kgradesheet/kGradeSheet.js') ||
-  url.pathname.endsWith('/kgradesheet/kGradeSheet.html') ||
-  url.pathname.endsWith('/classrecord/classrecord-modal.js') ||
-  url.pathname.endsWith('/classrecord/classrecord-modal.html')
-) {
-  event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
-  return;
-}
+  if (
+    url.pathname.endsWith('/SF9/sf9.js') ||
+    url.pathname.endsWith('/SF9/sf9.html') ||
+    url.pathname.endsWith('/Awards/awards.js') ||
+    url.pathname.endsWith('/gradesheet/gradesheet.js') ||
+    url.pathname.endsWith('/gradesheet/gradesheet.html') ||
+    url.pathname.endsWith('/kgradesheet/kGradeSheet.js') ||
+    url.pathname.endsWith('/kgradesheet/kGradeSheet.html') ||
+    url.pathname.endsWith('/classrecord/classrecord-modal.js') ||
+    url.pathname.endsWith('/classrecord/classrecord-modal.html')
+  ) {
+    event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
+    return;
+  }
 
   // Special handling for support.html. Do not fallback to index.html.
   if (url.pathname.endsWith('/support.html')) {

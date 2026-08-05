@@ -1857,8 +1857,8 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
       <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:space-between; width:100%; margin:0; padding:0;">
 		<button class="primary" id="btnOpenSF1" style="flex:1;" title="School Register">SF 1</button>
 		<button class="primary" id="btnExportSF2Pdf" style="flex:1;" title="Learner's Daily Class Attendance">SF 2</button>
-		<button class="primary" id="btnOpenClassRecord" style="flex:1;">Class<br />Record</button>
 		<button id="btnOpenSF3" class="primary" style="flex:1;" title="Book Issued and Returned">SF 3</button>
+		<button class="primary" style="flex:1;" disabled>SF 5</button>
 		<button class="primary" id="btnOpenSF8" style="flex:1;" title="Learner's Basic Health and Nutrition Report">SF 8</button>
         <!-- Retire Task log
 		<button class="primary" onclick="clearDebug()" style="flex:1; min-width:100px;">Clear Tasks Log</button> -->
@@ -1868,18 +1868,19 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
 	 
 	 <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:space-between; width:100%; margin:0; padding:0;">
 		<button class="primary" id="btnOpenSF9" style="flex:1;" title="Learner's Performance Report">SF 9</button>
-		<button class="primary" style="flex:1;" disabled>SF 5</button>
-		<button class="primary" id="btnOpenGradeSheet" style="flex:1;" title="List of all Final Grades, General Average, Promotion, Rank and Academic Awards">Grade Sheet</button>
+		<button class="primary" id="btnOpenClassRecord" style="flex:1;">Class Record</button>
+		<button class="primary" id="btnOpenGradeSheet" style="flex:1;" title="List of all Final Grades, GA, Promotion, Rank and Academic Awards">Grade Sheet</button>
+		<button class="primary" id="btnOpenAwards" style="flex:1;" title="Awards & Recognition">Awards</button>
 		<button class="primary" style="flex:1;" disabled>SF 10</button>
-		<button class="primary"
+		<!--<button class="primary"
         style="flex:1;"
         onclick="alert(this.getAttribute('title') || 'Coming soon…')"
         title="On it's way there 🏃‍♂️
-GradeSheets,SF5A,SF5B,SF9,SF10,etc.
+SF5,SF10,etc.
 	With your support💖
 		By GOD's grace 🙏
 			These can all be done💪
-				Welcomes Collaborators... 😎">Other<br />SF</button>
+				Welcomes Collaborators... 😎">Other<br />SF</button>-->
 	  </div>
 
 <!-- Storage Meter (below Task Logs; visible only when Unlocked) -->
@@ -7187,6 +7188,7 @@ document.addEventListener('click', function (e) {
   <script src="SF3pdf.js"></script>  
   <script src="SF8pdf.js"></script>
   <script src="SF9/sf9.js"></script>
+  <script src="Awards/awards.js"></script>
   <script src="classrecord/classrecord-modal.js"></script>
   <script src="gradesheet/gradesheet.js"></script>
   <script src="kgradesheet/kGradeSheet.js"></script>
