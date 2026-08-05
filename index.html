@@ -1431,6 +1431,52 @@ body.locked .ctm-copyright-footer{ display:block; }
 body:not(.locked) .ctm-copyright-footer{ display:none !important; }
 .ctm-copyright-footer p{ margin:.15rem 0; }
 .ctm-copyright-footer strong{ font-weight:700; }
+
+/* ===================== School Form Buttons: stable 5 x 2 grid ===================== */
+.sf-button-grid{
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:clamp(.28rem, 1.4vw, .6rem);
+  width:100%;
+  margin:.55rem 0 .85rem;
+}
+.sf-button-grid > button{
+  width:100%;
+  min-width:0 !important;
+  max-width:none !important;
+  flex:unset !important;
+  min-height:clamp(3rem, 10vw, 4.1rem);
+  padding:clamp(.38rem, 1.2vw, .7rem) clamp(.18rem, .9vw, .55rem);
+  font-size:clamp(.68rem, 2.45vw, 1rem);
+  line-height:1.08;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:normal;
+  border-radius:clamp(12px, 3vw, 20px);
+}
+@media (max-width: 360px){
+  .sf-button-grid{ gap:.26rem; }
+  .sf-button-grid > button{
+    min-height:2.85rem;
+    padding:.28rem .12rem;
+    font-size:clamp(.58rem, 2.8vw, .72rem);
+    letter-spacing:-.02em;
+  }
+}
+@media (max-width: 300px){
+  .sf-button-grid{ gap:.2rem; }
+  .sf-button-grid > button{
+    min-height:2.65rem;
+    padding:.22rem .08rem;
+    font-size:.55rem;
+    border-radius:10px;
+  }
+}
+
 </style>
 
 <script>
@@ -1854,34 +1900,20 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
 		[Class Name]
 	  </span>
 	</div>
-      <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:space-between; width:100%; margin:0; padding:0;">
-		<button class="primary" id="btnOpenSF1" style="flex:1;" title="School Register">SF 1</button>
-		<button class="primary" id="btnExportSF2Pdf" style="flex:1;" title="Learner's Daily Class Attendance">SF 2</button>
-		<button id="btnOpenSF3" class="primary" style="flex:1;" title="Book Issued and Returned">SF 3</button>
-		<button class="primary" style="flex:1;" disabled>SF 5</button>
-		<button class="primary" id="btnOpenSF8" style="flex:1;" title="Learner's Basic Health and Nutrition Report">SF 8</button>
-        <!-- Retire Task log
-		<button class="primary" onclick="clearDebug()" style="flex:1; min-width:100px;">Clear Tasks Log</button> -->
+      <div class="sf-button-grid" aria-label="School form shortcuts">
+		<button class="primary" id="btnOpenSF1" title="School Register">SF 1</button>
+		<button class="primary" id="btnExportSF2Pdf" title="Learner's Daily Class Attendance">SF 2</button>
+		<button id="btnOpenSF3" class="primary" title="Book Issued and Returned">SF 3</button>
+		<button class="primary" disabled>SF 5</button>
+		<button class="primary" id="btnOpenSF8" title="Learner's Basic Health and Nutrition Report">SF 8</button>
+		<button class="primary" id="btnOpenSF9" title="Learner's Performance Report">SF 9</button>
+		<button class="primary" id="btnOpenClassRecord">Class<br>Record</button>
+		<button class="primary" id="btnOpenGradeSheet" title="List of all Final Grades, GA, Promotion, Rank and Academic Awards">Grade<br>Sheet</button>
+		<button class="primary" id="btnOpenAwards" title="Awards & Recognition">Awards</button>
+		<button class="primary" disabled>SF 10</button>
       </div>
 	  <!--Retire Task log <div id="debugInfo" class="debug">Task log will appear here</div> -->
-	 <br />
-	 
-	 <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:space-between; width:100%; margin:0; padding:0;">
-		<button class="primary" id="btnOpenSF9" style="flex:1;" title="Learner's Performance Report">SF 9</button>
-		<button class="primary" id="btnOpenClassRecord" style="flex:1;">Class Record</button>
-		<button class="primary" id="btnOpenGradeSheet" style="flex:1;" title="List of all Final Grades, GA, Promotion, Rank and Academic Awards">Grade Sheet</button>
-		<button class="primary" id="btnOpenAwards" style="flex:1;" title="Awards & Recognition">Awards</button>
-		<button class="primary" style="flex:1;" disabled>SF 10</button>
-		<!--<button class="primary"
-        style="flex:1;"
-        onclick="alert(this.getAttribute('title') || 'Coming soon…')"
-        title="On it's way there 🏃‍♂️
-SF5,SF10,etc.
-	With your support💖
-		By GOD's grace 🙏
-			These can all be done💪
-				Welcomes Collaborators... 😎">Other<br />SF</button>-->
-	  </div>
+
 
 <!-- Storage Meter (below Task Logs; visible only when Unlocked) -->
 <div id="ctmStorageWrap" class="ctm-storage" aria-label="Local storage meter">
