@@ -128,12 +128,12 @@
 
 </style>
   <div class="ctm-gs-modal-content">
-    <div class="ctm-gs-topbar">
+    <div class="ctm-gs-topbar" style="background:#bde3fc">
       <div class="ctm-gs-topbar-grid">
         <div class="ctm-gs-title-cell"><h3 class="ctm-gs-title">Grade Sheet</h3></div>
         <div class="ctm-gs-close-cell"><button type="button" class="ctm-gs-close-btn" id="gsBtnClose" aria-label="Close Grade Sheet">✕</button></div>
         <div class="ctm-gs-subtitle"><span id="gsTopClass">No class loaded</span><span>•</span><span id="gsTopLayout">Quarter</span><span>•</span><span id="gsTopCount">0 learners</span></div>
-        <div class="ctm-gs-tabs" role="tablist" aria-label="Grade Sheet Tabs">
+        <div class="ctm-gs-tabs" role="tablist" aria-label="Grade Sheet Tabs" style="background:#bde3fc">
           <button type="button" class="ctm-gs-tab active" data-gs-tab="overview">Dynamic Table</button>
           <button type="button" class="ctm-gs-tab" data-gs-tab="learner">Learner Card</button>
           <button type="button" class="ctm-gs-tab" data-gs-tab="subjects">Subject Setup</button>
@@ -171,7 +171,7 @@
 	  <div class="ctm-gs-field ctm-gs-subject-field-order">
 	  <label for="gsSubjectOrder">Order</label><input id="gsSubjectOrder" type="number" min="1" step="1"></div>
 	  
-	  <div class="ctm-gs-field ctm-gs-subject-field-teacher"><label for="gsTeacherName">Teacher Name</label><input id="gsTeacherName" placeholder="Teacher"></div><div class="ctm-gs-field ctm-gs-subject-field-source"><label for="gsSourceType">Source Type</label><select id="gsSourceType"><option value="manual">Manual</option><option value="linked">Linked to Class Record</option></select></div><div class="ctm-gs-field ctm-gs-subject-field-linked-record"><label for="gsLinkedRecord">Linked Class Record</label>
+	  <div class="ctm-gs-field ctm-gs-subject-field-teacher"><label for="gsTeacherName">Teacher Name</label><input id="gsTeacherName" placeholder="Teacher"></div><div class="ctm-gs-field ctm-gs-subject-field-source"><label for="gsSourceType">Source Type</label><select id="gsSourceType"><option value="manual">Manual</option><option value="linked">Linked to Class Record</option></select></div><div class="ctm-gs-field ctm-gs-subject-field-mapeh-mode" style="display:none"><label for="gsMapehMode">MAPEH Entry Mode</label><select id="gsMapehMode"><option value="manualParentOnly">Manual Parent Grade Only</option><option value="manualPaired">Manual Paired Components</option><option value="linked">Linked from Class Record</option></select></div><div class="ctm-gs-field ctm-gs-subject-field-linked-record"><label for="gsLinkedRecord">Linked Class Record</label>
 	  
 	  <input id="gsLinkedRecord" placeholder="Class Record Subject Name">
 	  
