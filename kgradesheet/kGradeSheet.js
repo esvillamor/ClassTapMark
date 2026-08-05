@@ -377,7 +377,6 @@
   }
   function init(){
     document.addEventListener('click', routeGradeSheetClick, true);
-    var btn=$id('btnOpenGradeSheet'); if(btn) btn.title='Grade Sheet. KS1 transition classes open the descriptive EOSY summary.';
     if(!window.__CTMKGradeSheetFlushBound){ window.__CTMKGradeSheetFlushBound=true; window.addEventListener('beforeunload',function(){clearTimeout(state.saveTimer);persist();}); document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){clearTimeout(state.saveTimer);persist();} }); }
   }
 
