@@ -4,8 +4,8 @@
 - Caches CDN libraries needed by XLSX/PDF/compression/Excel export
 - Uses network-first only for rental-switch.js, with an offline fallback
 */
-const CACHE_NAME = 'ClassTapMark-cache-v11-2026-08-06';
-const DYNAMIC_CACHE = 'ctm-dynamic-v11-2026-08-06';
+const CACHE_NAME = 'ClassTapMark-cache-v11-2026-08-06p';
+const DYNAMIC_CACHE = 'ctm-dynamic-v11-2026-08-06p';
 
 // CDN libraries used by ClassTapMark modules.
 const CDN_XLSX = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
