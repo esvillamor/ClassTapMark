@@ -64,7 +64,7 @@
     const host=document.createElement('div');
     host.innerHTML = '<div id="awardsModal" class="modal ctm-awards-modal" aria-hidden="true" role="dialog" aria-modal="true" style="display:none"><div class="modal-content ctm-awards-content"><div class="ctm-awards-head"><div class="ctm-awards-head-main"><div class="ctm-awards-title-block"><h2 id="awardsTitle">Awards &amp; Recognition</h2><div id="awardsStatusLine" class="ctm-awards-status"></div></div><button id="awardsBtnClose" class="ctm-awards-close-x" type="button" aria-label="Close Awards modal" title="Close">&times;</button></div><div class="ctm-awards-tabs"><button class="ctm-awards-tab active" data-awards-tab="dashboard" type="button">Dashboard</button><button class="ctm-awards-tab" data-awards-tab="academic" type="button">Academic</button><button class="ctm-awards-tab" data-awards-tab="conduct" type="button">Conduct &amp; OV</button><button class="ctm-awards-tab" data-awards-tab="attendance" type="button">Attendance</button><button class="ctm-awards-tab" data-awards-tab="grade12" type="button">Grade 12 Awards</button><button class="ctm-awards-tab" data-awards-tab="rubrics" type="button">Rubrics</button><button class="ctm-awards-tab" data-awards-tab="special" type="button">Special Recognition</button><button class="ctm-awards-tab" data-awards-tab="reports" type="button">Reports / Export</button></div></div><div id="awardsTransitionBanner" class="ctm-awards-banner" hidden></div><div id="awardsPendingGradeSheet" class="ctm-awards-warn" hidden></div><section id="awardsPanelDashboard" class="ctm-awards-panel active"></section><section id="awardsPanelAcademic" class="ctm-awards-panel"></section><section id="awardsPanelConduct" class="ctm-awards-panel"></section><section id="awardsPanelAttendance" class="ctm-awards-panel"></section><section id="awardsPanelGrade12" class="ctm-awards-panel"></section><section id="awardsPanelRubrics" class="ctm-awards-panel"></section><section id="awardsPanelSpecial" class="ctm-awards-panel"></section><section id="awardsPanelReports" class="ctm-awards-panel"></section><div id="awardsPrintArea" class="ctm-awards-print-area" aria-hidden="true"></div></div></div>';
     document.body.appendChild(host);
-    state.htmlInjected=true; bindUi(); return true;
+    state.htmlInjected=true; bindUi(); ensureAwardsFormA11y($id('awardsModal')); return true;
   }
   function getClassId(){
     const dd=$id('classDropdown'); const opt=dd && dd.selectedIndex >= 0 ? dd.options[dd.selectedIndex] : null;
@@ -83,6 +83,40 @@
     return '';
   }
   function readJson(key, fallback){ try{ const v=localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(_){ return fallback; } }
+  // CTM FIX 2026-08-06: Awards renders many inputs/selects dynamically.
+  // Ensure every dynamic form field has a stable id/name and an associated label.
+  // If index.html already installed the global guard, delegate to it.
+  let awardsA11ySeq = 0;
+  function awardsSafeIdPart(v){ return String(v||'').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48); }
+  function awardsReadableLabel(el){
+    const data = el && (el.dataset.field || el.dataset.awardsWiGrade || el.dataset.awardsWiEvidence || el.dataset.awardsWiSupervisorRating || el.dataset.awardsWiTeacherRating || el.dataset.awardsWiAc || el.dataset.awardsSpecialField || el.dataset.awardsRiField || el.dataset.awardsKs1Field || el.dataset.awardsLeadershipField || el.dataset.awardsClubField || el.dataset.awardsDisciplineField);
+    return text((el && (el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.id)) || data || 'Awards field').replace(/[-_]+/g,' ');
+  }
+  function awardsEnsureId(el){
+    if(!el) return '';
+    if(!el.id){ let id; const base=awardsSafeIdPart(el.getAttribute('name') || awardsReadableLabel(el) || el.tagName || 'field') || 'field'; do{ id='ctm-awards-'+base+'-'+(++awardsA11ySeq); }while(document.getElementById(id)); el.id=id; }
+    if(!el.getAttribute('name')) el.setAttribute('name', awardsSafeIdPart(el.id) || el.id);
+    return el.id;
+  }
+  function awardsHasLabel(el){
+    if(!el) return true;
+    if(el.id && document.querySelector('label[for="'+(window.CSS&&CSS.escape?CSS.escape(el.id):el.id.replace(/[^a-zA-Z0-9_-]/g,'\\$&'))+'"]')) return true;
+    for(let p=el.parentElement;p&&p!==document.body;p=p.parentElement){ if(p.tagName && p.tagName.toLowerCase()==='label') return true; }
+    return false;
+  }
+  function ensureAwardsFormA11y(root){
+    root = root || $id('awardsModal') || document;
+    if(window.CTMFormLabelGuard && typeof window.CTMFormLabelGuard.associateLabels === 'function'){
+      window.CTMFormLabelGuard.associateLabels(root);
+      return;
+    }
+    root.querySelectorAll('input,select,textarea').forEach(el=>awardsEnsureId(el));
+    root.querySelectorAll('input:not([type="hidden"]),select,textarea').forEach(el=>{
+      const id=awardsEnsureId(el);
+      if(!awardsHasLabel(el) && id){ const lab=document.createElement('label'); lab.className='ctm-sr-only ctm-generated-label'; lab.setAttribute('for',id); lab.textContent=awardsReadableLabel(el); el.parentNode && el.parentNode.insertBefore(lab,el); }
+      if(!el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby')) el.setAttribute('aria-label',awardsReadableLabel(el));
+    });
+  }
   function getClassMeta(classId){
     const meta=readJson('classmeta:'+classId, {});
     if(meta && Object.keys(meta).length) return meta;
@@ -848,6 +882,7 @@
     renderSpecialRecognition();
     renderReports();
     switchTab(state.activeTab||'dashboard');
+    ensureAwardsFormA11y($id('awardsModal'));
   }
 
   function renderDashboard(){
@@ -1152,7 +1187,7 @@
     document.addEventListener('keydown',e=>{ if(e.key==='Escape' && modal.style.display!=='none') close(); });
   }
 
-  async function open(){ await ensureInjected(); refreshContext(); if(!state.classId){ alert('Please load a class first before opening Awards & Recognition.'); return; } renderAll(); switchTab(state.activeTab||'dashboard'); const modal=$id('awardsModal'); if(modal){ modal.style.display='block'; modal.setAttribute('aria-hidden','false'); try{modal.inert=false;}catch(_){} } }
+  async function open(){ await ensureInjected(); refreshContext(); if(!state.classId){ alert('Please load a class first before opening Awards & Recognition.'); return; } renderAll(); switchTab(state.activeTab||'dashboard'); ensureAwardsFormA11y($id('awardsModal')); const modal=$id('awardsModal'); if(modal){ modal.style.display='block'; modal.setAttribute('aria-hidden','false'); try{modal.inert=false;}catch(_){} } }
   function close(){ save(); const modal=$id('awardsModal'); if(modal){ if(window.CTMModalA11y&&typeof window.CTMModalA11y.prepareForHide==='function') window.CTMModalA11y.prepareForHide(modal); modal.style.display='none'; modal.setAttribute('aria-hidden','true'); try{modal.inert=true;}catch(_){} } }
 
   function bindAwardsButton(){
