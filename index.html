@@ -1380,6 +1380,110 @@ body.locked #btnBuyLicense.ctm-free-license-attention::before {
 }
 
 
+
+
+/* =========================================================
+   TEMP: Register License button attention animation
+   Similar to Free License button, but shown when Unlocked
+   Target button: #btnRegister
+   ========================================================= */
+body:not(.locked) #btnRegister.ctm-register-attention {
+  position: relative;
+  overflow: visible;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  font-weight: 800;
+  letter-spacing: .2px;
+  box-shadow:
+    0 0 0 0 rgba(16, 185, 129, .55),
+    0 12px 26px rgba(16, 185, 129, .35);
+  animation: ctmRegisterPulse 1.65s ease-in-out infinite;
+}
+
+@keyframes ctmRegisterPulse {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(16, 185, 129, .55),
+      0 12px 26px rgba(16, 185, 129, .35);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.035);
+    box-shadow:
+      0 0 0 9px rgba(16, 185, 129, .12),
+      0 16px 34px rgba(16, 185, 129, .48);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(16, 185, 129, 0),
+      0 12px 26px rgba(16, 185, 129, .35);
+  }
+}
+
+/* Small REGISTER badge */
+body:not(.locked) #btnRegister.ctm-register-attention::after {
+  content: "REGISTER";
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.4;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, .38);
+  animation: ctmRegisterBadgePop 1.65s ease-in-out infinite;
+}
+
+@keyframes ctmRegisterBadgePop {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Moving highlight/shimmer */
+body:not(.locked) #btnRegister.ctm-register-attention::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255,255,255,.12) 35%,
+    rgba(255,255,255,.45) 50%,
+    rgba(255,255,255,.12) 65%,
+    transparent 100%
+  );
+  transform: translateX(-120%);
+  animation: ctmRegisterShimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ctmRegisterShimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  45%, 100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Respect users/devices that reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  body:not(.locked) #btnRegister.ctm-register-attention,
+  body:not(.locked) #btnRegister.ctm-register-attention::before,
+  body:not(.locked) #btnRegister.ctm-register-attention::after {
+    animation: none !important;
+  }
+}
+
 /* ===================== Manage Learners: multiline learner paste field ===================== */
 #studentName{
   width:100%;
@@ -6290,7 +6394,10 @@ buyBtn.addEventListener('click', (e) => {
   regBtn.id = 'btnRegister';
   regBtn.type = 'button';
   regBtn.style.flex = '1';
-  regBtn.textContent = 'Register';
+  regBtn.textContent = 'Register License';
+  regBtn.classList.add('ctm-register-attention');
+  regBtn.setAttribute('title', 'Register this license');
+  regBtn.setAttribute('aria-label', 'Register this license');
 
 regBtn.addEventListener('click', (e) => {
   e.preventDefault();
@@ -7230,6 +7337,66 @@ document.addEventListener('click', function (e) {
 
   <script>
   /* =====================================================================
+     CTM Patch: SF9 button uniform unloaded-class behavior v2
+     - No MutationObserver is used here to avoid reload/spinner loops.
+     - SF 9 remains enabled visually.
+     - If no class is loaded, SF 9 shows the same alert as other SF buttons.
+     ===================================================================== */
+  (function () {
+    'use strict';
+
+    function hasLoadedClass() {
+      return !!(
+        window.currentClassId ||
+        (window.CTMLoadedClassContext && window.CTMLoadedClassContext.classId)
+      );
+    }
+
+    function keepSf9ButtonEnabled() {
+      var btn = document.getElementById('btnOpenSF9');
+      if (!btn) return;
+      if (btn.disabled) btn.disabled = false;
+      btn.removeAttribute('disabled');
+      btn.setAttribute('aria-disabled', 'false');
+      if (!btn.title) btn.title = "Learner's Performance Report";
+    }
+
+    function runEnablePasses() {
+      keepSf9ButtonEnabled();
+      [0, 100, 300, 700, 1200].forEach(function (delay) {
+        setTimeout(keepSf9ButtonEnabled, delay);
+      });
+    }
+
+    document.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('#btnOpenSF9') : null;
+      if (!btn) return;
+
+      keepSf9ButtonEnabled();
+
+      if (!hasLoadedClass()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        alert('Select and Load Class first!');
+      }
+    }, true);
+
+    document.addEventListener('change', function (event) {
+      if (event.target && event.target.id === 'classDropdown') runEnablePasses();
+    }, true);
+
+    window.addEventListener('load', runEnablePasses, { once: true });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', runEnablePasses, { once: true });
+    } else {
+      runEnablePasses();
+    }
+  })();
+  </script>
+
+  <script>
+  /* =====================================================================
      SF1-only learner dropdown-in-card fix
      - Moves ONLY the SF1 learner dropdown into the learner card
      - Hides the duplicate learner title after replacement
@@ -8121,12 +8288,28 @@ document.addEventListener('click', function (e) {
     }
   }
 
+  function applyRegisterAttention() {
+    var btn = document.getElementById('btnRegister');
+    if (!btn) return;
+
+    btn.classList.add('ctm-register-attention');
+    if ((btn.textContent || '').trim().toLowerCase() === 'register') {
+      btn.textContent = 'Register License';
+    }
+    btn.setAttribute('title', 'Register this license');
+    btn.setAttribute('aria-label', 'Register this license');
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     applyFreeLicenseAttention();
+    applyRegisterAttention();
 
     // Because your license buttons are dynamically created, watch for changes.
     var target = document.getElementById('licenseActionButtons') || document.body;
-    var observer = new MutationObserver(applyFreeLicenseAttention);
+    var observer = new MutationObserver(function () {
+      applyFreeLicenseAttention();
+      applyRegisterAttention();
+    });
 
     observer.observe(target, {
       childList: true,
