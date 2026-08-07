@@ -377,8 +377,8 @@
       division:['crDivision','sf1Division','sf2Division','sf8Division','division'],
       district:['crDistrict','sf1District','sf2District','sf8District','district'],
       schoolAddress:['crSchoolAddress','sf1SchoolAddress','sf2SchoolAddress','sf8SchoolAddress','schoolAddress'], schoolHead:['sf2SchoolHead','sf1SchoolHead','sf3SchoolHead','sf8SchoolHead','schoolHead'],
-      track:['crTrack','sf1Track','sf2Track'],
-      strand:['crStrand','sf1Strand','sf2Strand']
+      track:['crTrack','sf1Track','sf1TrackStrand','sf2Track','sf8Track'],
+      strand:['crStrand','sf1Strand','sf1TrackStrand','sf2Strand']
     };
     const headerKeys = {
       schoolYear:['schoolYear','sy'],
@@ -390,13 +390,33 @@
       division:['division','divisionName','schoolsDivision','schoolsDivisionName'],
       district:['district','districtName'],
       schoolAddress:['schoolAddress','address','schoolAddr','schoolContact','contactDetails'], schoolHead:['schoolHead','principal','headTeacher','schoolPrincipal'],
-      track:['track','shsTrack'],
-      strand:['strand','shsStrand']
+      track:['track','trackStrand','shsTrack','shsTrackStrand'],
+      strand:['strand','trackStrand','shsStrand','shsTrackStrand']
     };
     const keys = ids[name] || [];
     const hKeys = headerKeys[name] || [];
     for (const k of [name, name.toLowerCase(), ...hKeys, ...keys]) if (h && h[k]) return text(h[k]);
     for (const id of keys) { const el = $id(id); if (el && text(el.value || el.textContent)) return text(el.value || el.textContent); }
+    if (name === 'track' || name === 'strand') {
+      const sf1TrackStrand = readSf1TrackStrandMeta();
+      if (sf1TrackStrand) return sf1TrackStrand;
+    }
+    return '';
+  }
+  function readSf1TrackStrandMeta() {
+    const classIds = [state.classId, getLoadedClassId(), window.currentClassId].map(text).filter(Boolean);
+    const seen = new Set();
+    for (const cid of classIds) {
+      if (seen.has(cid)) continue;
+      seen.add(cid);
+      const keys = ['ctmSfMeta::' + cid, 'sf1-meta::' + cid];
+      for (const key of keys) {
+        const meta = safeJson(localStorage.getItem(key) || 'null', null);
+        if (!meta || typeof meta !== 'object') continue;
+        const value = text(meta.trackStrand || meta.shsTrackStrand || meta.track || meta.strand);
+        if (value) return value;
+      }
+    }
     return '';
   }
   function sf9PrefixLine(label, value) {
@@ -422,7 +442,7 @@
   }
   function schoolYear() { return getHeaderField('schoolYear') || text((state.gradeData || {}).schoolYear) || ''; }
   function isG12Transition() { return gradeLevelNumber() === 12 && /2026\D*2027/.test(schoolYear()); }
-  function getTrack() { return [getHeaderField('track'), getHeaderField('strand'), text((state.gradeData || {}).track), text((state.gradeData || {}).strand), subjectList(state.gradeData).map(subjectName).join(' ')].join(' '); }
+  function getTrack() { return [getHeaderField('track'), getHeaderField('strand'), readSf1TrackStrandMeta(), text((state.gradeData || {}).trackStrand), text((state.gradeData || {}).track), text((state.gradeData || {}).strand), subjectList(state.gradeData).map(subjectName).join(' ')].join(' '); }
 
   function hasQ4Evidence() {
     const gd = state.gradeData || {};
@@ -1234,7 +1254,7 @@ function computeMapehParent(displayProfile, learnerReport, gradeSheetData) {
     const schoolHead = state.meta.signatories && state.meta.signatories.schoolHead || '';
     const grade = getHeaderField('gradeLevel') || getHeaderField('grade') || '';
     const section = getHeaderField('section') || '';
-    const trackStrand = text(getHeaderField('track') || getHeaderField('strand'));
+    const trackStrand = text(getHeaderField('track') || getHeaderField('strand') || readSf1TrackStrandMeta() || text((state.gradeData || {}).trackStrand));
     const showTrack = gradeLevelNumber(grade) >= 11 || !!trackStrand;
     const termHead = shortLabels.map(x => `<th>${esc(x)}</th>`).join('');
     const rowHtml = rows.map(r => r.type === 'group' ? `<tr class="sf9-group"><td colspan="${periodKeys.length + 3}">${esc(r.label)}</td></tr>` : `<tr class="sf9-${esc(r.type)}"><td>${r.indent ? '&nbsp;&nbsp;&nbsp;' : ''}${esc(r.label)}</td>${periodKeys.map(q => `<td class="sf9-center">${show(r[q])}</td>`).join('')}<td class="sf9-center">${show(r.finalGrade)}</td><td class="sf9-center">${esc(r.remarks || '')}</td></tr>`).join('');
