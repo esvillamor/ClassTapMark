@@ -343,10 +343,31 @@
     /* Lock UI */
     body.locked .container > :not(#accessControl){display:none !important}
     body.locked #exportModal{display:none !important}
+    #proStatus{display:block;width:100%;min-height:1.5em;margin:0 0 .5rem 0;}
+    
+/* CTM lock/unlock header alignment v3 */
+#accessControl{margin-top:0 !important;padding-top:1.25rem !important;}
+#proStatus{display:block;width:100%;height:28px !important;min-height:28px !important;max-height:28px !important;overflow:hidden;margin:0 !important;line-height:28px !important;}
+
     #proStatus.ok { color:#10b981; }
     #proStatus.err { color:#ef4444; }
-    #ctmBuy, #ctmBuy + div { display: none !important; }
-    body.locked #ctmBuy, body.locked #ctmBuy + div { display: block !important; }
+    /* CTM license header alignment fix */
+    #accessControl{position:relative;}
+    #proStatus{position:absolute;left:1.25rem;top:.75rem;margin:0;line-height:1.2;min-height:0;}
+    #accessControl > div:first-of-type{margin-top:2rem;}
+    /* CTM License resource links
+       Show the emoji resource buttons in both Locked and Unlocked states.
+       Keep the longer promotional/info text visible only while Locked. */
+    .ctm-buy-links{
+      display: flex !important;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .ctm-buy-info{ display: none !important; }
+    body.locked .ctm-buy-info{ display: block !important; }
 	
 	/* Buy/Register button visibility based on lock state */
 #btnBuyLicense, #btnRegister { display: none !important; }
@@ -1590,7 +1611,10 @@ body:not(.locked) #btnRegister.ctm-register-attention::before {
 }
 
 
-/* ===================== CTM Locked Copyright Footer ===================== */
+/* ===================== CTM Copyright Footer =====================
+   Main page footer remains visible in both Locked and Unlocked states.
+   Scoped to the direct body footer to avoid unintentionally changing modal content.
+*/
 .ctm-copyright-footer{
   display:none;
   max-width:1200px;
@@ -1603,8 +1627,7 @@ body:not(.locked) #btnRegister.ctm-register-attention::before {
   letter-spacing:.01em;
   text-shadow:0 1px 2px rgba(0,0,0,.18);
 }
-body.locked .ctm-copyright-footer{ display:block; }
-body:not(.locked) .ctm-copyright-footer{ display:none !important; }
+body > .ctm-copyright-footer{ display:block !important; }
 .ctm-copyright-footer p{ margin:.15rem 0; }
 .ctm-copyright-footer strong{ font-weight:700; }
 
@@ -1651,6 +1674,35 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
     font-size:.55rem;
     border-radius:10px;
   }
+}
+
+
+/* ===================== CTM Static Background Patch v1 =====================
+   Keeps the unlocked page background as one continuous, non-repeating gradient
+   during normal document scrolling. This prevents the gradient from appearing
+   tiled/repeated on long pages and across mobile/desktop browsers.
+*/
+html{
+  min-height:100%;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  background-repeat:no-repeat;
+  background-size:cover;
+  background-position:center center;
+  background-attachment:fixed;
+}
+body{
+  min-height:100dvh;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  background-repeat:no-repeat;
+  background-size:cover;
+  background-position:center center;
+  background-attachment:fixed;
+}
+body:not(.locked){
+  background-repeat:no-repeat !important;
+  background-size:cover !important;
+  background-position:center center !important;
+  background-attachment:fixed !important;
 }
 
 </style>
@@ -1912,7 +1964,7 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
 		<!--<p id="ctmBuyText" style="font-size: 13px;"><strong>Vision & Plans...</strong></p>-->
 <div style="display: block; margin: 0 auto; text-align: center;">
-	<ul id="ctmBuy" style="margin: 0 auto; padding: 0; list-style-type: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px;">
+	<ul id="ctmBuyLinks" class="ctm-buy-links" style="margin: 0 auto; padding: 0; list-style-type: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px;">
 		<li style="display: inline-block;">
 			<a href="https://drive.google.com/file/d/1WM3owgKb1Z4OcRT994u5ZLNDfRUYo1lm/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="Vision, Mission, Goals and Objectives" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">📈</a>
 		</li>
@@ -1943,7 +1995,7 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
 	</ul>
 </div>
 
-        <p id="ctmBuy" style="font-size: 13px; text-align: justify;">		
+        <p id="ctmBuyInfo" class="ctm-buy-info" style="font-size: 13px; text-align: justify;">		
           <b>Empowering Teachers.</b> Offline-first EdTech for attendance, learner management, class records, and school forms.
 		  <br /><br />
 		  <b>Organizing Records.</b> Reduces paperwork, improves data consistency, and supports reporting workflows.
@@ -2870,7 +2922,7 @@ body:not(.locked) .ctm-copyright-footer{ display:none !important; }
 		   <a href="mailto:esv.tnt010@gmail.com?subject=ClassTapMarkesv.tnt010@gmail.com">esv.tnt010@gmail.com</a></p>
       </div>
     </div>
-	<footer id="ctmCopyrightFooter" class="ctm-copyright-footer" aria-label="ClassTapMark copyright notice" style="color: black;">
+	<footer id="ctmCopyrightFooterHelp" class="ctm-copyright-footer" aria-label="ClassTapMark copyright notice" style="color: black;">
   <p><strong>Copyright (c) 2026 Eric Villamor. All rights reserved.</strong></p>
   <p>ClassTapMark is proprietary software. No part of this codebase, including source code, files, designs, or related materials, may be copied, modified, distributed, hosted, sublicensed, sold, or used in another project without prior written permission from the author.</p>
 </footer>
