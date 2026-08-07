@@ -369,7 +369,59 @@
     .ctm-buy-info{ display: none !important; }
     body.locked .ctm-buy-info{ display: block !important; }
 	
-	/* Buy/Register button visibility based on lock state */
+	
+/* ===================== License Emoji Resource Buttons: single-line clamp =====================
+   Keeps the 7 emoji links in exactly one horizontal row at all screen sizes.
+   Similar to the SF button clamp: grid columns stay fixed, while gap, size,
+   padding, and emoji font-size shrink on narrow screens instead of wrapping.
+*/
+#ctmBuyLinks.ctm-buy-links{
+  display:grid !important;
+  grid-template-columns:repeat(7, minmax(0, 1fr)) !important;
+  gap:clamp(3px, 1.8vw, 10px) !important;
+  width:min(100%, 460px) !important;
+  max-width:100% !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  list-style:none !important;
+  align-items:center !important;
+  justify-content:center !important;
+  flex-wrap:nowrap !important;
+}
+#ctmBuyLinks.ctm-buy-links > li{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+#ctmBuyLinks.ctm-buy-links > li > a{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  min-width:0 !important;
+  min-height:clamp(32px, 10.5vw, 52px) !important;
+  padding:clamp(3px, 1.4vw, 6px) clamp(2px, 1.6vw, 10px) !important;
+  font-size:clamp(13px, 5.1vw, 20px) !important;
+  line-height:1 !important;
+  text-decoration:none !important;
+  border-radius:clamp(8px, 2.4vw, 12px) !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+}
+@media (max-width: 320px){
+  #ctmBuyLinks.ctm-buy-links{
+    gap:2px !important;
+    width:100% !important;
+  }
+  #ctmBuyLinks.ctm-buy-links > li > a{
+    min-height:30px !important;
+    padding:2px !important;
+    font-size:12px !important;
+    border-radius:8px !important;
+  }
+}
+
+/* Buy/Register button visibility based on lock state */
 #btnBuyLicense, #btnRegister { display: none !important; }
 
 /* Locked: show Buy License only */
@@ -447,6 +499,65 @@ html, body{
   }
 }
 
+
+    
+/* ===================== License Action Buttons: single-line clamp =====================
+   Keeps Clear License, Unlock, and the visible license action button in one row
+   in both Locked and Unlocked states. Buttons shrink with clamp() instead of wrapping.
+*/
+#licenseActionButtons{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+  gap:clamp(.22rem, 1.6vw, .6rem) !important;
+  width:100% !important;
+  max-width:100% !important;
+  overflow:visible !important;
+  padding-top:clamp(.28rem, 1.2vw, .45rem) !important;
+  align-items:stretch !important;
+}
+#licenseActionButtons > button{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  flex:unset !important;
+  min-height:clamp(2.45rem, 9.5vw, 3.35rem) !important;
+  padding:clamp(.42rem, 1.65vw, .8rem) clamp(.12rem, 1vw, .65rem) !important;
+  font-size:clamp(.56rem, 2.65vw, .95rem) !important;
+  line-height:1.05 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+  border-radius:clamp(10px, 2.8vw, 14px) !important;
+  text-align:center !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+body.locked #licenseActionButtons > #btnBuyLicense,
+body:not(.locked) #licenseActionButtons > #btnRegister{
+  display:flex !important;
+}
+@media (max-width: 320px){
+  #licenseActionButtons{
+    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+    gap:.18rem !important;
+    padding-top:.3rem !important;
+  }
+  #licenseActionButtons > button{
+    min-height:2.25rem !important;
+    padding:.34rem .08rem !important;
+    font-size:clamp(.48rem, 2.9vw, .58rem) !important;
+    letter-spacing:-.03em !important;
+    border-radius:9px !important;
+  }
+}
+@media (max-width: 260px){
+  #licenseActionButtons > button{
+    min-height:2.05rem !important;
+    padding:.28rem .04rem !important;
+    font-size:.45rem !important;
+    letter-spacing:-.045em !important;
+  }
+}
 
     /* ==== HELP FAB + HELP MODAL ==== */
     .fab {
@@ -1957,14 +2068,14 @@ body:not(.locked){
         <input id="proLicense" type="text" placeholder="License Key" style="flex:1;">
         <input id="proSignature" type="text" placeholder="Signature" style="flex:1">
       </div>
-		<div id="licenseActionButtons" style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
+		<div id="licenseActionButtons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;width:100%;">
 		<button class="danger" id="proClear" style="flex:1;">Clear License</button>
 		<button class="primary" id="proValidate" style="flex:1;">Unlock</button>
 		</div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
 		<!--<p id="ctmBuyText" style="font-size: 13px;"><strong>Vision & Plans...</strong></p>-->
 <div style="display: block; margin: 0 auto; text-align: center;">
-	<ul id="ctmBuyLinks" class="ctm-buy-links" style="margin: 0 auto; padding: 0; list-style-type: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px;">
+	<ul id="ctmBuyLinks" class="ctm-buy-links" style="margin: 0 auto; padding: 0; list-style-type: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); flex-wrap: nowrap; justify-content: center; align-items: center; gap: 10px;">
 		<li style="display: inline-block;">
 			<a href="https://drive.google.com/file/d/1WM3owgKb1Z4OcRT994u5ZLNDfRUYo1lm/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="Vision, Mission, Goals and Objectives" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">📈</a>
 		</li>
@@ -2220,16 +2331,13 @@ body:not(.locked){
         </div>
       </div>
     </div>
-<div class="debug"
-     id="supportLauncher"
-     role="button"
-     tabindex="0"
-     style="text-align:center;display:flex;gap:.6rem;flex-wrap:wrap;width:100%;cursor:pointer;">
-  ClassTapMark takes time, resources and lots of effort to maintain. If it has helped you, please consider supporting it with a small donation. Thank you ❤️
-</div>
+	<div class="debug" id="supportLauncher" role="button" tabindex="0"
+		 style="text-align:center;display:flex;gap:.6rem;flex-wrap:wrap;width:100%;cursor:pointer;">
+	 If ClassTapMark has helped you, please consider supporting it with a small donation. Thank you ❤️
+	</div>
 	<br />	  
-	<div class="debug" style="font-size:.6rem;text-align:center;display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
-         Outside the Philippines or DepEd? If ClassTapMark fits your needs. Customization is available upon request.</div>
+	<div class="debug" style="text-align:center;display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
+     Outside DepEd? If ClassTapMark fits your needs. Customization is available upon request.</div>
   </div>
 
 
