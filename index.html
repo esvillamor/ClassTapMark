@@ -460,7 +460,7 @@
 */
 #ctmBuyLinks.ctm-buy-links{
   display:grid !important;
-  grid-template-columns:repeat(7, minmax(0, 1fr)) !important;
+  grid-template-columns:repeat(8, minmax(0, 1fr)) !important;
   gap:clamp(3px, 1.8vw, 10px) !important;
   width:min(100%, 460px) !important;
   max-width:100% !important;
@@ -1905,6 +1905,19 @@ body:not(.locked){
   background-attachment:fixed !important;
 }
 
+
+
+/* CTM unlocked resource links: replaces the former Outside DepEd message. */
+#ctmUnlockedEmojiArea{
+  display:none;
+  width:100%;
+  justify-content:center;
+  align-items:center;
+}
+body:not(.locked) #ctmUnlockedEmojiArea{
+  display:flex;
+}
+
 </style>
 
 <script>
@@ -2164,37 +2177,7 @@ body:not(.locked){
 		</div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
 		<!--<p id="ctmBuyText" style="font-size: 13px;"><strong>Vision & Plans...</strong></p>-->
-<div style="display: block; margin: 0 auto; text-align: center;">
-	<ul id="ctmBuyLinks" class="ctm-buy-links" style="margin: 0 auto; padding: 0; list-style-type: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); flex-wrap: nowrap; justify-content: center; align-items: center; gap: 10px;">
-		<li style="display: inline-block;">
-			<a href="https://drive.google.com/file/d/1WM3owgKb1Z4OcRT994u5ZLNDfRUYo1lm/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="Vision, Mission, Goals and Objectives" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">📈</a>
-		</li>
 
-		<li style="display: inline-block;">
-			<a href="https://drive.google.com/file/d/1K-ovZNKy74a_UJMItaEOxpKxSWfd6A82/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="Open for Research Case Studies. ClassTapMark welcomes teachers, school teams, researchers, and education partners who wish to document practical classroom use through responsible case studies and structured feedback. Interested participants may explore how ClassTapMark supports offline-first classroom workflows, reduces repetitive documentation tasks, and strengthens practical learner-record management" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🎓</a>
-		</li>
-
-		<li style="display: inline-block;">
-			<a href="https://www.facebook.com/groups/classtapmark" target="_blank" rel="noopener noreferrer" title="Join ClassTapMark Community" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🙋‍♀️</a>
-		</li>
-
-		<li style="display: inline-block;">
-			<a href="https://forms.gle/zV1eBaNea4XQniwA9" target="_blank" rel="noopener noreferrer" title="Report a BUG" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🐞</a>
-		</li>
-
-		<li style="display: inline-block;">
-			<a href="https://drive.google.com/file/d/1ieRRextcX0cHF9Qge6nzHXklSi-HDStf/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="ClassTapMark White Paper" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">📜</a>
-		</li>
-
-		<li style="display: inline-block;">
-			<a href="https://drive.google.com/file/d/1-TRj9YZhK8c2MZB5BNpAcDUzPqN156R3/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="A Journey from Idea to Offline‑First App" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🧑‍💻</a>
-		</li>
-
-		<li style="display: inline-block;">
-			<a href="https://drive.google.com/file/d/1UfJgKpmo8YoRIvL_AHQHZHGLohTsDCxS/view?usp=drive_link" target="_blank" rel="noopener noreferrer" title="Collaboration &amp; Investment Proposal" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">👥</a>
-		</li>
-	</ul>
-</div>
 
         <p id="ctmBuyInfo" class="ctm-buy-info" style="font-size: 13px; text-align: justify;">		
           <b>Empowering Teachers.</b> Offline-first EdTech for attendance, learner management, class records, and school forms.
@@ -2421,13 +2404,45 @@ body:not(.locked){
         </div>
       </div>
     </div>
-	<div class="debug" id="supportLauncher" role="button" tabindex="0"
-		 style="text-align:center;display:flex;gap:.6rem;flex-wrap:wrap;width:100%;cursor:pointer;">
-	 If ClassTapMark has helped you, please consider supporting it with a small donation. Thank you ❤️
+
+	<div id="ctmUnlockedEmojiArea" aria-label="ClassTapMark resource links">
+<div style="display: block; margin: 0 auto; text-align: center;">
+	<ul id="ctmBuyLinks" class="ctm-buy-links" style="margin: 0 auto; padding: 0; list-style-type: none; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); flex-wrap: nowrap; justify-content: center; align-items: center; gap: 10px;">
+		<li style="display: inline-block;">
+			<a href="https://drive.google.com/file/d/1WM3owgKb1Z4OcRT994u5ZLNDfRUYo1lm/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="Vision, Mission, Goals and Objectives" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">📈</a>
+		</li>
+
+		<li style="display: inline-block;">
+			<a href="https://drive.google.com/file/d/1K-ovZNKy74a_UJMItaEOxpKxSWfd6A82/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="Open for Research Case Studies. ClassTapMark welcomes teachers, school teams, researchers, and education partners who wish to document practical classroom use through responsible case studies and structured feedback. Interested participants may explore how ClassTapMark supports offline-first classroom workflows, reduces repetitive documentation tasks, and strengthens practical learner-record management" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🎓</a>
+		</li>
+
+		<li style="display: inline-block;">
+			<a href="https://www.facebook.com/groups/classtapmark" target="_blank" rel="noopener noreferrer" title="Join ClassTapMark Community" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🙋‍♀️</a>
+		</li>
+
+		<li style="display: inline-block;">
+			<a href="https://forms.gle/zV1eBaNea4XQniwA9" target="_blank" rel="noopener noreferrer" title="Report a BUG" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🐞</a>
+		</li>
+
+		<li style="display: inline-block;">
+			<a href="https://drive.google.com/file/d/1ieRRextcX0cHF9Qge6nzHXklSi-HDStf/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="ClassTapMark White Paper" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">📜</a>
+		</li>
+
+		<li style="display: inline-block;">
+			<a href="https://drive.google.com/file/d/1-TRj9YZhK8c2MZB5BNpAcDUzPqN156R3/view?usp=sharing" target="_blank" rel="noopener noreferrer" title="A Journey from Idea to Offline‑First App" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">🧑‍💻</a>
+		</li>
+
+		<li style="display: inline-block;">
+			<a href="https://drive.google.com/file/d/1UfJgKpmo8YoRIvL_AHQHZHGLohTsDCxS/view?usp=drive_link" target="_blank" rel="noopener noreferrer" title="Collaboration &amp; Investment Proposal" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">👥</a>
+		</li>
+	
+
+		<li style="display: inline-block;">
+			<a id="supportLauncher" href="#supportModal" role="button" title="Support ClassTapMark with a small donation" aria-label="Support ClassTapMark with a small donation" style="font-size: 20px; text-decoration: none; display: inline-block; padding: 6px 10px; background-color: #f0f2f5; border-radius: 6px;">💝</a>
+		</li>
+</ul>
+</div>
 	</div>
-	<br />	  
-	<div class="debug" style="text-align:center;display:flex;gap:.6rem;flex-wrap:wrap;width:100%;">
-     Outside DepEd? If ClassTapMark fits your needs. Customization is available upon request.</div>
   </div>
 
 
@@ -7309,9 +7324,15 @@ function ensureStickyOverlayToggle(tableId, wrapperId){
     const modal = document.getElementById('supportModal');
 
     if (launcher){
-      launcher.addEventListener('click', openSupportModal);
+      launcher.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSupportModal();
+      });
       launcher.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') openSupportModal();
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openSupportModal();
+        }
       });
     }
 
