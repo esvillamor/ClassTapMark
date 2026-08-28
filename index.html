@@ -5188,6 +5188,14 @@ function purgeOrphanedCtmSfMeta() {
     updateStatusSummary();
     updateClassButtons();
     cancelEdit();
+
+    // After the class is fully loaded and rendered, bring Manage Learners into view.
+    window.setTimeout(function () {
+      const manageLearnersSection = document.getElementById('classContent');
+      if (manageLearnersSection) {
+        manageLearnersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }
 
   /* =========================================================================
