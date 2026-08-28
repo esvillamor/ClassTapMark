@@ -3,7 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="ClassTapMark helps you manage classes, add students, and record daily attendance with quick status buttons." />
+  <title>ClassTapMark | Offline-First Classroom Records for Teachers</title>
+  <meta name="description" content="ClassTapMark is an offline-first classroom tool for attendance tracking, learner management, class records, grades, and DepEd-related school-form preparation." />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="author" content="Eric Villamor" />
+  <meta name="application-name" content="ClassTapMark" />
+  <meta name="keywords" content="ClassTapMark, teacher attendance tracker, learner management, classroom records, school forms, offline-first education app, DepEd-related workflows" />
+  <link rel="canonical" href="https://esvillamor.github.io/ClassTapMark/" />
+  <link rel="alternate" hreflang="en" href="https://esvillamor.github.io/ClassTapMark/" />
+  <link rel="alternate" hreflang="x-default" href="https://esvillamor.github.io/ClassTapMark/" />
+
+  <!-- Social sharing previews -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ClassTapMark" />
+  <meta property="og:locale" content="en_PH" />
+  <meta property="og:title" content="ClassTapMark | Offline-First Classroom Records for Teachers" />
+  <meta property="og:description" content="Manage attendance, learners, class records, grades, and DepEd-related school forms with an offline-first, teacher-developed web app." />
+  <meta property="og:url" content="https://esvillamor.github.io/ClassTapMark/" />
+  <meta property="og:image" content="https://esvillamor.github.io/ClassTapMark/icon512x512.png" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+  <meta property="og:image:alt" content="ClassTapMark application icon" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="ClassTapMark | Classroom Records for Teachers" />
+  <meta name="twitter:description" content="Offline-first attendance, learner management, class records, grades, and school-form preparation." />
+  <meta name="twitter:image" content="https://esvillamor.github.io/ClassTapMark/icon512x512.png" />
+  <meta name="twitter:image:alt" content="ClassTapMark application icon" />
+
+  <!-- Connection hints for existing third-party libraries -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
   <meta name="theme-color" content="#667eea" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -12,7 +42,60 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" sizes="32x32" href="image/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="192x192" href="icon192x192.png" />
-  <title>ClassTapMark</title>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://esvillamor.github.io/ClassTapMark/#website",
+      "url": "https://esvillamor.github.io/ClassTapMark/",
+      "name": "ClassTapMark",
+      "description": "Offline-first classroom records and attendance tool for teachers.",
+      "inLanguage": "en-PH"
+    },
+    {
+      "@type": [
+        "SoftwareApplication",
+        "WebApplication"
+      ],
+      "@id": "https://esvillamor.github.io/ClassTapMark/#application",
+      "name": "ClassTapMark",
+      "url": "https://esvillamor.github.io/ClassTapMark/",
+      "image": "https://esvillamor.github.io/ClassTapMark/icon512x512.png",
+      "description": "An offline-first classroom tool for attendance tracking, learner management, class records, grades, and DepEd-related school-form preparation.",
+      "applicationCategory": "EducationalApplication",
+      "applicationSubCategory": "Classroom management and school records",
+      "operatingSystem": "Any modern web browser",
+      "browserRequirements": "Requires JavaScript and a modern browser with local storage support.",
+      "isAccessibleForFree": true,
+      "author": {
+        "@type": "Person",
+        "name": "Eric Villamor"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Eric Villamor"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "PHP",
+        "availability": "https://schema.org/OnlineOnly"
+      },
+      "featureList": [
+        "Attendance tracking",
+        "Learner management",
+        "Class records",
+        "Grade sheets",
+        "School-form preparation",
+        "Offline-first browser storage"
+      ],
+      "inLanguage": "en-PH"
+    }
+  ]
+}
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
