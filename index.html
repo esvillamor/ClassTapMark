@@ -2137,6 +2137,38 @@ body:not(.locked) #ctmUnlockedEmojiArea{
 })();
 </script>
 
+
+<style id="ctm-long-press-tooltip-style">
+  .ctm-long-press-tooltip {
+    position: fixed;
+    z-index: 2147483647;
+    max-width: min(280px, calc(100vw - 24px));
+    padding: 8px 11px;
+    border-radius: 9px;
+    background: rgba(24, 24, 27, 0.96);
+    color: #fff;
+    font: 600 13px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-align: center;
+    box-shadow: 0 7px 22px rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(3px);
+    transition: opacity .14s ease, transform .14s ease, visibility .14s;
+  }
+  .ctm-long-press-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  #ctmBuyLinks a {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+</style>
+
 </head>
 <body class="locked">
     <h1>ClassTapMark</h1>
@@ -8989,6 +9021,133 @@ document.addEventListener('click', function (e) {
       subtree: true,
       characterData: true
     });
+  });
+})();
+</script>
+
+
+<script id="ctm-long-press-tooltip-script">
+(function () {
+  'use strict';
+
+  var HOLD_MS = 600;
+  var MOVE_LIMIT = 12;
+  var HIDE_DELAY_MS = 1400;
+  var root = document.getElementById('ctmBuyLinks');
+  if (!root) return;
+
+  var tip = document.createElement('div');
+  tip.className = 'ctm-long-press-tooltip';
+  tip.id = 'ctmLongPressTooltip';
+  tip.setAttribute('role', 'tooltip');
+  tip.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(tip);
+
+  var holdTimer = 0;
+  var hideTimer = 0;
+  var activeButton = null;
+  var startX = 0;
+  var startY = 0;
+  var suppressNextClick = false;
+
+  function clearHold() {
+    window.clearTimeout(holdTimer);
+    holdTimer = 0;
+  }
+
+  function hideTip() {
+    window.clearTimeout(hideTimer);
+    tip.classList.remove('is-visible');
+    tip.setAttribute('aria-hidden', 'true');
+    if (activeButton) activeButton.removeAttribute('aria-describedby');
+  }
+
+  function placeTip(button) {
+    var buttonRect = button.getBoundingClientRect();
+    var tipRect = tip.getBoundingClientRect();
+    var margin = 8;
+    var left = buttonRect.left + (buttonRect.width - tipRect.width) / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+
+    var top = buttonRect.top - tipRect.height - 10;
+    if (top < margin) top = buttonRect.bottom + 10;
+    top = Math.max(margin, Math.min(top, window.innerHeight - tipRect.height - margin));
+
+    tip.style.left = Math.round(left) + 'px';
+    tip.style.top = Math.round(top) + 'px';
+  }
+
+  function showTip(button) {
+    var text = button.getAttribute('title') || button.getAttribute('aria-label');
+    if (!text) return;
+
+    window.clearTimeout(hideTimer);
+    tip.textContent = text;
+    tip.classList.add('is-visible');
+    tip.setAttribute('aria-hidden', 'false');
+    button.setAttribute('aria-describedby', tip.id);
+    placeTip(button);
+    suppressNextClick = true;
+
+    if (navigator.vibrate) navigator.vibrate(18);
+  }
+
+  root.addEventListener('pointerdown', function (event) {
+    var button = event.target.closest('a');
+    if (!button || !root.contains(button) || event.button > 0) return;
+
+    clearHold();
+    hideTip();
+    activeButton = button;
+    startX = event.clientX;
+    startY = event.clientY;
+    suppressNextClick = false;
+
+    holdTimer = window.setTimeout(function () {
+      holdTimer = 0;
+      showTip(button);
+    }, HOLD_MS);
+  });
+
+  root.addEventListener('pointermove', function (event) {
+    if (!holdTimer) return;
+    if (Math.hypot(event.clientX - startX, event.clientY - startY) > MOVE_LIMIT) {
+      clearHold();
+    }
+  });
+
+  function finishPress() {
+    clearHold();
+    if (tip.classList.contains('is-visible')) {
+      hideTimer = window.setTimeout(hideTip, HIDE_DELAY_MS);
+    }
+  }
+
+  root.addEventListener('pointerup', finishPress);
+  root.addEventListener('pointercancel', function () {
+    clearHold();
+    hideTip();
+  });
+  root.addEventListener('pointerleave', function () {
+    if (holdTimer) clearHold();
+  });
+
+  root.addEventListener('click', function (event) {
+    if (!suppressNextClick) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    suppressNextClick = false;
+  }, true);
+
+  root.addEventListener('contextmenu', function (event) {
+    var button = event.target.closest('a');
+    if (button && root.contains(button)) event.preventDefault();
+  });
+
+  window.addEventListener('scroll', hideTip, true);
+  window.addEventListener('resize', hideTip);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) hideTip();
   });
 })();
 </script>
