@@ -1,4 +1,5 @@
-/* v18.71 ECR Initial Grade conformance: Summative Tests and Term Examination now use combined raw-score PS (total score / total HPS) before the EX weight; removes the incorrect fixed ST1/ST2/TE 30/30/40 sub-weighting. */
+/* v18.72 DO 015, s. 2026 EX conformance: ST1/ST2/TE use the mandated 30%/30%/40% internal distribution; detailed computation now shows the correct weighted-share formula instead of a misleading total-score/HPS formula. */
+/* v18.71 superseded: Summative Tests and Term Examination now use combined raw-score PS (total score / total HPS) before the EX weight; removes the incorrect fixed ST1/ST2/TE 30/30/40 sub-weighting. */
 /* v18.70 MAPEH Excel export screenshot conformance: MAPEH_Tn value-cell borders/alignment fixed; consolidated Summary of Grades now places Division at G3:J3 and School ID at G4:H4 for hidden-G layout, with F-width and H6 right-alignment fixes. */
 /* v18.69 MAPEH Excel export screenshot conformance fix: MA/PEH School Year label style, MAPEH_Tn E-column header labels, Summary of Grades title/division placement; v18.68 Summary of Grades subject merge uses H6 label + I6:J6 value; MAPEH_Tn descriptors are term-grade based; Excel numbering stays sex-reset and blank template rows are unnumbered; headers align to corrected workbook. */
 /* v18.67 MAPEH consolidated Excel header-fill fix: MAPEH_T1/T2/T3 and Summary of Grades now populate Region, Division, School Name, and School ID from the base or paired component headers; v18.66 MAPEH Summary duplicate warning UI fix; v18.65 Summary table descriptor narrative fix: Summary rows now materialize General Description and Instructional Response for Table 10/11 final results; v18.64 G12 descriptor render fix: learner cards and Summary table materialize Table 10/11 descriptor text; v18.63 MAPEH_Tn View in Excel format-map activation fix: MAPEH_T1/T2/T3 now actually apply the fixed XLSX 8-column merge/style map instead of falling back to the generic summary styling. */
@@ -42,7 +43,7 @@
   if (window.CTMClassRecord && typeof window.CTMClassRecord.init === 'function') return;
 
   const MODULE_HTML_PATH = 'classrecord/classrecord-modal.html';
-  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.71-ecr-initial-grade-conformance'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
+  const FORM_VERSION = 'CTM-CLASSRECORD-SY-2026.18.72-do015-ex-share-conformance'; // New Record shared-header isolation fix: New clears only Class Record school year, grade level, subject group, and subject; SF1/SF2/SF3/SF8 shared header values remain untouched; New reset now also runs on every module open and after saved-record deletion // Descriptive learner pill fix: for KS1 descriptive modes, hide Complete/Needs support + IG/TG pills and keep only a full Descriptor pill; compat/data/CSV logic unchanged // Descriptive mode patch: hide entire Shared HPS / Term Setup block while keeping autosave, CSV, computation, legacy, and numeric workflows compatible // Policy Setup compact grid v2.1: first row = Resolved Mode / Table / Numeric Mode; second row = full-width Transition Rule; logic/compat unchanged // UI fix: hide Summary tab Letter / Final Descriptor columns by default for DO No. 015, s. 2026 compliance while retaining underlying data/computation // Term / Quarter compactness patch v5 restores General Description + Instructional Response to 1-column notes layout; no logic changes // Draft/New status locks Shared HPS editing; Duplicate button removed from UI/bindings; compat/data/CSV unchanged
   // Term / Quarter fixed 4x2 card compactness patch v4; no logic changes
   // Term/Quarter compactness patch v3: CSS-driven layout only; no logic changes.
   // Summary tab column visibility switches (UI-only).
@@ -1352,16 +1353,19 @@ function categoryPercent(scores, hps) { let e = 0, t = 0; Object.keys(hps || {})
 function examPercent(scores, hps) {
   const qaHps = num(hps && hps.qa1);
   if (qaHps != null && qaHps > 0) return (scoreAsZeroWhenBlank(scores, 'qa1') / qaHps) * 100;
-  // v18.71 ECR conformance: Summative Tests and Term Examination form one
-  // assessment component. The ECR first totals all earned scores and all HPS,
-  // then computes PS = total earned / total HPS * 100. Do not assign fixed
-  // 30%/30%/40% shares to ST1/ST2/TE because their HPS already determine their
-  // proportional contribution inside the component.
-  return categoryPercent(scores, {
-    st1: hps && hps.st1,
-    st2: hps && hps.st2,
-    te: hps && hps.te
+  // v18.72 DO 015, s. 2026 conformance: within EXs, ST1 is 30%, ST2 is
+  // 30%, and TE is 40%. Each assessment is first converted to its own PS.
+  const shares = { st1: 0.3, st2: 0.3, te: 0.4 };
+  let weightedTotal = 0;
+  let activeShareTotal = 0;
+  Object.keys(shares).forEach(k => {
+    const hv = num(hps && hps[k]);
+    if (hv != null && hv > 0) {
+      weightedTotal += (scoreAsZeroWhenBlank(scores, k) / hv) * 100 * shares[k];
+      activeShareTotal += shares[k];
+    }
   });
+  return activeShareTotal > 0 ? weightedTotal / activeShareTotal : null;
 }
 
 function computeCustomLearnerTerm(row, term) { const prev=clone(row.computed||defaultComputed()); row.computed=Object.assign(defaultComputed(), prev, { teacherNotes:prev.teacherNotes||'', interventionNotes:prev.interventionNotes||'' }); const setup=state.setupProfile||defaultSetupProfile(), c=normalizeCustomComponents(setup.customComponents), map={ww:['ww1','ww2','ww3','ww4','ww5'],pt:['pt1','pt2','pt3','pt4','pt5'],st:['st1','st2'],te:['te1','te2'],qe:['qe1','qe2']}; let ig=0; Object.keys(c).forEach(k=>{ const cfg=c[k]; if(Number(cfg.weight)<=0||Number(cfg.count)<=0) return; let e=0,t=0; map[k].slice(0,cfg.count).forEach(fieldKey=>{ const g=(k==='ww'||k==='pt')?k:'ex'; const hv=num(term&&term.hps&&term.hps[g]&&term.hps[g][fieldKey]); if(hv!=null&&hv>0){t+=hv; e+=scoreAsZeroWhenBlank(row.scores&&row.scores[g],fieldKey);} }); ig += (t>0 ? (e/t)*100 : 0) * Number(cfg.weight)/100; }); ig=round2(ig); const method=normalizeGradeConversionMethod(setup.gradeConversionMethod||state.recordHeader.gradeConversionMethod), key=normalizeTransmutationTableKey(setup.transmutationTableKey||state.recordHeader.transmutationTableKey,method), descriptorTable=getCustomDescriptorTable((setup&&setup.customDescriptorSource)||(state.recordHeader&&state.recordHeader.customDescriptorSource)), tg=method==='transmutation'?transmuteWithRegistry(ig,key):ig, d=customNumericDescriptor(tg, descriptorTable); Object.assign(row.computed,{ tableUsed:descriptorTable, gradeConversionTableUsed:method==='transmutation'?getTransmutationRegistryEntry(key).label:'Zero Based Direct Computation', initialGrade:ig, transmutedGrade:method==='transmutation'?tg:null, termGrade:tg, finalDisplayedNumeric:tg, letterGrade:d?d.descriptorCode:'', descriptorCode:d?d.descriptorCode:'', descriptorLabel:d?(d.descriptorLabel||d.descriptorCode):'', generalDescription:d?(d.generalDescription||''):'', instructionalResponse:d?(d.instructionalResponse||''):'', remarks:Number(tg)>=PASSING_GRADE?'Passed':'Failed', interventionFlag:Number(tg)<PASSING_GRADE }); return row.computed; }
@@ -3820,7 +3824,10 @@ function termStats(termKey) {
     }
     const weightPct = component.weight * 100;
     const shareLines = component.subShareMode ? (component.used || []).map(item => `<div class="ctm-cr-computation-line ctm-cr-computation-muted">${esc(item.label)} Share: ${esc(computationFormatNumber(item.scoreUsed, 2))} ÷ ${esc(computationFormatNumber(item.hps, 2))} × 100 × ${esc(computationFormatPercent(item.share * 100, 0))} = ${esc(computationFormatNumber(item.weightedShare, 2))}</div>`).join('') : '';
-    return `<div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">${esc(component.label)}</div><div class="ctm-cr-computation-line">Component Score: ${esc(computationFormatNumber(component.scoreTotal, 2))} / ${esc(computationFormatNumber(component.hpsTotal, 2))}</div>${renderComputationFieldList(component)}${shareLines}<div class="ctm-cr-computation-line">Percentage Score: ${esc(computationFormatNumber(component.scoreTotal, 2))} ÷ ${esc(computationFormatNumber(component.hpsTotal, 2))} × 100 = ${esc(computationFormatPercent(component.percentageScore, 2))}${component.subShareMode ? ' <span class="ctm-cr-computation-muted">(normalized from active ST/TE shares)</span>' : ''}</div><div class="ctm-cr-computation-line">Weighted Score: ${esc(computationFormatNumber(component.percentageScore, 2))} × ${esc(computationFormatPercent(weightPct, 0))} = ${esc(computationFormatNumber(component.weightedScore, 2))}</div></div>`;
+    const percentageLine = component.subShareMode
+      ? `<div class="ctm-cr-computation-line">EX Percentage Score: sum of ST1/ST2/TE weighted shares = ${esc(computationFormatPercent(component.percentageScore, 2))} <span class="ctm-cr-computation-muted">(ST1 30% + ST2 30% + TE 40%, normalized only when an HPS slot is inactive)</span></div>`
+      : `<div class="ctm-cr-computation-line">Percentage Score: ${esc(computationFormatNumber(component.scoreTotal, 2))} ÷ ${esc(computationFormatNumber(component.hpsTotal, 2))} × 100 = ${esc(computationFormatPercent(component.percentageScore, 2))}</div>`;
+    return `<div class="ctm-cr-computation-section"><div class="ctm-cr-computation-title">${esc(component.label)}</div><div class="ctm-cr-computation-line">Component Score: ${esc(computationFormatNumber(component.scoreTotal, 2))} / ${esc(computationFormatNumber(component.hpsTotal, 2))}</div>${renderComputationFieldList(component)}${shareLines}${percentageLine}<div class="ctm-cr-computation-line">Weighted Score: ${esc(computationFormatNumber(component.percentageScore, 2))} × ${esc(computationFormatPercent(weightPct, 0))} = ${esc(computationFormatNumber(component.weightedScore, 2))}</div></div>`;
   }
   function renderComputationBreakdownHtml(breakdown) {
     if (!breakdown) return '';
